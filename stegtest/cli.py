@@ -2,9 +2,11 @@
 
 """Console script for StegTest."""
 import sys
+import os
 import click
 
 import stegtest.utils.filesystem as fs
+from stegtest.scheduler import Scheduler
 
 # from stegtest.utils.filesystem import write_to_file
 
@@ -15,9 +17,16 @@ def pipeline(ctx):
 
 #TODO creates all the relevant directories and files or ensures that they exist. cleans file system for these directories as well#
 @pipeline.command()
+@click.option('-d', '--directory', help='directory to initalize stegtest files in', type=str, )
 @click.pass_context
-def initialize():
-    pass
+def initialize(ctx, directory):
+    """initializes the directory so stegtest can operate properly"""
+    if directory is not None:
+        cwd = directory
+    else:
+        cwd = os.getcwd()
+
+    Scheduler._initializeFS(cwd)
 
 #TODO downloads a certain database to a specific directory. Renames files. Adds some sort of metadata list a .txt file at the top. Adds 
 @pipeline.command()

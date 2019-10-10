@@ -4,6 +4,7 @@ class Pipeline(ABC):
 
 	@abstractmethod
 	def __init__(self, *args):
+		pass
 
 	@abstractmethod
 	def _loadDB(self, ):

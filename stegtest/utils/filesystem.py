@@ -1,23 +1,27 @@
 """Filesystem utility functions."""
 import os
 import errno
+import uuid
 
 from os import path
 from stegtest.utils.helpers.embeddor_helpers import add_embeddor_to_file
+
 # from stegtest.
 
-def file_exists(path):
-    return path.exists(path)
+def get_uuid():
+    return uuid.uuid4()
+
+def file_exists(file):
+    return path.exists(file)
+
+def makefile(path):
+    """Creates file if it does not exist."""
+    print(path)
+    if not file_exists(path):
+        with open(path, 'w'): pass
 
 def makedirs(path):
-    """Create directory recursively if not exists.
-    Similar to `makedir -p`, you can skip checking existence before this function.
-
-    Parameters
-    ----------
-    path : str
-        Path of the desired dir
-    """
+    """Creates directory recursively if it does not exist."""
     try:
         os.makedirs(path)
     except OSError as exc:
@@ -25,15 +29,15 @@ def makedirs(path):
             raise
 
 def get_last_file(type):
-    return 'stub_last_file'
+    raise NotImplementedError
 
 def get_file_from_hash(hash):
     #TODO can optimize here with a database
-    open_lookup_table
-
+    #TODO open_lookup_table
+    raise NotImplementedError
 
 def get_hash_of_file(file):
-    return 0
+    raise NotImplementedError
 
 def write_to_file(type, file, options):
     assert(type == 'embeddor' or type == 'detector' or type == 'db')

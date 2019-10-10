@@ -7,5 +7,5 @@ def add_embeddor_to_file(file, options):
 
 	with open(file,'wb') as out:
 	    csv_out=csv.writer(out)
-	    csv_out.writerow(['embeddor','weight'])
-	    csv_out.writerow(options)
+	    for row in options:
+	    	csv_out.writerow(row)
