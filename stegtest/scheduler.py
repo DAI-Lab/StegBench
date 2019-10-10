@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import stegtest.utils.filesystem as fs
 import stegtest.utils.bindings as bd
@@ -24,15 +25,19 @@ class Scheduler(Pipeline):
 
 	@staticmethod
 	def _initializeFS(directory):
-		print('initializing FS at ' + directory)
-
+		"""Clears and adds needed directories for stegdetect to work"""
+		print('initializing fs at ' + directory)
 		try:
 			os.chdir(directory)
 		except:
 			raise OSError('directory: ' + directory + ' is not a valid directory. Please initialize with a valid directory')
 
-		print('initializing diretories...')
+		print('cleaning fs...')
+		fs.clean_filesystem()
+
 		directories = bd.get_directories()
+		print('initializing directories...')
+
 		for directory in directories:
 			fs.makedirs(directory)
 

@@ -5,7 +5,12 @@ import sys
 import os
 import click
 
+
+
+import stegtest.utils.bindings as bd
+import stegtest.utils.downloader as dl 
 import stegtest.utils.filesystem as fs
+
 from stegtest.scheduler import Scheduler
 
 # from stegtest.utils.filesystem import write_to_file
@@ -15,12 +20,11 @@ from stegtest.scheduler import Scheduler
 def pipeline(ctx):
     pass
 
-#TODO creates all the relevant directories and files or ensures that they exist. cleans file system for these directories as well#
 @pipeline.command()
 @click.option('-d', '--directory', help='directory to initalize stegtest files in', type=str, )
 @click.pass_context
 def initialize(ctx, directory):
-    """initializes the directory so stegtest can operate properly"""
+    """initializes stegtest filesystem"""
     if directory is not None:
         cwd = directory
     else:
@@ -30,22 +34,33 @@ def initialize(ctx, directory):
 
 #TODO downloads a certain database to a specific directory. Renames files. Adds some sort of metadata list a .txt file at the top. Adds 
 @pipeline.command()
+@click.option('-n', '--name', help='specify a pre-loaded download routine', type=click.Choice(bd.get_download_routines()))
+@click.option('-f', '--file', help='specify a properly-formatted file (<img_name, img_url, *args> for each row) to download from')
+@click.option('-d', '--directory', help='specify an already downloaded database')
 @click.pass_context
-def download(ctx):
-    click.echo('Downloading the database')
+def download(ctx, name, file, directory):
+    """downloads a specified database"""
+    assert ((name and not file and not directory) or (file and not name and not directory) or (directory and not name and not file))
+    if name:
+        dl.download_routine(name)
+    elif file:
+        dl.download_from_file(file)
+    else:
+        dl.download_directory(directory)
 
 @pipeline.command()
-@click.option('-a', '--algorithm', type=click.Choice(['BrokenArrows', 'CloackedPixel', 'F5', 'JpHide', 'JSteg', 'LSB', 'OpenStego', 'Outguess', 'Stegano', 'StegHide', 'StegPy']))
-@click.option('-w', '--weight', type=float)
-@click.option('--new/--old', default=False)
-@click.option('-h', '-hash')
+@click.option('-a', '--algorithm', help='specify an embedding routine', type=click.Choice(bd.get_embed_routines()))
+@click.option('-w', '--weight', help='weight indicates embeddors weight for db generation', type=float)
+@click.option('--new/--old', help='set new for new embedding sets', default=False, )
+@click.option('-h', '-hash', help='specifies an existing embeddor set')
 @click.pass_context
 def add_embeddor(ctx, algorithm, weight, new, hash):
+    """adds embeddor"""
     assert(new or hash)
     if new:
-        file = fs.get_last_file('embeddor')
+        file = fs.get_last_file(bd.embeddor)
     else:
-        file = fs.get_file_from_hash(hash)
+        file = fs.get_file_from_hash(bd.embeddor, hash)
 
     click.echo('Adding embeddor: [' + algorithm + ']' ' with options -- weight:[' + str(weight) + ']')
 
@@ -58,42 +73,43 @@ def add_embeddor(ctx, algorithm, weight, new, hash):
 @click.option('--algorithm', type=click.Choice(['StegDetect', 'StegExpose', 'YeNet']))
 @click.pass_context
 def add_detector(ctx, algorithm):
-	click.echo('Adding detector: [' + algorithm + ']')
+    """adds detector"""
+    click.echo('Adding detector: [' + algorithm + ']')@pipeline.command()
 
 @pipeline.command()
 @click.pass_context
 def info(ctx):
-	pass
+    """provides system info"""
+    #print the master.txt files in each of the subdirectories in a easy to read way
+    pass
 
 @pipeline.command()
 @click.pass_context
 def reset(ctx):
-	pass
-
-
-@pipeline.command()
-@click.argument('hash')
-@click.pass_context
-def parse_db(ctx):
-	click.echo('parsing db for information')
+    """cleans up system"""
+    fs.clean_filesystem()
 
 @pipeline.command()
+@click.option('-e', '--embeddor', help='hash of the embeddor set being used')
+@click.option('-db', '--db', help='hash of the db set being used')
 @click.pass_context
-def generate(ctx):
-	#FOR NOW, max make make our datasets 10,000 images. 
-	#assert() something about number of embeddor
-	#this needs to be an orchestrator for some sort of parallelization parameter
+def generate(ctx, embeddor, db):
+    """Generates a test db using embeddors and db images"""
+    #FOR NOW, max make make our datasets 10,000 images. 
+    #assert() something about number of embeddor
+    #this needs to be an orchestrator for some sort of parallelization parameter
     click.echo('Here is information on the db that was just generated')
 
 @pipeline.command()
-@click.argument('algorithm')
+@click.option('-d', '--detector', help='hash of the detector set being used')
+@click.option('-db', '--db', help='hash of the generated db set being used')
+@click.option('-o', '--output', help='output file to output results to')
 @click.pass_context
-def analyze(ctx):
-	#assert() something about number of detectors
-	#should produce some sort of csv with statistics about each of the detectors
-	click.echo('Analyzing steganalyzers')
+def analyze(ctx, detector, db, output):
+    """analyzes a set of detectors on a specified database producing """
+    #assert() something about number of detectors
+    #should produce some sort of csv with statistics about each of the detectors
+    click.echo('Analyzing steganalyzers')
 
 def main():
-	#need a way to dispatch this... lol
-	#can use click commands nice.
     pipeline(obj={})
