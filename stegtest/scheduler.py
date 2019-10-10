@@ -1,6 +1,6 @@
 
 from stegtest.types.pipeline import Pipeline 
-from stegtest.utils.filesystem import generate_file_list
+from stegtest.utils.filesystem import generate_file_list, makedirs
 from stegtest.utils.bindings import lookup_embeddor, lookup_detector
 
 class Scheduler(Pipeline):
@@ -16,6 +16,9 @@ class Scheduler(Pipeline):
 		for detector in detectors:
 		#   <gets you info> lookup_detect()
 
+	def _initializeFS(self, directory):
+		#calls filesystem stuff
+
 
 	def _loadDB(self, db_hash):
 		self.db_hash = db_hash
@@ -29,3 +32,4 @@ class Scheduler(Pipeline):
 
 	def _test(self, ):
 		pass
+
