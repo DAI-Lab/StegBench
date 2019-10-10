@@ -36,4 +36,5 @@ def lookup_detector(name_of_method):
 	raise NotImplementedError
 
 def get_db_names():
+	raise NotImplementedError
 	#TODO need to get any additional db names 
