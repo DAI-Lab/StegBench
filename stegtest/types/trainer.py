@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 
-class Tester(ABC):
+class Trainer(ABC):
     @abstractmethod
     def __init__(self, *args):
         pass
 
     @abstractmethod
-    def test(self, db_hash, detect_set):
+    def train(self, db_hash, detector_hash):
         pass
 

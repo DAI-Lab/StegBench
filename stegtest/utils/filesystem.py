@@ -4,8 +4,6 @@ import errno
 import uuid
 import shutil
 
-import stegtest.utils.bindings as bd
-
 from os import path
 from stegtest.utils.helpers.embeddor_helpers import add_embeddor_to_file
 
@@ -20,12 +18,18 @@ def dir_exists(directory):
 def file_exists(file):
     return path.exists(file)
 
-def makefile(path):
+def remove_file(file):
+    if not file_exists(file):
+        raise Error('file does not exist')
+
+    os.remove(file)
+
+def make_file(path):
     """Creates file if it does not exist."""
     if not file_exists(path):
         with open(path, 'w'): pass
 
-def makedirs(path):
+def make_dirs(path):
     """Creates directory recursively if it does not exist."""
     try:
         os.makedirs(path)
@@ -46,7 +50,8 @@ def get_hash_of_file(file):
     raise NotImplementedError
 
 def write_to_file(type, file, options):
-    assert(type == bd.embeddor or type == bd.detector or type == bd.db)
+    # TODO fix
+    # assert(type == bd.embeddor or type == bd.detector or type == bd.db)
     def get_writer(type):
         return {
         'embeddor': add_embeddor_to_file,
@@ -57,9 +62,8 @@ def write_to_file(type, file, options):
     writer = get_writer(type)
     wrtier(options)
 
-def clean_filesystem():
+def clean_filesystem(directories):
     """removes directories defined in bindings"""
-    directories = bd.get_directories()
     for directory in directories:
         if dir_exists(directory):
             shutil.rmtree(directory)

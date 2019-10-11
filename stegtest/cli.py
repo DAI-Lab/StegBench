@@ -5,10 +5,9 @@ import sys
 import os
 import click
 
-
-
 import stegtest.utils.bindings as bd
-import stegtest.utils.downloader as dl 
+import stegtest.utils.download as dl 
+import stegtest.utils.processor as pr
 import stegtest.utils.filesystem as fs
 
 from stegtest.scheduler import Scheduler
@@ -19,6 +18,13 @@ from stegtest.scheduler import Scheduler
 @click.pass_context
 def pipeline(ctx):
     pass
+
+
+@pipeline.command()
+@click.pass_context
+def start(ctx):
+    """starts docker image"""
+    raise NotImplementedError
 
 @pipeline.command()
 @click.option('-d', '--directory', help='directory to initalize stegtest files in', type=str, )
@@ -34,19 +40,26 @@ def initialize(ctx, directory):
 
 #TODO downloads a certain database to a specific directory. Renames files. Adds some sort of metadata list a .txt file at the top. Adds 
 @pipeline.command()
-@click.option('-n', '--name', help='specify a pre-loaded download routine', type=click.Choice(bd.get_download_routines()))
+@click.option('-n', '--name', help='specify a pre-loaded download routine', type=click.Choice(dl.get_download_routines().keys()))
 @click.option('-f', '--file', help='specify a properly-formatted file (<img_name, img_url, *args> for each row) to download from')
-@click.option('-d', '--directory', help='specify an already downloaded database')
 @click.pass_context
-def download(ctx, name, file, directory):
+def download(ctx, name, file):
     """downloads a specified database"""
-    assert ((name and not file and not directory) or (file and not name and not directory) or (directory and not name and not file))
+    assert ((name and not file) or (file and not name))
     if name:
         dl.download_routine(name)
-    elif file:
-        dl.download_from_file(file)
     else:
-        dl.download_directory(directory)
+        dl.download_from_file(file)
+
+#TODO downloads a certain database to a specific directory. Renames files. Adds some sort of metadata list a .txt file at the top. Adds 
+@pipeline.command()
+@click.option('-d', '--directory', help='specify an already downloaded database')
+@click.option('-n', '--name', help='specify the name for the database')
+@click.pass_context
+def process(ctx, directory, name):
+    """processes a specified database"""
+    assert(directory and name)
+    pr.process_directory(directory, name)
 
 @pipeline.command()
 @click.option('-a', '--algorithm', help='specify an embedding routine', type=click.Choice(bd.get_embed_routines()))
@@ -87,7 +100,8 @@ def info(ctx):
 @click.pass_context
 def reset(ctx):
     """cleans up system"""
-    fs.clean_filesystem()
+    top_level_directories = bd.get_top_level_directories().values()
+    fs.clean_filesystem(top_level_directories)
 
 @pipeline.command()
 @click.option('-e', '--embeddor', help='hash of the embeddor set being used')

@@ -5,8 +5,6 @@ import stegtest.utils.filesystem as fs
 import stegtest.utils.bindings as bd
 
 from stegtest.types.pipeline import Pipeline 
-# from stegtest.utils.filesystem import generate_file_list, makedirs
-# from stegtest.utils.bindings import lookup_embeddor, lookup_detector
 
 #code way to do it.
 
@@ -33,30 +31,35 @@ class Scheduler(Pipeline):
 			raise OSError('directory: ' + directory + ' is not a valid directory. Please initialize with a valid directory')
 
 		print('cleaning fs...')
-		fs.clean_filesystem()
+		
+		top_level_directories = bd.get_top_level_directories().values()
+		fs.clean_filesystem(top_level_directories)
 
-		directories = bd.get_directories()
 		print('initializing directories...')
 
+		directories = bd.all_directories()
+
 		for directory in directories:
-			fs.makedirs(directory)
+			fs.make_dirs(directory)
 
 		print('initializing files...')
 		master_files = bd.get_master_files().values()
 		for file in master_files:
-			fs.makefile(file)
+			fs.make_file(file)
 
-	def _loadDB(self, db_hash):
-		self.db_hash = db_hash
+	def _loadDB(self, ):
+		raise NotImplementedError
 		#load the list of files from this hash
 
 		# self.file_list = generate_file_list(db_hash)
 
-	def _generateTestDB(self, noice):
-		pass
+	def _generateTestDB(self, ):
+		raise NotImplementedError
 		# uses embeddors to generate the test files
 		# produces a db hash with a file list
 
-	def _test(self, noice):
-		pass
+	def _test(self, ):
+		raise NotImplementedError
 
+	def _train(self, ):
+		raise NotImplementedError

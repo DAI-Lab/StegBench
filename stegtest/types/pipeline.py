@@ -17,3 +17,7 @@ class Pipeline(ABC):
 	@abstractmethod
 	def _test(self, ):
 		pass
+
+	@abstractmethod
+	def _train(self, ):
+		pass
