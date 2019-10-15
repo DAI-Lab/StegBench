@@ -12,8 +12,6 @@ import stegtest.utils.filesystem as fs
 
 from stegtest.scheduler import Scheduler
 
-# from stegtest.utils.filesystem import write_to_file
-
 @click.group()
 @click.pass_context
 def pipeline(ctx):
@@ -124,6 +122,29 @@ def analyze(ctx, detector, db, output):
     #assert() something about number of detectors
     #should produce some sort of csv with statistics about each of the detectors
     click.echo('Analyzing steganalyzers')
+
+
+@pipeline.command()
+@click.option('-e', '--embeddor', help='hash of embeddor being used')
+@click.option('-i', '--image', help='path to image file')
+@click.pass_context
+def embedImage(ctx, embeddor, image):
+    """Embeds a specific image using an embeddor"""
+    #FOR NOW, max make make our datasets 10,000 images. 
+    #assert() something about number of embeddor
+    #this needs to be an orchestrator for some sort of parallelization parameter
+    click.echo('Here is the path to the embedded image')
+
+@pipeline.command()
+@click.option('-e', '--detector', help='hash of the detector being used')
+@click.option('-i', '--image', help='path to image file')
+@click.pass_context
+def detectImage(ctx, detector, image):
+    """Generates a test db using embeddors and db images"""
+    #FOR NOW, max make make our datasets 10,000 images. 
+    #assert() something about number of embeddor
+    #this needs to be an orchestrator for some sort of parallelization parameter
+    click.echo('Here is the detection result')
 
 def main():
     pipeline(obj={})
