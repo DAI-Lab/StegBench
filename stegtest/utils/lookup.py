@@ -1,3 +1,5 @@
+import stegtest.utils.filesystem as fs
+
 embeddor = 'embeddor'
 detector = 'detector'
 db = 'db'
@@ -40,13 +42,11 @@ def all_directories():
 
 	return tld + tmp_directories + dataset_directory
 
-def lookup_embeddor(name_of_method):
-	raise NotImplementedError
-
-def lookup_detector(name_of_method):
-	raise NotImplementedError
-
 def get_db_names():
 	#TODO need to get any additional db names 
 	#reads the db file in master.txt to get the list of dbs that we can use
-	raise NotImplementedError
+	db_master_file = get_master_files()[db]
+	db_rows = fs.read_csv_file(db_master_file)
+	return db_rows
+
+"""need way to change directory to the dataset directory absolutely"""

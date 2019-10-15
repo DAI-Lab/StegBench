@@ -2,7 +2,7 @@ import os
 import shutil
 
 import stegtest.utils.filesystem as fs
-import stegtest.utils.bindings as bd
+import stegtest.utils.lookup as lookup
 
 from stegtest.types.pipeline import Pipeline 
 
@@ -11,8 +11,8 @@ from stegtest.types.pipeline import Pipeline
 class Scheduler(Pipeline):
 
 	def __init__(self, embeddors, detectors):
-		self.embeddors = []
-		self.detectors = []
+		self.embeddors = embeddors
+		self.detectors = detectors
 		for embeddor in embeddors:
 			continue
 		#	<gets you class> lookup_emnbeddor()
@@ -32,18 +32,18 @@ class Scheduler(Pipeline):
 
 		print('cleaning fs...')
 		
-		top_level_directories = bd.get_top_level_directories().values()
+		top_level_directories = lookup.get_top_level_directories().values()
 		fs.clean_filesystem(top_level_directories)
 
 		print('initializing directories...')
 
-		directories = bd.all_directories()
+		directories = lookup.all_directories()
 
 		for directory in directories:
 			fs.make_dirs(directory)
 
 		print('initializing files...')
-		master_files = bd.get_master_files().values()
+		master_files = lookup.get_master_files().values()
 		for file in master_files:
 			fs.make_file(file)
 
@@ -53,7 +53,7 @@ class Scheduler(Pipeline):
 
 		# self.file_list = generate_file_list(db_hash)
 
-	def _generateTestDB(self, ):
+	def _generateTestDB(self, ): #Scheduler initialized with embeddors
 		raise NotImplementedError
 		# uses embeddors to generate the test files
 		# produces a db hash with a file list

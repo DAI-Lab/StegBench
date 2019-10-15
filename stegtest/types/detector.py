@@ -2,11 +2,11 @@ from abc import ABC, abstractmethod
 
 class Detector(ABC):
 
-	@abstractmethod
+    @abstractmethod
     def __init__(self, *args):
         pass
 
-	@abstractmethod
+    @abstractmethod
     def train(self, path_to_directory):
         pass
 
@@ -14,6 +14,6 @@ class Detector(ABC):
     def detect(self, path_to_input):
         pass
 
-        @abstractmethod
+    @abstractmethod
     def detect_bulk(self, path_to_directory, input_list):
         pass

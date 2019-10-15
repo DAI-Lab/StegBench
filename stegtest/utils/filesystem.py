@@ -1,16 +1,14 @@
 """Filesystem utility functions."""
 import os
+import csv
 import errno
 import uuid
 import shutil
 
 from os import path
-from stegtest.utils.helpers.embeddor_helpers import add_embeddor_to_file
-
-# from stegtest.
 
 def get_uuid():
-    return uuid.uuid4()
+    return str(uuid.uuid4())
 
 def dir_exists(directory):
     return path.isdir(directory)
@@ -49,18 +47,24 @@ def get_file_from_hash(type, hash):
 def get_hash_of_file(file):
     raise NotImplementedError
 
-def write_to_file(type, file, options):
-    # TODO fix
-    # assert(type == bd.embeddor or type == bd.detector or type == bd.db)
-    def get_writer(type):
-        return {
-        'embeddor': add_embeddor_to_file,
-        'detector': None,
-        'db': None,
-        }[type]
+def write_to_csv_file(path_to_file, rows):
+    """writes data to a csv file"""
+    ##TODO need to verify that this adds to a csv file if it already exists and does not override it###
+    with open(path_to_file, 'w') as out:
+        csv_ou = csv.writer(out)
+        
+        for row in rows:
+            csv_out.writerow(row)
 
-    writer = get_writer(type)
-    wrtier(options)
+    out.close()
+
+def read_csv_file(path_to_file):
+    with open(path_to_file, 'r') as in_file:
+        reader = csv.reader(in_file)
+        rows = [list(row) for row in reader]
+
+    in_file.close()
+    return rows
 
 def clean_filesystem(directories):
     """removes directories defined in bindings"""

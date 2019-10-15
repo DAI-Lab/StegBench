@@ -1,15 +1,12 @@
 
 import subprocess
-
 from stegtest.types.embeddor import Embeddor
-
+from shutil import copyfile
 # from stegtest.utils.filesystem import file_exists
-
-##NEED TO FINISH EMBEDDING PROCESS
 
 class CloackedPixel(Embeddor):
 
-    def __init__(self, secret_txt, password):
+    def __init__(self, secret_txt:str, password:str):
         super().__init__()
         self.secret_txt = secret_txt
         self.password = password
@@ -21,6 +18,3 @@ class CloackedPixel(Embeddor):
 
     	commands = ['cloackedpixel', 'hide', path_to_input, self.secret_txt, self.password]
     	subprocess.run(commands)
-
-
-CloackedPixel('ajinkya', 'ajinkya')

@@ -2,7 +2,7 @@
 import subprocess
 
 from stegtest.types.detector import Detector
-from stegtest.utils.filesystem import directory_exists, file_exists, file_type, get_images_in_directory
+from stegtest.utils.filesystem import dir_exists, file_exists
 
 # from stegtest.utils.filesystem import file_exists
 # http://old-releases.ubuntu.com/ubuntu/pool/universe/s/stegdetect/
@@ -16,15 +16,15 @@ class StegDetect(Detector):
 
     def detect(self, path_to_input):
         assert(file_exists(path_to_input))
-        assert(file_type(path_to_input, [".jpg"]))
+        # assert(file_type(path_to_input, [".jpg"]))
 
-        commands = ['stegdetect', '', path_to_input, self.secret_txt, path_to_output]
+        commands = ['stegdetect', path_to_input,]
         subprocess.run(commands)
 
     def detect_bulk(self, path_to_directory, input_list):
         if not input_list:
-            assert(directory_exists(path_to_directory))
-            input_list = get_images_in_directory(input_list, ['jpg'])
+            assert(dir_exists(path_to_directory))
+            input_list = [] #get_images_in_directory(input_list, ['jpg'])
 
         num_images = len(input_list)
 
