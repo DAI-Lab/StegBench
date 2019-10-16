@@ -73,19 +73,27 @@ def add_to_algorithm_set(type: str, uuid:str, algorithm:str):
 	return uuid
 
 def lookup_algorithm_set(type:str, uuid:str):
-	asset(type is not None)
+	return get_all_algorithm_sets(type)[uuid]
 
+def get_all_algorithm_sets(type:str):
+	"""gets info on all the current sets of specified type that are in fs"""
 	master_algorithm_file = lookup.get_master_files()[type]
+	master_file_data = fs.read_csv_file(master_algorithm_file)
+	row_data = master_file_data[1:]
 
-	algorithm_sets = fs.read_csv_file(master_algorithm_file)
+	all_set_info = {}
+	for algorithm_set in row_data:
+		set_info_dict = {}
 
-	#1st element is UUID as described by procedure. 
-	#TODO need a better way to ensure this to avoid breaking everything.
-	uuid_set = list(filter(lambda r: r[0] == uuid), algorithm_sets)
-	assert(len(uuid_set) == 1)
+		(uuid, compatible_types_set, set_file_path) = algorithm_set
+		set_info = fs.read_csv_file(set_file_path)
 
-	#TODO potentially some more filtering on this...
-	return uuid_set[0]
+		set_info_dict[lookup.compatibile_types_decorator] = compatible_types_set
+		set_info_dict[type] = set_info
+
+		all_set_info[uuid] = set_info_dict
+
+	return all_set_info
 
 def instantiate_algorithm(type:str, name_of_method:str, parameters:list):
 	"""returns an instantiated class with arguments args""" 

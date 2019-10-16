@@ -127,13 +127,11 @@ def add_detector(ctx, algorithm, new, uuid):
 @click.option('-db', '--db', help='database info', is_flag=True, default=False)
 @click.option('-e', '--embeddor', help='embeddor info', is_flag=True, default=False)
 @click.option('-d', '--detector', help='detector info', is_flag=True, default=False)
-@click.option('-es', '--embedset', help='embeddor sets info', is_flag=True, default=False)
-@click.option('-ds', '--detectsets', help='detector sets info', is_flag=True, default=False)
 @click.pass_context
 def info(ctx, all, db, embeddor, detector):
     """provides system info"""
     #TODO print the master.txt files in each of the subdirectories in a easy to read way
-    breaker = ['-' for i in range(20)]
+    breaker = ['-' for i in range(100)]
     breaker = ''.join(breaker)
     click.echo('Listing all requested information....')
     click.echo(breaker)
@@ -155,6 +153,15 @@ def info(ctx, all, db, embeddor, detector):
             click.echo('\t\t' + ' Compatible Types: ' + str(embeddor[lookup.compatibile_types_decorator]))
         click.echo(breaker)
 
+        click.echo('Embeddor sets available: ')
+        embeddor_set_info = algo.get_all_algorithm_sets(lookup.embeddor)
+        for uuid in embeddor_set_info.keys():
+            embeddor_set = embeddor_set_info[uuid]
+            click.echo('\tUUID: ' + uuid)
+            click.echo('\t\t' + ' Compatible Types: ' + str(embeddor_set[lookup.compatibile_types_decorator]))
+            click.echo('\t\t' + ' Embeddors: ' + str(embeddor_set[lookup.embeddor]))
+        click.echo(breaker)
+
     if all or detector:
         click.echo(breaker)
         click.echo('Detectors available: ')
@@ -162,6 +169,15 @@ def info(ctx, all, db, embeddor, detector):
         for detector in detector_info:
             click.echo('\t' + str(detector[lookup.algorithm_name]))
             click.echo('\t\t' + ' Compatible Types: ' + str(detector[lookup.compatibile_types_decorator]))
+        click.echo(breaker)
+
+        click.echo('Detector sets available: ')
+        detector_set_info = algo.get_all_algorithm_sets(lookup.detector)
+        for uuid in detector_set_info.keys():
+            detector_set = detector_set_info[uuid]
+            click.echo('\tUUID: ' + uuid)
+            click.echo('\t\t' + ' Compatible Types: ' + str(detector_set[lookup.compatibile_types_decorator]))
+            click.echo('\t\t' + ' Detectors: ' + str(detector_set[lookup.detector]))
         click.echo(breaker)
     
     click.echo(breaker)
