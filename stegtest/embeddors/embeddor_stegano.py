@@ -1,5 +1,7 @@
 import subprocess
 import os
+import stegtest.types.compatibility as compatibility
+
 from stegtest.types.embeddor import Embeddor
 from stegtest.utils.filesystem import file_exists
 
@@ -10,6 +12,7 @@ class Stegano(Embeddor):
         self.secret_txt = secret_txt
         self.mode = mode
 
+    @compatibility.register(compatibility.png)
     def embed(self, path_to_input, path_to_output):
         assert(file_exists(path_to_input))
         # assert(file_type(path_to_input, [".pmg"]))
@@ -27,4 +30,4 @@ class Stegano(Embeddor):
             commands = ['stegano-lsb-set', 'hide', '--input', path_to_input, '-f', self.secret_txt, 
             '-e', 'UTF-8', '-g', '$GENERATOR', '--output', path_to_output, 'for various generators (stegano-lsb-set list-generators)']
 
-        subprocess.run(commands)
+        subprocess.run(' '.join(commands), shell=True)

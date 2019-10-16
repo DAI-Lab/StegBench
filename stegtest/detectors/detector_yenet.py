@@ -1,5 +1,6 @@
 
 import subprocess
+import stegtest.types.compatibility as compatibility
 
 from stegtest.types.detector import Detector
 
@@ -10,6 +11,7 @@ class YeNet(Detector):
     def train(self, path_to_directory):
         pass
 
+    @compatibility.register(compatibility.png, compatibility.bmp)
     def detect(self, path_to_input):
     	pass
 

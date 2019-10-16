@@ -17,6 +17,7 @@ def download_routine(name, *args):
 	process_directory(tmp_directory)
 
 def download_from_file(file):
-	#dipatch this to a helper routine or probably this
+	#dipatch this to a helper routine or probably this 
+	#V1 TODO work - download images from a file list 
 	tmp_directory = None
 	process_directory(tmp_directory)

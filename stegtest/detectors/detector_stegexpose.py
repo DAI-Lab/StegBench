@@ -1,4 +1,5 @@
 import subprocess
+import stegtest.types.compatibility as compatibility
 
 from stegtest.types.detector import Detector
 from stegtest.utils.filesystem import dir_exists
@@ -21,6 +22,7 @@ class StegExpose(Detector):
     def train(self, path_to_directory):
         pass
 
+    @compatibility.register(compatibility.png, compatibility.bmp)
     def detect(self, path_to_input):
         pass #only runs ond directorys
 

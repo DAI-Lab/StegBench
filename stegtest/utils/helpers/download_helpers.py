@@ -39,7 +39,17 @@ def download_from_BOSS(temp_directory):
 	return path_to_unzip_directory
 
 def download_from_BOWS2(dir):
-	retrieve_zip_file
+	zip_file_name = 'BOWS2.zip'
+	unzip_directory = 'BOWS2OrigEp3'
+	path_to_zip_file = temp_directory + '/' + zip_file_name
+	path_to_unzip_directory = temp_directory + '/' + unzip_directory
+	
+	retrieve_zip_file(BOSS_URL, path_to_zip_file)
+	unzip_file(path_to_zip_file, temp_directory)
+
+	assert(fs.dir_exists(path_to_unzip_directory))
+
+	return path_to_unzip_directory
 
 def download_from_BURST(dir):
 	raise NotImplementedError

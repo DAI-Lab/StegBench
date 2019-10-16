@@ -1,5 +1,6 @@
 
 import subprocess
+import stegtest.types.compatibility as compatibility
 
 from stegtest.types.detector import Detector
 from stegtest.utils.filesystem import dir_exists, file_exists
@@ -14,6 +15,7 @@ class StegDetect(Detector):
     def train(self, path_to_directory):
         pass
 
+    @compatibility.register(compatibility.jpeg, compatibility.jpg)
     def detect(self, path_to_input):
         assert(file_exists(path_to_input))
         # assert(file_type(path_to_input, [".jpg"]))

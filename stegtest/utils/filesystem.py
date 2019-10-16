@@ -35,23 +35,16 @@ def make_dirs(path):
         if exc.errno != errno.EEXIST:
             raise
 
-def get_last_file(type):
-    raise NotImplementedError
-
-def get_file_from_hash(type, hash):
-
-    #TODO can optimize here with a database
-    #TODO open_lookup_table
-    raise NotImplementedError
-
-def get_hash_of_file(file):
-    raise NotImplementedError
-
-def write_to_csv_file(path_to_file, rows):
+def write_to_csv_file(path_to_file, rows, override=False):
     """writes data to a csv file"""
     ##TODO need to verify that this adds to a csv file if it already exists and does not override it###
-    with open(path_to_file, 'w') as out:
-        csv_ou = csv.writer(out)
+    if file_exists(path_to_file) and not override:
+        mode = 'a'
+    else:
+        mode = 'w'
+ 
+    with open(path_to_file, mode) as out:
+        csv_out = csv.writer(out)
         
         for row in rows:
             csv_out.writerow(row)

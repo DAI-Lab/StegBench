@@ -47,7 +47,7 @@ def process_image_directory(path_to_directory, db_name):
 
 	num_images = len(files)
 	db_uuid = fs.get_uuid()
-	dataset_info = [(db_name, num_images, db_uuid)]
+	dataset_info = [(db_uuid, db_name, num_images)]
 
 	fs.write_to_csv_file(db_master_file, dataset_info)
 

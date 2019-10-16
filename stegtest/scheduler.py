@@ -43,9 +43,12 @@ class Scheduler(Pipeline):
 			fs.make_dirs(directory)
 
 		print('initializing files...')
-		master_files = lookup.get_master_files().values()
-		for file in master_files:
-			fs.make_file(file)
+		master_files = lookup.get_master_files()
+		for file_type in master_files.keys():
+			path_to_master_file = master_files[file_type]
+			master_file_header = lookup.get_master_header(file_type)
+
+			fs.write_to_csv_file(path_to_master_file, [master_file_header])
 
 	def _loadDB(self, ):
 		raise NotImplementedError

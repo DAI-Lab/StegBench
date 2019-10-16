@@ -1,14 +1,25 @@
 import stegtest.utils.filesystem as fs
+import uuid
 
+#DIRECTORY TYPES#
 embeddor = 'embeddor'
 detector = 'detector'
 db = 'db'
 tmp = 'tmp'
 datasets = 'datasets'
 
+##FILE TYPES##
 master_file = 'master.csv'
-embeddor_routines = ['BrokenArrows', 'CloakedPixel', 'F5', 'JpHide', 'JSteg', 'LSB', 'OpenStego', 'Outguess', 'Stegano', 'StegHide', 'StegPy']
-detector_routines = ['StegDetect', 'StegExpose', 'YeNet']
+embeddor_header = ['UUID', 'Compatible Types', 'Filepath'] 
+detector_header = ['UUID', 'Compatible Types', 'Filepath']
+db_header = ['UUID', 'Name', 'Number of Images']
+
+##ALGORITHM TYPES##
+algorithm_name = 'name'
+embed_function = 'embed'
+detect_function = 'detect'
+parameters = 'parameters'
+compatibile_types_decorator = 'compatibile_types'
 
 def get_master_files():
 	return {binding: binding + '/' + master_file for binding in get_top_level_directories().values()}
@@ -17,11 +28,23 @@ def get_bindings_list(type):
 	bindings = get_master_files()
 	return bindings[type]
 
-def get_embed_routines():
-	return embeddor_routines
+def get_types():
+	return [embeddor, detector, db]
 
-def get_detector_routines():
-	return detector_routines
+def get_parameter_type(type):
+    return {
+     'str': str,
+     'int': int,
+     'float': float,
+     'bool': bool,
+     'uuid': uuid.UUID
+    }[type]
+
+def get_compatible_types(steganographic_function):
+	compatibile_types = getattr(steganographic_function, compatibile_types_decorator)
+	compatibile_types = list(map(lambda ct: ct.__name__, compatibile_types))
+
+	return compatibile_types
 
 def get_top_level_directories():
 	return {embeddor: embeddor, detector: detector, db: db}
@@ -31,6 +54,17 @@ def get_tmp_directories():
 	tmp_directories = {tl: (tl + '/' + tmp) for tl in tld}
 
 	return tmp_directories
+
+def get_master_header(type:str):
+	assert(type == embeddor or type == detector or type == db)
+	def get_header_for_type():
+		return {
+		 embeddor: embeddor_header,
+		 detector: detector_header,
+		 db: db_header
+		}[type]
+
+	return get_header_for_type()
 
 def get_dataset_directory():
 	return {db: db + '/' + datasets}
@@ -43,10 +77,21 @@ def all_directories():
 	return tld + tmp_directories + dataset_directory
 
 def get_db_names():
-	#TODO need to get any additional db names 
-	#reads the db file in master.txt to get the list of dbs that we can use
+	"""gets the dbs that are already processed"""
 	db_master_file = get_master_files()[db]
 	db_rows = fs.read_csv_file(db_master_file)
-	return db_rows
 
-"""need way to change directory to the dataset directory absolutely"""
+	header = db_rows[0]
+	db_data = db_rows[1:]
+
+	data_to_dict = []
+	for row in db_data:
+		assert(len(row) == len(header)) #have to be the same to match properly
+		
+		row_dict = {}
+		for i in range(len(row)):
+			row_dict[header[i]] = row[i]
+
+		data_to_dict.append(row_dict)
+
+	return data_to_dict
