@@ -11,6 +11,9 @@ class BrokenArrows(Embeddor):
 	def __init__(self):
 	    super().__init__()
 
+	def update_parameters(self):
+	    pass
+
 	@compatibility.register(compatibility.file_check, compatibility.jpeg, compatibility.jpg)
 	def embed(self, path_to_input:str, path_to_output:str):
 

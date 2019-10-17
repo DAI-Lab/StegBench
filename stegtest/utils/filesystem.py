@@ -11,8 +11,12 @@ from os import path
 def get_uuid():
     return str(uuid.uuid4())
 
-def create_file_from_hash(uuid, type):
-    return sha512(uuid.encode('utf-8')).hexdigest() + '.' + type
+def get_extension(file_path):
+    filename, file_extension = os.path.splitext(file_path)
+    return file_extension
+
+def create_file_from_hash(to_hash:str, type:str):
+    return sha512(to_hash.encode('utf-8')).hexdigest() + '.' + type
 
 def dir_exists(directory):
     return path.isdir(directory)
@@ -31,7 +35,7 @@ def make_file(path):
     if not file_exists(path):
         with open(path, 'w'): pass
 
-def make_dirs(path):
+def make_dir(path):
     """Creates directory recursively if it does not exist."""
     try:
         os.makedirs(path)
@@ -40,19 +44,19 @@ def make_dirs(path):
             raise
 
 def write_to_text_file(path_to_file, rows, override=False):
+    """writes data to a text file"""
     if file_exists(path_to_file) and not override:
         mode = 'a'
     else:
         mode = 'w'
 
-    with open("Output.txt", "w") as text_file:
+    with open(path_to_file, mode) as text_file:
         for row in rows:
             text_file.write(row)
     text_file.close()
 
 def write_to_csv_file(path_to_file, rows, override=False):
     """writes data to a csv file"""
-    ##TODO need to verify that this adds to a csv file if it already exists and does not override it###
     if file_exists(path_to_file) and not override:
         mode = 'a'
     else:
@@ -66,13 +70,36 @@ def write_to_csv_file(path_to_file, rows, override=False):
 
     out.close()
 
-def read_csv_file(path_to_file):
+def convert_csv_to_dict(rows):
+    header = rows[0]
+    data = rows[1:]
+
+    data_to_dict = []
+    for row in data:
+        assert(len(row) == len(header)) #have to be the same to match properly
+        
+        row_dict = {}
+        for i in range(len(row)):
+            row_dict[header[i]] = row[i]
+
+        data_to_dict.append(row_dict)
+
+    return data_to_dict
+
+def read_csv_file(path_to_file, return_as_dict=False):
     with open(path_to_file, 'r') as in_file:
         reader = csv.reader(in_file)
         rows = [list(row) for row in reader]
 
     in_file.close()
+    if return_as_dict:
+        return convert_csv_to_dict(rows)
+
     return rows
+
+def remove_file(path_to_file):
+    if file_exists(path_to_file):
+        os.remove(path_to_file)
 
 def clean_filesystem(directories):
     """removes directories defined in bindings"""

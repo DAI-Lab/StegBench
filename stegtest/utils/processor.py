@@ -5,16 +5,6 @@ import stegtest.utils.images as img
 from os import listdir
 from os.path import isfile, join, abspath
 
-"""IN GENERAL
-
-we need to go over all the images to find specific information 
-- size
-- type
-- other image info (find helpers online)
-- exif data??
-- ch
-
-"""
 def process_image_file(path_to_image):
 	"""processes an image file"""
 	assert(fs.file_exists(path_to_image))
@@ -36,20 +26,31 @@ def process_image_directory(path_to_directory, db_name):
 	files = [join(absolute_path, f) for f in listdir(absolute_path) if img.is_image_file(join(absolute_path, f))]
 
 	info_images = []
-	for f in files:
-		info_images.append(list(process_image_file(f).values()))
 
-	variables = img.get_image_info_variables()
+	compatible_types = set()
+
+	for f in files:
+		info_image = process_image_file(f)
+		compatible_types.add(info_image[lookup.image_type]) 
+
+		info_images.append(list(info_image.values()))
+
+	variables = lookup.get_image_info_variables()
 	rows = [variables] + info_images
 
-	fs.make_dirs(target_directory)
+	fs.make_dir(target_directory)
 	fs.write_to_csv_file(join(target_directory, lookup.master_file), rows)
 
-	num_images = len(files)
 	db_uuid = fs.get_uuid()
-	dataset_info = [(db_uuid, db_name, num_images)]
+	num_images = len(files)
+	compatible_types = list(compatible_types)
 
+	dataset_info = [(db_uuid, db_name, num_images, compatible_types)]
 	fs.write_to_csv_file(db_master_file, dataset_info)
+
+def process_steganographic_directory(path_to_directory, db_name):
+	"""processes an image directory"""
+	raise NotImplementedError
 
 def add_embeddor_to_file(algorithm, weight, path_to_file):
     """adds embeddor"""

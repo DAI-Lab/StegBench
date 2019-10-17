@@ -1,5 +1,11 @@
 import stegtest.utils.filesystem as fs
 import uuid
+import ast 
+import os 
+
+from os.path import join, abspath
+
+#TODO consider moving strings to a separate json/python file
 
 #DIRECTORY TYPES#
 embeddor = 'embeddor'
@@ -9,11 +15,25 @@ tmp = 'tmp'
 assets = 'assets'
 datasets = 'datasets'
 
+#IMAGE INFORMATION
+file_path = 'file'
+image_type = 'type'
+image_width = 'width'
+image_height = 'height'
+image_channels = 'channels'
+
+#HEADER NAMES
+uuid_descriptor = 'UUID'
+compatible_descriptor = 'Compatible Types'
+filepath_descriptor = 'Filepath'
+db_descriptor = 'DB Name'
+db_image_count = 'Number of Images'
+
 ##FILE TYPES##
 master_file = 'master.csv'
-embeddor_header = ['UUID', 'Compatible Types', 'Filepath'] 
-detector_header = ['UUID', 'Compatible Types', 'Filepath']
-db_header = ['UUID', 'Name', 'Number of Images']
+embeddor_header = [uuid_descriptor, compatible_descriptor, filepath_descriptor] 
+detector_header = [uuid_descriptor, compatible_descriptor, filepath_descriptor]
+db_header = [uuid_descriptor, db_descriptor, db_image_count, compatible_descriptor]
 
 ##ALGORITHM TYPES##
 algorithm_name = 'name'
@@ -24,7 +44,7 @@ compatibile_types_decorator = 'compatibile_types'
 description = 'description'
 
 def get_master_files():
-	return {binding: binding + '/' + master_file for binding in get_top_level_directories().values()}
+	return {binding: join(binding, master_file) for binding in get_top_level_directories().values()}
 
 def get_bindings_list(type):
 	bindings = get_master_files()
@@ -59,13 +79,13 @@ def get_top_level_directories():
 
 def get_tmp_directories():
 	tld = get_top_level_directories()
-	tmp_directories = {tl: (tl + '/' + tmp) for tl in tld}
+	tmp_directories = {tl: join(tl, tmp) for tl in tld}
 
 	return tmp_directories
 
 def get_asset_directories():
 	tld = get_top_level_directories()
-	asset_directories = {tl: (tl + '/' + assets) for tl in tld}
+	asset_directories = {tl: join(tl, assets) for tl in tld}
 
 	return asset_directories
 
@@ -81,7 +101,7 @@ def get_master_header(type:str):
 	return get_header_for_type()
 
 def get_dataset_directory():
-	return {db: db + '/' + datasets}
+	return {db: join(db, datasets)}
 
 def all_directories():
 	tld = list(get_top_level_directories().values())
@@ -93,29 +113,87 @@ def all_directories():
 
 def create_asset_file(type:str, content:str):
 	"""creates a text asset for the specificied directory"""
-	asset_directory = lookup.get_asset_directories()[type]
+	asset_directory = get_asset_directories()[type]
 	file_name = fs.create_file_from_hash(fs.get_uuid(), 'txt')
-	file_path = abspath(asset_directory + '/' + file_name)
-	
+	file_path = abspath(join(asset_directory, file_name))
+
 	fs.write_to_text_file(file_path, [content])
 	return file_path
 
-def get_db_names():
+def get_all_dbs():
 	"""gets the dbs that are already processed"""
 	db_master_file = get_master_files()[db]
-	db_rows = fs.read_csv_file(db_master_file)
+	db_rows = fs.read_csv_file(db_master_file, return_as_dict=True)
 
-	header = db_rows[0]
-	db_data = db_rows[1:]
+	return db_rows
 
-	data_to_dict = []
-	for row in db_data:
-		assert(len(row) == len(header)) #have to be the same to match properly
-		
-		row_dict = {}
-		for i in range(len(row)):
-			row_dict[header[i]] = row[i]
+def get_db_info(db_identifier):
+	"""gets db info for a specific db"""
+	all_db_information = get_all_dbs()
+	found_data = list(filter(lambda d: d[uuid_descriptor] == db_identifier or d[db_descriptor] == db_identifier, all_db_information))
+	assert(len(found_data) == 1)
 
-		data_to_dict.append(row_dict)
+	found_data = found_data[0]
+	assert(len(found_data) == len(db_header))
 
-	return data_to_dict
+	found_data[compatible_descriptor] = ast.literal_eval(found_data[compatible_descriptor])
+
+	return found_data
+
+def get_image_info_variables():
+	return [file_path, image_type, image_width, image_height, image_channels]
+
+def get_image_list(db_descriptor):
+	#get the master.csv file in the db/datasets folder
+	dataset_directory = get_dataset_directory()[db]
+	db_directory = join(dataset_directory, db_descriptor)
+	db_master_file = join(db_directory, master_file)
+
+	assert(fs.dir_exists(db_directory))
+	assert(fs.file_exists(db_master_file))
+
+	image_info = fs.read_csv_file(db_master_file, return_as_dict=True)
+	return image_info
+
+def generate_output_list(output_directory:str, input_list:dict):
+	target_directory = output_directory
+
+	output_list = []
+	for file in input_list:
+		file_name = file[file_path]
+		file_type = file[image_type]
+
+		output_file = fs.create_file_from_hash(file_name, file_type)
+		output_file_path = join(target_directory, output_file)
+		output_list.append(output_file_path)
+
+	return output_list
+
+def initialize_filesystem(directory):
+	"""Clears and adds needed directories for stegdetect to work"""
+	print('initializing fs at ' + directory)
+	try:
+		os.chdir(directory)
+	except:
+		raise OSError('directory: ' + directory + ' is not a valid directory. Please initialize with a valid directory')
+
+	print('cleaning fs...')
+	
+	top_level_directories = get_top_level_directories().values()
+	fs.clean_filesystem(top_level_directories)
+
+	print('initializing directories...')
+
+	directories = all_directories()
+
+	for directory in directories:
+		fs.make_dir(directory)
+
+	print('initializing files...')
+	master_files = get_master_files()
+	for file_type in master_files.keys():
+		path_to_master_file = master_files[file_type]
+		master_file_header = get_master_header(file_type)
+
+		fs.write_to_csv_file(path_to_master_file, [master_file_header])
+

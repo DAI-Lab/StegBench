@@ -1,6 +1,9 @@
 import imghdr
+import collections
+import stegtest.utils.lookup as lookup
 
 from PIL import Image, ExifTags
+Image.MAX_IMAGE_PIXELS = None
 
 # 1 (1-bit pixels, black and white, stored with one pixel per byte)
 # L (8-bit pixels, black and white)
@@ -15,32 +18,31 @@ from PIL import Image, ExifTags
 # I (32-bit signed integer pixels)
 # F (32-bit floating point pixels)
 
-file_path = 'file'
-image_type = 'type'
-image_width = 'width'
-image_height = 'height'
-image_channels = 'channels'
+
+def get_image_type(path_to_file):
+	return imghdr.what(path_to_file)
 
 def is_image_file(path_to_file):
-	return imghdr.what(path_to_file) is not None
+	return get_image_type(path_to_file) is not None
 
-def get_image_info_variables():
-	return [file_path, image_type, image_width, image_height, image_channels]
-
-def get_image_info(path_to_image):
+def get_image_info(path_to_file):
 	"""Returns image info as a dictionary with elements, type, width, height, channels"""
 	#assert(file_exists()) TODO
-	img_type = imghdr.what(path_to_image)
-	im = Image.open(path_to_image)
+	img_type = get_image_type(path_to_file)
+	im = Image.open(path_to_file)
 	width, height = im.size
 	channels = im.mode
-	return {
-		file_path: path_to_image, 
-		image_type: img_type, 
-		image_width: width, 
-		image_height: height, 
-		image_channels: channels
-	}
+
+	info_dict = collections.OrderedDict()
+	info_dict[lookup.file_path] = path_to_file 
+	info_dict[lookup.image_type] = img_type 
+	info_dict[lookup.image_width] = width
+	info_dict[lookup.image_height] = height
+	info_dict[lookup.image_channels] = channels
+
+	print(info_dict)
+
+	return info_dict
 
 def get_exif_info(path_to_file, requested=None):
 	##TODO if we need exif info -- broken method##

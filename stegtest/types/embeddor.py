@@ -8,9 +8,12 @@ class Embeddor(ABC):
 
     @abstractmethod
     def embed(self, path_to_image, path_to_output):
-        pass
+        raise NotImplementedError
 
-  	## TODO - declare this abstract?? ###
+    @abstractmethod
+    def update_parameters(self, *args):
+        raise NotImplementedError
+
     def embed_bulk(self, input_list, output_list):
     	assert(len(input_list) == len(output_list))
 
@@ -19,3 +22,6 @@ class Embeddor(ABC):
     	for i in range(num_images): #can parallelize this code a lot
     		self.embed(input_list[i], output_list[i])
 
+
+#pool = multiprocessing.Pool(4)
+# out1, out2, out3 = zip(*pool.map(calc_stuff, range(0, 10 * offset, offset)))

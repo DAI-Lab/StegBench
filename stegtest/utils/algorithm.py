@@ -6,7 +6,7 @@ import stegtest.detectors as detectors
 import stegtest.utils.lookup as lookup
 import stegtest.utils.filesystem as fs
 
-from os.path import abspath
+from os.path import abspath, join
 
 def create_algorithm_set(type:str, algorithm:str):
 	"""creates a new algorithm set"""
@@ -17,7 +17,7 @@ def create_algorithm_set(type:str, algorithm:str):
 	#might want to move file name procedure to filesystem.py
 	file_directory = lookup.get_tmp_directories()[type]
 	file_name = fs.create_file_from_hash(new_uuid, 'csv')
-	file_path = abspath(file_directory + '/' + file_name)
+	file_path = abspath(join(file_directory, file_name))
 	fs.make_file(file_path)
 
 	algorithm_info = get_algorithm_info(type, algorithm)
@@ -53,7 +53,7 @@ def add_to_algorithm_set(type: str, uuid:str, algorithm:str):
 	new_compatible_types = list(new_compatible_types)
 
 	if(len(new_compatible_types) == 0):
-		raise Error('This algorithm cannot be added since it does not work on compatible file types')
+		raise ValueError('This algorithm cannot be added since it does not work on compatible file types')
 
 	if len(new_compatible_types) != len(compatible_types_set):
 		def update_function(row):
@@ -72,7 +72,14 @@ def add_to_algorithm_set(type: str, uuid:str, algorithm:str):
 	return uuid
 
 def lookup_algorithm_set(type:str, uuid:str):
-	return get_all_algorithm_sets(type)[uuid]
+	all_algorithm_sets = get_all_algorithm_sets(type)
+	if uuid not in all_algorithm_sets.keys():
+		raise ValueError('uuid not found in algorithm sets of type: ' + type)
+
+	found_set = all_algorithm_sets[uuid]
+	found_set[lookup.compatibile_types_decorator] = ast.literal_eval(found_set[lookup.compatibile_types_decorator])
+
+	return found_set
 
 def get_all_algorithm_sets(type:str):
 	"""gets info on all the current sets of specified type that are in fs"""
@@ -93,6 +100,23 @@ def get_all_algorithm_sets(type:str):
 		all_set_info[uuid] = set_info_dict
 
 	return all_set_info
+
+def instantiate_algorithm_random(type:str, name_of_method:str):
+	"""returns an instantiated class with arguments args""" 
+	raise NotImplementedError
+	# assert(type is not None)
+
+	# algorithm_source = None
+	# if type == lookup.embeddor:
+	# 	algorithm_source = embeddors
+	# else:
+	# 	algorithm_source = detectors
+
+	# algorithm = getattr(algorithm_source, name_of_method)
+	# #need to get parameters to initiate and set them randomly, generate a random string.
+
+	# instance = algorithm(*parameters)
+	# return instance
 
 def instantiate_algorithm(type:str, name_of_method:str, parameters:list):
 	"""returns an instantiated class with arguments args""" 

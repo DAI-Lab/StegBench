@@ -37,19 +37,11 @@ RUN chmod a+x /tmp/install/*.sh && \
     for i in /tmp/install/*.sh;do echo $i && $i;done && \
     rm -rf /tmp/install
 
-# Use this section to try new installation scripts.
-# All previous steps will be cached
-#
 COPY install_dev /tmp/install
 RUN find /tmp/install -name '*.sh' -exec chmod a+x {} + && \
     for f in $(ls /tmp/install/* | sort );do /bin/sh $f;done && \
     rm -rf /tmp/install
-
-COPY scripts /opt/scripts
-RUN find /opt/scripts -name '*.sh' -exec chmod a+x {} + && \
-    find /opt/scripts -name '*.py' -exec chmod a+x {} +
-ENV PATH="/opt/scripts:${PATH}"
-
+    
 COPY . /tmp/stegtest
 WORKDIR /tmp/stegtest
 RUN sudo pip3 install -e .

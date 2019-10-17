@@ -12,7 +12,7 @@ import stegtest.utils.processor as pr
 import stegtest.utils.filesystem as fs
 import stegtest.utils.algorithm as algo
 
-from stegtest.scheduler import Scheduler
+from stegtest.tasks import DefaultGenerator, DefaultAnalyzer
 
 @click.pass_context
 def request_parameters(ctx, parameters):
@@ -58,20 +58,21 @@ def initialize(ctx, directory):
     else:
         cwd = os.getcwd()
 
-    Scheduler._initializeFS(cwd)
+    lookup.initialize_filesystem(cwd)
 
 #TODO downloads a certain database to a specific directory. Renames files. Adds some sort of metadata list a .txt file at the top. Adds 
 @pipeline.command()
 @click.option('-n', '--name', help='specify a pre-loaded download routine', type=click.Choice(dl.get_download_routines().keys()))
 @click.option('-f', '--file', help='specify a properly-formatted file (<img_name, img_url, *args> for each row) to download from')
+@click.option('-db', '--db', help='specify the name of the db if you want to override the default')
 @click.pass_context
-def download(ctx, name, file):
+def download(ctx, name, file, db):
     """downloads a specified database"""
     assert ((name and not file) or (file and not name))
     if name:
         dl.download_routine(name)
     else:
-        dl.download_from_file(file)
+        dl.download_from_file(file, db)
 
 #TODO downloads a certain database to a specific directory. Renames files. Adds some sort of metadata list a .txt file at the top. Adds 
 @pipeline.command()
@@ -139,9 +140,12 @@ def info(ctx, all, db, embeddor, detector):
     if all or db:
         click.echo(breaker)
         click.echo('Databases processed: ')
-        db_info = lookup.get_db_names()
-        for db in db_info:
-            click.echo('\t' + str(db))
+        db_info = lookup.get_all_dbs()
+        for db in db_info: 
+            click.echo('\t' + str(db[lookup.db_descriptor]))
+            click.echo('\t\t' + 'UUID: ' + str(db[lookup.uuid_descriptor]))
+            click.echo('\t\t' + 'Image Count: ' + str(db[lookup.db_image_count]))
+            click.echo('\t\t' + 'Image Types: ' + str(db[lookup.compatible_descriptor]))
         click.echo(breaker)
 
     if all or embeddor:
@@ -194,14 +198,20 @@ def reset(ctx):
 
 @pipeline.command()
 @click.option('-e', '--embeddor', help='uuid of the embeddor set being used')
-@click.option('-db', '--db', help='name or uuid of the db being used')
+@click.option('-d', '--db', help='name or uuid of the db being used')
 @click.pass_context
 def generate(ctx, embeddor, db):
-    """Generates a test db using embeddors and db images"""
+    """Generates an embedded db using embeddors and db images"""
     #FOR NOW, max make make our datasets 10,000 images. 
     #assert() something about number of embeddor
     #this needs to be an orchestrator for some sort of parallelization parameter
-    click.echo('Here is information on the db that was just generated')
+    assert(embeddor and db)
+    embeddor_set = algo.lookup_algorithm_set(lookup.embeddor, embeddor)
+    generator = DefaultGenerator(embeddor_set)
+
+    db_uuid = generator.generate(db)
+    click.echo('The UUID of the dataset you have created is: ' + db_uuid)
+
 
 @pipeline.command()
 @click.option('-d', '--detector', help='hash of the detector set being used')
