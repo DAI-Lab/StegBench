@@ -1,21 +1,15 @@
 import subprocess
 import stegtest.types.compatibility as compatibility
 from stegtest.types.embeddor import Embeddor
-from stegtest.utils.filesystem import file_exists
+from stegtest.utils.lookup import embeddor, create_asset_file
 
 class Openstego(Embeddor):
-
-    def __init__(self, secret_txt:str, password:str):
+    """Random LSB steganographic algorithm"""
+    def __init__(self, secret_txt:str):
         super().__init__()
-        self.secret_txt = secret_txt
-        self.password = password
+        self.secret_txt = create_asset_file(embeddor, secret_txt)
 
-    @compatibility.register(compatibility.png)
-    def embed(self, path_to_input, path_to_output):
-        assert(file_exists(path_to_input))
-
-        # assert(file_type(path_to_input, [".pmg"]))
-        # assert(file_type(path_to_output, [".pmg"]))
-
-        commands = ['openstego', 'embed', '-mf', self.secret_txt, '-cf', path_to_input, '-p', self.password, '-sf', path_to_output]
+    @compatibility.register(compatibility.file_check, compatibility.png)
+    def embed(self, path_to_input:str, path_to_output:str):
+        commands = ['openstego', 'embed', '-mf', self.secret_txt, '-cf', path_to_input, '-sf', path_to_output]
         subprocess.run(' '.join(commands), shell=True)

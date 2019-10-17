@@ -6,6 +6,7 @@ embeddor = 'embeddor'
 detector = 'detector'
 db = 'db'
 tmp = 'tmp'
+assets = 'assets'
 datasets = 'datasets'
 
 ##FILE TYPES##
@@ -20,6 +21,7 @@ embed_function = 'embed'
 detect_function = 'detect'
 parameters = 'parameters'
 compatibile_types_decorator = 'compatibile_types'
+description = 'description'
 
 def get_master_files():
 	return {binding: binding + '/' + master_file for binding in get_top_level_directories().values()}
@@ -40,9 +42,15 @@ def get_parameter_type(type):
      'uuid': uuid.UUID
     }[type]
 
+def all_supported_types():
+	return ['bmp', 'gif', 'jpeg', 'jpg', 'pgm', 'png']
+
 def get_compatible_types(steganographic_function):
 	compatibile_types = getattr(steganographic_function, compatibile_types_decorator)
 	compatibile_types = list(map(lambda ct: ct.__name__, compatibile_types))
+
+	all_types = all_supported_types()
+	compatibile_types = list(filter(lambda ct: ct in all_types, compatibile_types))
 
 	return compatibile_types
 
@@ -54,6 +62,12 @@ def get_tmp_directories():
 	tmp_directories = {tl: (tl + '/' + tmp) for tl in tld}
 
 	return tmp_directories
+
+def get_asset_directories():
+	tld = get_top_level_directories()
+	asset_directories = {tl: (tl + '/' + assets) for tl in tld}
+
+	return asset_directories
 
 def get_master_header(type:str):
 	assert(type == embeddor or type == detector or type == db)
@@ -72,9 +86,19 @@ def get_dataset_directory():
 def all_directories():
 	tld = list(get_top_level_directories().values())
 	tmp_directories = list(get_tmp_directories().values())
+	asset_directories = list(get_asset_directories().values())
 	dataset_directory = list(get_dataset_directory().values())
 
-	return tld + tmp_directories + dataset_directory
+	return tld + tmp_directories + asset_directories + dataset_directory
+
+def create_asset_file(type:str, content:str):
+	"""creates a text asset for the specificied directory"""
+	asset_directory = lookup.get_asset_directories()[type]
+	file_name = fs.create_file_from_hash(fs.get_uuid(), 'txt')
+	file_path = abspath(asset_directory + '/' + file_name)
+	
+	fs.write_to_text_file(file_path, [content])
+	return file_path
 
 def get_db_names():
 	"""gets the dbs that are already processed"""

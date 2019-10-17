@@ -6,17 +6,13 @@ from stegtest.types.embeddor import Embeddor
 from stegtest.utils.filesystem import file_exists
 
 class StegPy(Embeddor):
-
+    """LSB steganographic algorithm"""
     def __init__(self, secret_txt:str):
         super().__init__()
         self.secret_txt = secret_txt
 
-    @compatibility.register(compatibility.png, compatibility.gif, compatibility.bmp)
-    def embed(self, path_to_input, path_to_output):
-        # assert(file_exists(path_to_input))
-        # assert(file_type(path_to_input, [".pmg"]))
-        # assert(file_type(path_to_output, [".pmg"]))
-
+    @compatibility.register(compatibility.file_check, compatibility.png, compatibility.gif, compatibility.bmp)
+    def embed(self, path_to_input:str, path_to_output:str):
         commands = ['stegpy', self.secret_txt, path_to_input]
         subprocess.run(' '.join(commands), shell=True)
 

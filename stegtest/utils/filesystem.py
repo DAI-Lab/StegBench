@@ -5,10 +5,14 @@ import errno
 import uuid
 import shutil
 
+from hashlib import sha512
 from os import path
 
 def get_uuid():
     return str(uuid.uuid4())
+
+def create_file_from_hash(uuid, type):
+    return sha512(uuid.encode('utf-8')).hexdigest() + '.' + type
 
 def dir_exists(directory):
     return path.isdir(directory)
@@ -34,6 +38,17 @@ def make_dirs(path):
     except OSError as exc:
         if exc.errno != errno.EEXIST:
             raise
+
+def write_to_text_file(path_to_file, rows, override=False):
+    if file_exists(path_to_file) and not override:
+        mode = 'a'
+    else:
+        mode = 'w'
+
+    with open("Output.txt", "w") as text_file:
+        for row in rows:
+            text_file.write(row)
+    text_file.close()
 
 def write_to_csv_file(path_to_file, rows, override=False):
     """writes data to a csv file"""

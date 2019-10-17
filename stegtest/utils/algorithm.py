@@ -6,7 +6,6 @@ import stegtest.detectors as detectors
 import stegtest.utils.lookup as lookup
 import stegtest.utils.filesystem as fs
 
-from hashlib import sha512
 from os.path import abspath
 
 def create_algorithm_set(type:str, algorithm:str):
@@ -17,7 +16,7 @@ def create_algorithm_set(type:str, algorithm:str):
 	#might have to write parameter values for instantiation and create file
 	#might want to move file name procedure to filesystem.py
 	file_directory = lookup.get_tmp_directories()[type]
-	file_name = sha512(new_uuid.encode('utf-8')).hexdigest() + '.csv'
+	file_name = fs.create_file_from_hash(new_uuid, 'csv')
 	file_path = abspath(file_directory + '/' + file_name)
 	fs.make_file(file_path)
 
@@ -149,6 +148,8 @@ def get_all_algorithms(type:str):
 		#get compatible image types 
 		algorithm_class = getattr(algorithm_source, name)
 		steganographic_function = getattr(algorithm_class, func_name)
+		
+		info[lookup.description] = algorithm_class.__doc__
 		info[lookup.compatibile_types_decorator] = lookup.get_compatible_types(steganographic_function)
 
 		#get required parameters for instantiation

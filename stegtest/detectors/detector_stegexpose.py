@@ -4,13 +4,8 @@ import stegtest.types.compatibility as compatibility
 from stegtest.types.detector import Detector
 from stegtest.utils.filesystem import dir_exists
 
-# from stegtest.utils.filesystem import file_exists
-
-##NEED TO FINISH EMBEDDING PROCESS
-
-
 class StegExpose(Detector):
-
+    """Sample Pairs, RS Analysis, Chi Square Attack, Primary Sets"""
     def __init__(self, output_csv:bool=False):
         super().__init__()
         self.output_csv = output_csv

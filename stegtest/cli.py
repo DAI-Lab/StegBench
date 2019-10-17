@@ -10,7 +10,7 @@ import stegtest.utils.lookup as lookup
 import stegtest.utils.downloader as dl 
 import stegtest.utils.processor as pr
 import stegtest.utils.filesystem as fs
-import stegtest.utils.algorithms as algo
+import stegtest.utils.algorithm as algo
 
 from stegtest.scheduler import Scheduler
 
@@ -150,6 +150,7 @@ def info(ctx, all, db, embeddor, detector):
         embeddor_info = algo.get_all_algorithms(lookup.embeddor)
         for embeddor in embeddor_info:
             click.echo('\t' + str(embeddor[lookup.algorithm_name]))
+            click.echo('\t\t' + ' Description: ' + str(embeddor[lookup.description]))
             click.echo('\t\t' + ' Compatible Types: ' + str(embeddor[lookup.compatibile_types_decorator]))
         click.echo(breaker)
 
@@ -168,6 +169,7 @@ def info(ctx, all, db, embeddor, detector):
         detector_info = algo.get_all_algorithms(lookup.detector)
         for detector in detector_info:
             click.echo('\t' + str(detector[lookup.algorithm_name]))
+            click.echo('\t\t' + ' Description: ' + str(detector[lookup.description]))
             click.echo('\t\t' + ' Compatible Types: ' + str(detector[lookup.compatibile_types_decorator]))
         click.echo(breaker)
 
@@ -214,9 +216,10 @@ def analyze(ctx, detector, db, output):
 
 @pipeline.command()
 @click.option('-e', '--embeddor', help='name of the embeddor being used', type=click.Choice(algo.get_algorithm_names(lookup.embeddor)))
-@click.option('-i', '--image', help='path to image file')
+@click.option('-i', '--input', help='path to image file')
+@click.option('-o', '--output', help='path to output file')
 @click.pass_context
-def embedImage(ctx, embeddor, image):
+def embedImage(ctx, embeddor, input, output):
     """Embeds a specific image using an embeddor"""
     algorithm_parameters = algo.get_algorithm_info(lookup.embeddor, embeddor, params_only=True)
 
@@ -227,7 +230,7 @@ def embedImage(ctx, embeddor, image):
     parameter_values = list(parameters.values())
     instance = algo.instantiate_algorithm(lookup.embeddor, embeddor, parameter_values)
 
-    instance.embed(image, image)
+    instance.embed(input, output)
 
 @pipeline.command()
 @click.option('-d', '--detector', help='name of the detector being used', type=click.Choice(algo.get_algorithm_names(lookup.detector)))

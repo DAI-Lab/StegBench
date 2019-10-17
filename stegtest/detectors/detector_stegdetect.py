@@ -9,6 +9,7 @@ from stegtest.utils.filesystem import dir_exists, file_exists
 # http://old-releases.ubuntu.com/ubuntu/pool/universe/s/stegdetect/
 
 class StegDetect(Detector):
+    """Statisticl Detector"""
     def __init__(self, *args):
         super().__init__()
 
