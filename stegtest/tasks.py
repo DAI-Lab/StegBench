@@ -5,6 +5,7 @@ import random
 import stegtest.utils.filesystem as fs
 import stegtest.utils.lookup as lookup
 import stegtest.utils.algorithm as algo
+import stegtest.utils.processor as processor
 
 from stegtest.types.generator import Generator
 from stegtest.types.analyzer import Analyzer 
@@ -53,7 +54,9 @@ class DefaultGenerator(Generator):
 		input_partition = []
 		output_partition = []
 
-		output_directory = lookup.get_tmp_directories()[lookup.db]
+		#TODO verify this
+		output_directory_name = db_information[lookup.db_descriptor] + '_steganographic_' + self.embeddor_set[lookup.uuid_descriptor]
+		output_directory = join(lookup.get_tmp_directories()[lookup.db], output_directory_name)
 
 		if divided:
 			images_per_embeddor = int(num_images / num_embeddors)
@@ -73,9 +76,10 @@ class DefaultGenerator(Generator):
 		for idx, embeddor in enumerate(self.embeddors):
 			embeddor.embed_bulk(input_partition[idx], output_partition[idx])
 
-		##NEED TO WRITE METADATA##
 
-		return fs.get_uuid()
+		#TODO UPDATE THE PROCESSING OF THE INFORMATION
+		db_uuid = processor.process_steganographic_directory(input_partition, output_partition, self.embeddor_set, source_db)
+		return db_uuid
 
 class DefaultAnalyzer(Analyzer):
 	""""runs all the analyzer tasks"""
