@@ -15,5 +15,5 @@ class Detector(ABC):
         pass
 
     @abstractmethod
-    def detect_bulk(self, path_to_directory, input_list):
+    def detect_bulk(self, input_list, path_to_directory):
         pass

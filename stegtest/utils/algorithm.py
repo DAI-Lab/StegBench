@@ -1,5 +1,8 @@
 import inspect
 import ast
+import collections
+import random
+import string
 
 import stegtest.embeddors as embeddors
 import stegtest.detectors as detectors
@@ -7,6 +10,30 @@ import stegtest.utils.lookup as lookup
 import stegtest.utils.filesystem as fs
 
 from os.path import abspath, join
+
+
+###TODO 
+#1. NEED TO INSTANTIATE RANDOMLY 
+#2. NEED TO BE ABLE TO POINT AN ANALYZER TO AN ARBITRARY DIRECTORY
+#3. NEED TO BE ABLE TO 
+
+def generate_random_string():
+	return ''.join(random.choice(string.ascii_letters + string.digits) for x in range(50))
+
+def generate_random_float():
+	return random.random()*10000
+
+def generate_random_int():
+	return int(generate_random_float())
+
+def generate_param(type):
+	function = {
+		'str': generate_random_string, 
+		'float': generate_random_float,
+		'int': generate_random_int,
+	}[type]
+
+	return function()
 
 def create_algorithm_set(type:str, algorithm:str):
 	"""creates a new algorithm set"""
@@ -29,7 +56,6 @@ def create_algorithm_set(type:str, algorithm:str):
 	row_data = [(new_uuid, compatible_types, file_path)]
 	fs.write_to_csv_file(master_algorithm_file, row_data)
 
-	#TODO 
 	return new_uuid
 
 def add_to_algorithm_set(type: str, uuid:str, algorithm:str):
@@ -78,6 +104,7 @@ def lookup_algorithm_set(type:str, uuid:str):
 
 	found_set = all_algorithm_sets[uuid]
 	found_set[lookup.compatibile_types_decorator] = ast.literal_eval(found_set[lookup.compatibile_types_decorator])
+	found_set[lookup.uuid_descriptor] = uuid
 
 	return found_set
 
@@ -102,21 +129,18 @@ def get_all_algorithm_sets(type:str):
 	return all_set_info
 
 def instantiate_algorithm_random(type:str, name_of_method:str):
-	"""returns an instantiated class with arguments args""" 
-	raise NotImplementedError
-	# assert(type is not None)
+	"""returns an instantiated class with random arguments""" 
+	algo_params = get_algorithm_info(type, name_of_method, params_only=True)
 
-	# algorithm_source = None
-	# if type == lookup.embeddor:
-	# 	algorithm_source = embeddors
-	# else:
-	# 	algorithm_source = detectors
+	random_parameters = []
+	for param in algo_params.keys():
+		param_type = algo_params[param]
+		random_param_value = generate_param(param_type)
 
-	# algorithm = getattr(algorithm_source, name_of_method)
-	# #need to get parameters to initiate and set them randomly, generate a random string.
+		random_parameters.append(random_param_value)
 
-	# instance = algorithm(*parameters)
-	# return instance
+
+	return instantiate_algorithm(type, name_of_method, random_parameters)
 
 def instantiate_algorithm(type:str, name_of_method:str, parameters:list):
 	"""returns an instantiated class with arguments args""" 
@@ -128,12 +152,29 @@ def instantiate_algorithm(type:str, name_of_method:str, parameters:list):
 	else:
 		algorithm_source = detectors
 
-	instance = getattr(algorithm_source, name_of_method)(*parameters)
+	if parameters:
+		instance = getattr(algorithm_source, name_of_method)(*parameters)
+	else:
+		instance = getattr(algorithm_source, name_of_method)()
+
 	return instance
 
-def get_algorithm_info(type:str, name:str, params_only=False):
+def instantiate_algorithm_set(type:str, algorithm_set, params=None):
+	algorithm_names = algorithm_set[type]
+	algorithm_instances = []
+
+	if params:
+		for idx, name in enumerate(algorithm_names):
+			algorithm_instances.append(instantiate_algorithm(type, name[0], params[idx]))
+	else:
+		for idx, name in enumerate(algorithm_names):
+			algorithm_instances.append(instantiate_algorithm_random(type, name[0]))
+
+	return algorithm_instances
+
+def get_algorithm_info(type:str, name_of_method:str, params_only=False):
 	info = get_all_algorithms(type)
-	matching_algorithm = list(filter(lambda d: d[lookup.algorithm_name] == name, info))
+	matching_algorithm = list(filter(lambda d: d[lookup.algorithm_name] == name_of_method, info))
 
 	#TODO error handling#
 	if not matching_algorithm:
@@ -179,7 +220,7 @@ def get_all_algorithms(type:str):
 		#get required parameters for instantiation
 		args = inspect.signature(algorithm_class.__init__)
 		parameters = list((tuple(args.parameters.values())))
-		parameters_dict = {}
+		parameters_dict = collections.OrderedDict()
 		parameters_without_self = list(filter(lambda p: p.name != 'self', parameters))
 
 		for parameter in parameters_without_self:
@@ -193,3 +234,8 @@ def get_all_algorithms(type:str):
 		algorithm_info.append(info)
 
 	return algorithm_info
+
+def calculate_statistics(cover_results, stego_results):
+	"""calculates all the relevant analyzer statistics"""
+	raise NotImplementedError
+

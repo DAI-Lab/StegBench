@@ -32,6 +32,10 @@ RUN apt-get update && \
     pip3 install setuptools && \
     pip install tqdm
 
+ARG GITHUB_TOKEN
+
+RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+
 COPY install /tmp/install
 RUN chmod a+x /tmp/install/*.sh && \
     for i in /tmp/install/*.sh;do echo $i && $i;done && \
@@ -41,6 +45,8 @@ COPY install_dev /tmp/install
 RUN find /tmp/install -name '*.sh' -exec chmod a+x {} + && \
     for f in $(ls /tmp/install/* | sort );do /bin/sh $f;done && \
     rm -rf /tmp/install
+
+RUN git config --global --unset url."https://${GITHUB_TOKEN}@github.com/".insteadOf
     
 COPY . /tmp/stegtest
 WORKDIR /tmp/stegtest

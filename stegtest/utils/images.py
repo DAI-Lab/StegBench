@@ -1,6 +1,7 @@
 import imghdr
 import collections
 import stegtest.utils.lookup as lookup
+import stegtest.utils.filesystem as fs
 
 from PIL import Image, ExifTags
 Image.MAX_IMAGE_PIXELS = None
@@ -20,10 +21,12 @@ Image.MAX_IMAGE_PIXELS = None
 
 
 def get_image_type(path_to_file):
-	return imghdr.what(path_to_file)
+	#return imghdr.what(path_to_file)
+	ext = fs.get_extension(path_to_file)[1:]
+	return ext
 
 def is_image_file(path_to_file):
-	return get_image_type(path_to_file) is not None
+	return get_image_type(path_to_file) in lookup.all_supported_types()
 
 def get_image_info(path_to_file):
 	"""Returns image info as a dictionary with elements, type, width, height, channels"""
@@ -39,8 +42,6 @@ def get_image_info(path_to_file):
 	info_dict[lookup.image_width] = width
 	info_dict[lookup.image_height] = height
 	info_dict[lookup.image_channels] = channels
-
-	print(info_dict)
 
 	return info_dict
 

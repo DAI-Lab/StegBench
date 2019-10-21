@@ -13,7 +13,11 @@ detector = 'detector'
 db = 'db'
 tmp = 'tmp'
 assets = 'assets'
-datasets = 'datasets'
+
+#DB DIRECTORIES
+dataset = 'datasets'
+source = 'source_info'
+embedded = 'embedded_info'
 
 #IMAGE INFORMATION
 file_path = 'file'
@@ -22,6 +26,14 @@ image_width = 'width'
 image_height = 'height'
 image_channels = 'channels'
 
+#STEGANOGRAPHIC INFORMATION FILE INFORMATION
+steganographic_function = 'Generating Algorithm'
+source_image = 'Source Image'
+
+#STEGANOGRAPHIC METADATA
+source_db = 'Source Database'
+source_embeddor_set = 'Source Embeddor Set'
+
 #HEADER NAMES
 uuid_descriptor = 'UUID'
 compatible_descriptor = 'Compatible Types'
@@ -29,13 +41,14 @@ filepath_descriptor = 'Filepath'
 db_descriptor = 'DB Name'
 db_image_count = 'Number of Images'
 
-##FILE TYPES##
+#FILE TYPES
 master_file = 'master.csv'
 embeddor_header = [uuid_descriptor, compatible_descriptor, filepath_descriptor] 
 detector_header = [uuid_descriptor, compatible_descriptor, filepath_descriptor]
 db_header = [uuid_descriptor, db_descriptor, db_image_count, compatible_descriptor]
+steganographic_header = [uuid_descriptor, source_db, source_embeddor_set, db_image_count, compatible_descriptor]
 
-##ALGORITHM TYPES##
+#ALGORITHM TYPES
 algorithm_name = 'name'
 embed_function = 'embed'
 detect_function = 'detect'
@@ -43,12 +56,25 @@ parameters = 'parameters'
 compatibile_types_decorator = 'compatibile_types'
 description = 'description'
 
-def get_master_files():
-	return {binding: join(binding, master_file) for binding in get_top_level_directories().values()}
+#BINARY CLASSIFIER STATISTICS
+false_positive_rate = 'fpr'
+false_negative_rate = 'fnr'
+true_negative_rate = 'tnr'
+negative_predictive_value = 'npv'
+false_discovery_rate = 'fdr'
+true_positive_rate = 'tpr'
+positive_predictive_value = 'ppv'
+accuracy = 'acc'
+roc_auc = 'roc_auc'
 
-def get_bindings_list(type):
-	bindings = get_master_files()
-	return bindings[type]
+def get_master_files():
+	master_files = {binding: join(binding, master_file) for binding in get_top_level_directories().values()}
+
+	db_directories = get_db_directories()
+	dataset_master_files = {binding: join(db_directories[binding], master_file) for binding in db_directories}
+
+	master_files.update(dataset_master_files)
+	return master_files
 
 def get_types():
 	return [embeddor, detector, db]
@@ -64,6 +90,10 @@ def get_parameter_type(type):
 
 def all_supported_types():
 	return ['bmp', 'gif', 'jpeg', 'jpg', 'pgm', 'png']
+
+def get_metric_variables():
+	return [false_positive_rate, false_negative_rate, true_negative_rate, negative_predictive_value,
+	false_discovery_rate, true_positive_rate, positive_predictive_value, accuracy, roc_auc]
 
 def get_compatible_types(steganographic_function):
 	compatibile_types = getattr(steganographic_function, compatibile_types_decorator)
@@ -90,26 +120,32 @@ def get_asset_directories():
 	return asset_directories
 
 def get_master_header(type:str):
-	assert(type == embeddor or type == detector or type == db)
 	def get_header_for_type():
 		return {
 		 embeddor: embeddor_header,
 		 detector: detector_header,
-		 db: db_header
+		 db: db_header,
+		 source: db_header,
+		 embedded: steganographic_header,
+		 dataset: db_header,
 		}[type]
 
 	return get_header_for_type()
 
-def get_dataset_directory():
-	return {db: join(db, datasets)}
+def get_db_directories():
+	return {
+	dataset: join(db, dataset), 
+	source: join(db, source), 
+	embedded: join(db, embedded),
+	}
 
 def all_directories():
 	tld = list(get_top_level_directories().values())
 	tmp_directories = list(get_tmp_directories().values())
 	asset_directories = list(get_asset_directories().values())
-	dataset_directory = list(get_dataset_directory().values())
+	db_directories = list(get_db_directories().values())
 
-	return tld + tmp_directories + asset_directories + dataset_directory
+	return tld + tmp_directories + asset_directories + db_directories
 
 def create_asset_file(type:str, content:str):
 	"""creates a text asset for the specificied directory"""
@@ -120,16 +156,38 @@ def create_asset_file(type:str, content:str):
 	fs.write_to_text_file(file_path, [content])
 	return file_path
 
+def get_all_source_dbs():
+	source_master_file = get_master_files()[source]
+	source_rows = fs.read_csv_file(source_master_file, return_as_dict=True)
+
+	return source_rows
+
+def get_all_embedded_dbs():
+	embedded_master_file = get_master_files()[embedded]
+	embedded_rows = fs.read_csv_file(embedded_master_file, return_as_dict=True)
+
+	return embedded_rows
+
 def get_all_dbs():
 	"""gets the dbs that are already processed"""
-	db_master_file = get_master_files()[db]
-	db_rows = fs.read_csv_file(db_master_file, return_as_dict=True)
+	return get_all_source_dbs() + get_all_embedded_dbs()
 
-	return db_rows
-
-def get_db_info(db_identifier):
+def get_steganographic_db_info(db_identifier):
 	"""gets db info for a specific db"""
-	all_db_information = get_all_dbs()
+	all_db_information = get_all_embedded_dbs()
+	found_data = list(filter(lambda d: d[uuid_descriptor] == db_identifier, all_db_information))
+	assert(len(found_data) == 1)
+
+	found_data = found_data[0]
+	assert(len(found_data) == len(steganographic_header))
+
+	found_data[compatible_descriptor] = ast.literal_eval(found_data[compatible_descriptor])
+
+	return found_data
+
+def get_source_db_info(db_identifier):
+	"""gets db info for a specific db"""
+	all_db_information = get_all_source_dbs()
 	found_data = list(filter(lambda d: d[uuid_descriptor] == db_identifier or d[db_descriptor] == db_identifier, all_db_information))
 	assert(len(found_data) == 1)
 
@@ -143,10 +201,18 @@ def get_db_info(db_identifier):
 def get_image_info_variables():
 	return [file_path, image_type, image_width, image_height, image_channels]
 
-def get_image_list(db_descriptor):
+def get_steganographic_info_variables():
+	return [file_path, image_type, image_width, image_height, image_channels, source_image, steganographic_function]
+
+def get_image_list(type, db_descriptor):
 	#get the master.csv file in the db/datasets folder
-	dataset_directory = get_dataset_directory()[db]
-	db_directory = join(dataset_directory, db_descriptor)
+	if type == embedded:
+		dir_name = fs.create_name_from_hash(db_descriptor)
+	else:
+		dir_name = db_descriptor 
+
+	dataset_directory = get_db_directories()[dataset]
+	db_directory = join(dataset_directory, dir_name)
 	db_master_file = join(db_directory, master_file)
 
 	assert(fs.dir_exists(db_directory))

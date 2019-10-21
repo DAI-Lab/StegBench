@@ -10,33 +10,27 @@ import stegtest.utils.processor as processor
 from stegtest.types.generator import Generator
 from stegtest.types.analyzer import Analyzer 
 
-NUMBER_PROCESSES = 10
+from os.path import abspath, join
+from multiprocessing import Pool
+from functools import partial
 
 class DefaultGenerator(Generator):
 	""""runs all the generation tasks"""
-	def __init__(self, embeddor_set, params=[['1'], ['1']]):
+	def __init__(self, embeddor_set, params=None):
 		embeddor_names = embeddor_set[lookup.embeddor]
 		assert(params is None or len(params) == len(embeddor_names))
-		
+
 		self.embeddor_set = embeddor_set
-		self.compatible_types = set(embeddor_set[lookup.compatibile_types_decorator])
-		self.embeddors = []
+		self.compatible_types = set(self.embeddor_set[lookup.compatibile_types_decorator])
+		self.embeddors = algo.instantiate_algorithm_set(lookup.embeddor, embeddor_set, params)
 
-		if params:
-			for idx, name in enumerate(embeddor_names):
-				self.embeddors.append(algo.instantiate_algorithm(lookup.embeddor, name[0], params[idx]))
-		else:
-			for idx, name in enumerate(embeddor_names):
-				self.embeddors.append(algo.instantiate_algorithm_random(lookup.embeddor, name[0]))
-
-		print(self.embeddors)
-
-	def generate(self, source_db, divided=True, random_parameters=False): #returns a db_uuid
+	def generate(self, source_db:str, divided=True, random_parameters=False):
+		"""generates a test DB. if divided, embeddors are randomly distributed each of the db images. otherwise each image undergoes an operation by each embeddor"""
 		if random_parameters:
 			#need to update parameters for each embedding process (need some sort of bypass using update_parameters here
 			raise NotImplementedError
 		
-		db_information = lookup.get_db_info(source_db)
+		db_information = lookup.get_source_db_info(source_db)
 		db_compatible_states = set(db_information[lookup.compatible_descriptor])
 
 		db_embed_compatible = db_compatible_states.intersection(self.compatible_types)
@@ -44,7 +38,7 @@ class DefaultGenerator(Generator):
 		if len(db_embed_compatible) <= 0:
 			raise ValueError('The embeddor set and dataset are not compatible')
 
-		image_dict = lookup.get_image_list(db_information[lookup.db_descriptor])
+		image_dict = lookup.get_image_list(lookup.source, db_information[lookup.db_descriptor])
 		image_dict = list(filter(lambda img_info: img_info[lookup.image_type] in db_embed_compatible, image_dict))
 		random.shuffle(image_dict)
 
@@ -54,9 +48,14 @@ class DefaultGenerator(Generator):
 		input_partition = []
 		output_partition = []
 
-		#TODO verify this
-		output_directory_name = db_information[lookup.db_descriptor] + '_steganographic_' + self.embeddor_set[lookup.uuid_descriptor]
-		output_directory = join(lookup.get_tmp_directories()[lookup.db], output_directory_name)
+		embeddor_set_uuid = self.embeddor_set[lookup.uuid_descriptor]
+		embeddor_names = self.embeddor_set[lookup.embeddor]
+
+		output_directory_name = fs.create_name_from_hash(fs.get_uuid())
+		output_directory = abspath(join(lookup.get_tmp_directories()[lookup.db], output_directory_name))
+		
+		assert(not fs.dir_exists(output_directory))
+		fs.make_dir(output_directory)
 
 		if divided:
 			images_per_embeddor = int(num_images / num_embeddors)
@@ -73,21 +72,53 @@ class DefaultGenerator(Generator):
 		output_partition = [lookup.generate_output_list(output_directory, input_list) for input_list in input_partition]
 		input_partition = [list(map(lambda img_info: img_info[lookup.file_path], partition)) for partition in input_partition]
 
-		for idx, embeddor in enumerate(self.embeddors):
+		for idx, embeddor in enumerate(self.embeddors): #TODO launch subprocesses here
 			embeddor.embed_bulk(input_partition[idx], output_partition[idx])
 
+		partition = [[(input_partition[idx][i], output_partition[idx][i], embeddor_names[idx][0]) for i in range(len(input_partition[idx]))] for idx in range(num_embeddors)]
+		db_uuid = processor.process_steganographic_directory(output_directory, partition, embeddor_set_uuid, source_db)
 
-		#TODO UPDATE THE PROCESSING OF THE INFORMATION
-		db_uuid = processor.process_steganographic_directory(input_partition, output_partition, self.embeddor_set, source_db)
 		return db_uuid
+
+def analyze_detector(input_list, detector):
+	"""analyzes a detector on a specific list"""
+	return detector.detect_bulk(input_list)
 
 class DefaultAnalyzer(Analyzer):
 	""""runs all the analyzer tasks"""
-	def __init__(self, detectors):
-		pass
+	def __init__(self, detector_set, params=None):
+		detector_names = detector_set[lookup.detector]
+		assert(params is None or len(params) == len(detector_names))
 
-	def analyze(self, db_uuid): #returns a csv file with results
-		pass
+		self.detector_set = detector_set
+		self.compatible_types = set(self.detector_set[lookup.compatibile_types_decorator])
+		self.detectors = algo.instantiate_algorithm_set(lookup.detector, detector_set, params)
+
+	def analyze(self, test_db:str): #returns a csv file with results
+		db_information = lookup.get_steganographic_db_info(test_db)
+		db_compatible_states = set(db_information[lookup.compatible_descriptor])
+
+		db_embed_compatible = db_compatible_states.intersection(self.compatible_types)
+		
+		if len(db_embed_compatible) <= 0:
+			raise ValueError('The embeddor set and dataset are not compatible')
+
+		image_dict = lookup.get_image_list(lookup.embedded, test_db)
+
+		cover_files = list(map(lambda img: img[lookup.source_image], image_dict))
+		stego_files = list(map(lambda img: img[lookup.file_path], image_dict))
+
+		analyze_cover = partial(analyze_detector, cover_files)
+		analyze_stego = partial(analyze_detector, stego_files)
+
+		pool = Pool()
+		cover_results = pool.map(analyze_cover, self.detectors)
+		stego_results = pool.map(analyze_stego, self.detectors)
+		pool.close()
+		pool.join()
+
+		statistics = algo.calculate_statistics(cover_results, stego_results)
+		return statistics
 
 class Scheduler():
 	"""schedules the generator and analyzer task"""

@@ -45,7 +45,13 @@ def start(ctx):
     """starts docker image"""
     build_command = ['bin/build.sh']
     run_command = ['bin/run.sh']
-    subprocess.run(build_command)
+
+    access_token = 'github access token'
+    parameters = request_parameters({access_token: 'str'})
+    build_command.append(parameters[access_token])
+    build_command = ' '.join(build_command)
+
+    subprocess.run(build_command, shell=True)
     subprocess.run(run_command)
 
 @pipeline.command()
@@ -139,12 +145,24 @@ def info(ctx, all, db, embeddor, detector):
 
     if all or db:
         click.echo(breaker)
-        click.echo('Databases processed: ')
+        click.echo('Source Databases processed: ')
         db_info = lookup.get_all_dbs()
-        for db in db_info: 
+
+        source_db = list(filter(lambda d: len(d.keys()) == len(lookup.db_header), db_info))
+        steganographic_db = list(filter(lambda d: len(d.keys()) == len(lookup.steganographic_header), db_info))
+
+        for db in source_db: 
             click.echo('\t' + str(db[lookup.db_descriptor]))
             click.echo('\t\t' + 'UUID: ' + str(db[lookup.uuid_descriptor]))
             click.echo('\t\t' + 'Image Count: ' + str(db[lookup.db_image_count]))
+            click.echo('\t\t' + 'Image Types: ' + str(db[lookup.compatible_descriptor]))
+        click.echo(breaker)
+
+        click.echo('Steganographic Databases processed: ')
+        for db in steganographic_db: 
+            click.echo('\t' + 'UUID: ' + str(db[lookup.uuid_descriptor]))
+            click.echo('\t\t' + 'Source DB: ' + str(db[lookup.source_db]))
+            click.echo('\t\t' + 'Source Embeddor Set: ' + str(db[lookup.source_embeddor_set]))
             click.echo('\t\t' + 'Image Types: ' + str(db[lookup.compatible_descriptor]))
         click.echo(breaker)
 
@@ -214,15 +232,20 @@ def generate(ctx, embeddor, db):
 
 
 @pipeline.command()
-@click.option('-d', '--detector', help='hash of the detector set being used')
+@click.option('-d', '--detector', help='uuid of the detector set being used')
 @click.option('-db', '--db', help='hash of the generated db set being used')
 @click.option('-o', '--output', help='output file to output results to')
 @click.pass_context
 def analyze(ctx, detector, db, output):
-    """analyzes a set of detectors on a specified database producing """
+    """analyzes a set detectors using a pre-processed database"""
     #assert() something about number of detectors
     #should produce some sort of csv with statistics about each of the detectors
-    click.echo('Analyzing steganalyzers')
+    assert(detector and db)
+    detector_set = algo.lookup_algorithm_set(lookup.detector, detector)
+    analyzer = DefaultAnalyzer(detector_set)
+
+    analyzer.analyze(db)
+    click.echo('The results can be found here...')
 
 @pipeline.command()
 @click.option('-e', '--embeddor', help='name of the embeddor being used', type=click.Choice(algo.get_algorithm_names(lookup.embeddor)))
@@ -236,10 +259,10 @@ def embedImage(ctx, embeddor, input, output):
     if algorithm_parameters:
         parameters = request_parameters(algorithm_parameters)
     
-    click.echo('Creating the embeddor')
+    click.echo('Initializing embeddor...')
     parameter_values = list(parameters.values())
     instance = algo.instantiate_algorithm(lookup.embeddor, embeddor, parameter_values)
-
+    click.echo('Embedding image...')
     instance.embed(input, output)
 
 @pipeline.command()
@@ -249,15 +272,17 @@ def embedImage(ctx, embeddor, input, output):
 def detectImage(ctx, detector, image):
     """Detects a specific image using a detector"""
     algorithm_parameters = algo.get_algorithm_info(lookup.detector, detector, params_only=True)
+    parameter_values = None
 
     if algorithm_parameters:
         parameters = request_parameters(algorithm_parameters)
+        parameter_values = list(parameters.values())
     
-    click.echo('Creating the detector')
-    parameter_values = list(parameters.values())
+    click.echo('Initializing detector...')
     instance = algo.instantiate_algorithm(lookup.detector, detector, parameter_values)
-
-    instance.detect(image)
+    click.echo('Analyzing image...')
+    result = instance.detect(image)
+    click.echo('The detector has found the following result: ' + str(result))
 
 def main():
     pipeline(obj={})

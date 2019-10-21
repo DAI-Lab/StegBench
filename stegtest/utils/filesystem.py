@@ -15,8 +15,11 @@ def get_extension(file_path):
     filename, file_extension = os.path.splitext(file_path)
     return file_extension
 
+def create_name_from_hash(to_hash):
+    return sha512(to_hash.encode('utf-8')).hexdigest() 
+
 def create_file_from_hash(to_hash:str, type:str):
-    return sha512(to_hash.encode('utf-8')).hexdigest() + '.' + type
+    return create_name_from_hash(to_hash) + '.' + type
 
 def dir_exists(directory):
     return path.isdir(directory)

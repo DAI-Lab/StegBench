@@ -17,8 +17,5 @@ class JPHide(Embeddor):
 
 	@compatibility.register(compatibility.file_check, compatibility.jpeg, compatibility.jpg)
 	def embed(self, path_to_input:str, path_to_output:str):
-	    commands = ['jphide', 'hide', path_to_input, path_to_output, self.secret_txt]
-
-	    print(commands)
-
+	    commands = ['jphide', path_to_input, path_to_output, self.secret_txt]
 	    subprocess.run(' '.join(commands), shell=True)
