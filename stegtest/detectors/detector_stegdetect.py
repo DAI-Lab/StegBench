@@ -3,7 +3,6 @@ import subprocess
 import stegtest.types.compatibility as compatibility
 
 from stegtest.types.detector import Detector
-from stegtest.utils.filesystem import dir_exists, file_exists
 
 # from stegtest.utils.filesystem import file_exists
 # http://old-releases.ubuntu.com/ubuntu/pool/universe/s/stegdetect/
@@ -21,9 +20,7 @@ class StegDetect(Detector):
 
     @compatibility.register(compatibility.jpeg, compatibility.jpg)
     def detect(self, path_to_input):
-        assert(file_exists(path_to_input))
-        # assert(file_type(path_to_input, [".jpg"]))
-        commands = ['stegdetect', path_to_input]
+        commands = ['stegodetect', path_to_input]
         subprocess.run(commands)
         return True
 

@@ -9,6 +9,8 @@ import stegtest.detectors as detectors
 import stegtest.utils.lookup as lookup
 import stegtest.utils.filesystem as fs
 
+import math
+
 from os.path import abspath, join
 
 
@@ -235,7 +237,51 @@ def get_all_algorithms(type:str):
 
 	return algorithm_info
 
-def calculate_statistics(cover_results, stego_results):
-	"""calculates all the relevant analyzer statistics"""
-	raise NotImplementedError
 
+""""TODO calculate accuracy scores"""
+
+def calculate_statistics(cover_results, stego_results, paired=True):
+	"""calculates all the relevant analyzer statistics"""
+	if paired:
+		assert(len(cover_results) == len(stego_results))
+
+	total_stego = len(stego_results)
+	total_cover = len(cover_results)
+	total_results = total_stego + total_cover
+	
+	false_positive_total = sum(cover_results)
+	true_negative_total = len(cover_results) - false_positive_total
+
+	true_positive_total = sum(stego_results)
+	false_negative_total = len(stego_results) - false_negative_total
+
+	fpr = false_positive_total / total_results
+	fnr = false_negative_total / total_results
+
+	tpr = true_positive_total / total_stego
+	tnr = true_negative_total / total_cover
+	ppv = true_positive_total / (true_positive_total + false_positive_total)
+	npv = true_negative_total / (true_negative_total + false_negative_total)
+	fnr = 1 - tpr
+	fpr = 1 - tnr
+	fdr - 1 - ppv
+	for_score = 1 - npv
+	ts = true_positive_total / (true_positive_total + false_negative_total + false_positive_total)
+
+	accuracy = (true_positive_total + true_negative_total) / (total_results)
+	f1_score = 2 * ((ppv*tpr)/(ppv + tpr))
+	mcc = (true_positive_total*true_negative_total - false_positive_total*false_negative_total)
+	denominator = (true_positive_total + false_positive_total)*(true_positive_total + false_negative_total)*(true_negative_total + false_positive_total)*(true_negative_total + false_negative_total)
+	denominator = math.sqrt(denominator)
+	mcc /= denominator
+
+	return {
+		lookup.false_positive_rate: fpr,
+		lookup.false_negative_rate: fnr,
+		lookup.true_negative_rate: tnr,
+		lookup.negative_predictive_value: npv,
+		lookup.false_discovery_rate: fdr,
+		lookup.true_positive_rate: tpr,
+		lookup.positive_predictive_value: ppv,
+		lookup.accuracy: accuracy
+	}

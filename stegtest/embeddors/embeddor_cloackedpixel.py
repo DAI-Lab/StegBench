@@ -1,5 +1,5 @@
-
 import subprocess
+import shutil
 import stegtest.types.compatibility as compatibility
 
 from stegtest.utils.filesystem import remove_file
@@ -22,3 +22,6 @@ class CloackedPixel(Embeddor):
     def embed(self, path_to_input:str, path_to_output:str):
         commands = ['cloackedpixel', 'hide', path_to_input, self.secret_txt, self.password]
         subprocess.run(' '.join(commands), shell=True)
+
+        output_file_name = path_to_input + '-stego.png'
+        shutil.move(output_file_name, path_to_output)

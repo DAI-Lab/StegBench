@@ -14,6 +14,15 @@ from os.path import abspath, join
 from multiprocessing import Pool
 from functools import partial
 
+
+def embed_external(input_partition, output_partition, embeddors, idx):
+	"""multiprocessing funtion for embedding"""
+	try:
+		embeddors[idx].embed_bulk(input_partition[idx], output_partition[idx])
+		return True
+	except:
+		return False
+
 class DefaultGenerator(Generator):
 	""""runs all the generation tasks"""
 	def __init__(self, embeddor_set, params=None):
@@ -38,7 +47,7 @@ class DefaultGenerator(Generator):
 		if len(db_embed_compatible) <= 0:
 			raise ValueError('The embeddor set and dataset are not compatible')
 
-		image_dict = lookup.get_image_list(lookup.source, db_information[lookup.db_descriptor])
+		image_dict = lookup.get_image_list(db_information[lookup.uuid_descriptor])
 		image_dict = list(filter(lambda img_info: img_info[lookup.image_type] in db_embed_compatible, image_dict))
 		random.shuffle(image_dict)
 
@@ -71,9 +80,14 @@ class DefaultGenerator(Generator):
 
 		output_partition = [lookup.generate_output_list(output_directory, input_list) for input_list in input_partition]
 		input_partition = [list(map(lambda img_info: img_info[lookup.file_path], partition)) for partition in input_partition]
+		
+		embed_bulk = partial(embed_external, input_partition, output_partition, self.embeddors)
+		embeddor_idx = list(range(len(self.embeddors)))
 
-		for idx, embeddor in enumerate(self.embeddors): #TODO launch subprocesses here
-			embeddor.embed_bulk(input_partition[idx], output_partition[idx])
+		pool = Pool()
+		embed_results = pool.map(embed_bulk, embeddor_idx)
+		pool.close()
+		pool.join()
 
 		partition = [[(input_partition[idx][i], output_partition[idx][i], embeddor_names[idx][0]) for i in range(len(input_partition[idx]))] for idx in range(num_embeddors)]
 		db_uuid = processor.process_steganographic_directory(output_directory, partition, embeddor_set_uuid, source_db)
@@ -94,8 +108,8 @@ class DefaultAnalyzer(Analyzer):
 		self.compatible_types = set(self.detector_set[lookup.compatibile_types_decorator])
 		self.detectors = algo.instantiate_algorithm_set(lookup.detector, detector_set, params)
 
-	def analyze(self, test_db:str): #returns a csv file with results
-		db_information = lookup.get_steganographic_db_info(test_db)
+	def analyze(self, testdb_uuid:str): #returns a csv file with results
+		db_information = lookup.get_steganographic_db_info(testdb_uuid)
 		db_compatible_states = set(db_information[lookup.compatible_descriptor])
 
 		db_embed_compatible = db_compatible_states.intersection(self.compatible_types)
@@ -103,7 +117,7 @@ class DefaultAnalyzer(Analyzer):
 		if len(db_embed_compatible) <= 0:
 			raise ValueError('The embeddor set and dataset are not compatible')
 
-		image_dict = lookup.get_image_list(lookup.embedded, test_db)
+		image_dict = lookup.get_image_list(testdb_uuid)
 
 		cover_files = list(map(lambda img: img[lookup.source_image], image_dict))
 		stego_files = list(map(lambda img: img[lookup.file_path], image_dict))

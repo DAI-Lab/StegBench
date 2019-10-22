@@ -50,11 +50,14 @@ def process_image_directory(path_to_directory, db_name):
 	"""processes an image directory"""
 	db_master_file = lookup.get_master_files()[lookup.source]
 	dataset_directory = lookup.get_db_directories()[lookup.dataset]
-	target_directory = join(dataset_directory, db_name)
+
+	db_uuid = fs.get_uuid()
+
+	target_directory_name = fs.create_name_from_hash(db_uuid)
+	target_directory = join(dataset_directory, target_directory_name)
 
 	assert(fs.dir_exists(path_to_directory))
 	assert(fs.dir_exists(dataset_directory))
-	assert(not fs.dir_exists(target_directory))
 
 	absolute_path = abspath(path_to_directory)
 
@@ -68,7 +71,6 @@ def process_image_directory(path_to_directory, db_name):
 	fs.make_dir(target_directory)
 	fs.write_to_csv_file(join(target_directory, lookup.master_file), rows)
 
-	db_uuid = fs.get_uuid()
 	num_images = len(files)
 	compatible_types = list(compatible_types)
 
@@ -87,7 +89,6 @@ def process_steganographic_directory(output_directory, partition, embeddor_set_u
 
 	assert(fs.dir_exists(output_directory))
 	assert(fs.dir_exists(dataset_directory))
-	assert(not fs.dir_exists(target_directory))
 
 	info_images, compatible_types = process_steganographic_list(partition)
 	variables = lookup.get_steganographic_info_variables()

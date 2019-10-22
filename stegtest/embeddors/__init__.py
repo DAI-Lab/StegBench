@@ -9,7 +9,6 @@ from stegtest.embeddors.embeddor_openstego import Openstego
 from stegtest.embeddors.embeddor_outguess import Outguess
 from stegtest.embeddors.embeddor_stegano import Stegano
 from stegtest.embeddors.embeddor_steghide import StegHide
-from stegtest.embeddors.embeddor_stegpy import StegPy
+from stegtest.embeddors.embeddor_steganogan import Steganogan
 
-
-__all__ = ['CloackedPixel', 'BrokenArrows', 'F5', 'JPHide', 'JSteg', 'LSB', 'Openstego', 'Outguess', 'Stegano', 'StegHide', 'StegPy']
+__all__ = ['CloackedPixel', 'BrokenArrows', 'F5', 'JPHide', 'JSteg', 'LSB', 'Openstego', 'Outguess', 'Stegano', 'StegHide', 'Steganogan']

@@ -254,6 +254,7 @@ def analyze(ctx, detector, db, output):
 @click.pass_context
 def embedImage(ctx, embeddor, input, output):
     """Embeds a specific image using an embeddor"""
+    assert(embeddor and input and output)
     algorithm_parameters = algo.get_algorithm_info(lookup.embeddor, embeddor, params_only=True)
 
     if algorithm_parameters:

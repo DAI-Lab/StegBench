@@ -7,15 +7,18 @@ from stegtest.utils.filesystem import remove_file
 
 class Openstego(Embeddor):
     """Random LSB steganographic algorithm"""
-    def __init__(self, secret_txt:str):
+    def __init__(self, secret_txt:str, password:str):
         super().__init__()
         self.secret_txt = create_asset_file(embeddor, secret_txt)
+        self.password = password
 
-    def update_parameters(self, secret_txt:str):
+    def update_parameters(self, secret_txt:str, password:str):
         remove_file(self.secret_txt)
         self.secret_txt = create_asset_file(embeddor, secret_txt)
+        self.password = password
 
     @compatibility.register(compatibility.file_check, compatibility.png)
     def embed(self, path_to_input:str, path_to_output:str):
-        commands = ['openstego', 'embed', '-mf', self.secret_txt, '-cf', path_to_input, '-sf', path_to_output]
+        commands = ['openstego', 'embed', '-mf', self.secret_txt, '-cf', path_to_input, '-p', self.password, '-sf', path_to_output]
+        print(' '.join(commands))
         subprocess.run(' '.join(commands), shell=True)

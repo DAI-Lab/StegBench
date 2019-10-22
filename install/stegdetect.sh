@@ -8,3 +8,7 @@ wget -O /tmp/stegdetect.deb http://old-releases.ubuntu.com/ubuntu/pool/universe/
 # Install
 dpkg -i /tmp/stegdetect.deb || apt-get install -f -y
 rm /tmp/stegdetect.deb
+
+echo 'i am right here'
+mv /usr/bin/stegdetect /usr/bin/stegodetect
+chmod +x /usr/bin/stegodetect

@@ -11,6 +11,7 @@ from os.path import join
 
 BOSS_URL = 'http://dde.binghamton.edu/download/ImageDB/BOSSbase_1.01.zip'
 BOWS2_URL = 'http://bows2.ec-lille.fr/BOWS2OrigEp3.tgz'
+COCO_URL = 'http://images.cocodataset.org/zips/test2017.zip'
 
 def get_download_routines():
 	return { 
@@ -92,7 +93,7 @@ def download_from_BOWS2(directory):
 	path_to_zip_file = join(directory, zip_file_name)
 	path_to_unzip_directory = join(directory, unzip_directory)
 	
-	retrieve_file(BOSS_URL, path_to_zip_file)
+	retrieve_file(BOWS2_URL, path_to_zip_file)
 	unzip_file(path_to_zip_file, directory)
 
 	assert(fs.dir_exists(path_to_unzip_directory))
@@ -103,7 +104,17 @@ def download_from_BURST(dir):
 	raise NotImplementedError
 
 def download_from_COCO(dir, params):
-	raise NotImplementedError
+	zip_file_name = 'test2017.zip'
+	unzip_directory = 'test2017'
+	path_to_zip_file = join(directory, zip_file_name)
+	path_to_unzip_directory = join(directory, unzip_directory)
+	
+	retrieve_file(COCO_URL, path_to_zip_file)
+	unzip_file(path_to_zip_file, directory)
+
+	assert(fs.dir_exists(path_to_unzip_directory))
+
+	return path_to_unzip_directory
 
 def download_from_DRESDEN(dir, params):
 	raise NotImplementedError

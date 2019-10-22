@@ -9,13 +9,15 @@ from stegtest.types.embeddor import Embeddor
 
 class Outguess(Embeddor):
     """Redundant bits steganographic algorithm"""
-    def __init__(self, secret_txt:str):
+    def __init__(self, secret_txt:str, password:str):
         super().__init__()
         self.secret_txt = create_asset_file(embeddor, secret_txt)
+        self.password = password
 
-    def update_parameters(self, secret_txt:str):
+    def update_parameters(self, secret_txt:str, password:str):
         remove_file(self.secret_txt)
         self.secret_txt = create_asset_file(embeddor, secret_txt)
+        self.password = password
 
     @compatibility.register(compatibility.file_check, compatibility.jpeg, compatibility.jpg)
     def embed(self, path_to_input:str, path_to_output:str):

@@ -147,10 +147,14 @@ def all_directories():
 
 	return tld + tmp_directories + asset_directories + db_directories
 
-def create_asset_file(type:str, content:str):
+def create_asset_file(type:str, content:str, shortened:bool=False):
 	"""creates a text asset for the specificied directory"""
 	asset_directory = get_asset_directories()[type]
 	file_name = fs.create_file_from_hash(fs.get_uuid(), 'txt')
+
+	if shortened:
+		file_name = file_name[:10] + '.txt'
+
 	file_path = abspath(join(asset_directory, file_name))
 
 	fs.write_to_text_file(file_path, [content])
@@ -204,13 +208,9 @@ def get_image_info_variables():
 def get_steganographic_info_variables():
 	return [file_path, image_type, image_width, image_height, image_channels, source_image, steganographic_function]
 
-def get_image_list(type, db_descriptor):
+def get_image_list(db_descriptor):
 	#get the master.csv file in the db/datasets folder
-	if type == embedded:
-		dir_name = fs.create_name_from_hash(db_descriptor)
-	else:
-		dir_name = db_descriptor 
-
+	dir_name = fs.create_name_from_hash(db_descriptor)
 	dataset_directory = get_db_directories()[dataset]
 	db_directory = join(dataset_directory, dir_name)
 	db_master_file = join(db_directory, master_file)
