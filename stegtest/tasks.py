@@ -14,7 +14,6 @@ from os.path import abspath, join
 from multiprocessing import Pool
 from functools import partial
 
-
 def embed_external(input_partition, output_partition, embeddors, idx):
 	"""multiprocessing funtion for embedding"""
 	try:
@@ -80,7 +79,7 @@ class DefaultGenerator(Generator):
 
 		output_partition = [lookup.generate_output_list(output_directory, input_list) for input_list in input_partition]
 		input_partition = [list(map(lambda img_info: img_info[lookup.file_path], partition)) for partition in input_partition]
-		
+
 		embed_bulk = partial(embed_external, input_partition, output_partition, self.embeddors)
 		embeddor_idx = list(range(len(self.embeddors)))
 
@@ -96,7 +95,9 @@ class DefaultGenerator(Generator):
 
 def analyze_detector(input_list, detector):
 	"""analyzes a detector on a specific list"""
-	return detector.detect_bulk(input_list)
+	results = detector.detect_bulk(input_list)
+	return results
+
 
 class DefaultAnalyzer(Analyzer):
 	""""runs all the analyzer tasks"""
@@ -108,7 +109,8 @@ class DefaultAnalyzer(Analyzer):
 		self.compatible_types = set(self.detector_set[lookup.compatibile_types_decorator])
 		self.detectors = algo.instantiate_algorithm_set(lookup.detector, detector_set, params)
 
-	def analyze(self, testdb_uuid:str): #returns a csv file with results
+	def analyze(self, testdb_uuid:str, write_results=None):
+		print('preparing db for evaluation')
 		db_information = lookup.get_steganographic_db_info(testdb_uuid)
 		db_compatible_states = set(db_information[lookup.compatible_descriptor])
 
@@ -126,12 +128,33 @@ class DefaultAnalyzer(Analyzer):
 		analyze_stego = partial(analyze_detector, stego_files)
 
 		pool = Pool()
+		print('processing cover results...')
 		cover_results = pool.map(analyze_cover, self.detectors)
+		print('processing stego results...')
 		stego_results = pool.map(analyze_stego, self.detectors)
 		pool.close()
 		pool.join()
 
-		statistics = algo.calculate_statistics(cover_results, stego_results)
+		print('calcualating statistics...')
+		detector_names = self.detector_set[lookup.detector]
+		statistics = algo.calculate_statistics(detector_names, cover_results, stego_results)
+
+		if write_results:
+			output_directory = lookup.get_tmp_directories()[lookup.detector]
+			output_file_name = fs.create_file_from_hash(testdb_uuid + self.detector_set[lookup.uuid_descriptor], 'csv')
+
+			output_file_path = abspath(join(output_directory, output_file_name))
+
+			statistics_header = [lookup.get_statistics_header()]
+			statistics_rows = [list(detector_statistic.values()) for detector_statistic in statistics]
+			print('writing statistics to file...')
+
+			statistics_data = statistics_header + statistics_rows
+
+			fs.write_to_csv_file(output_file_path, statistics_data)
+
+			return output_file_path
+
 		return statistics
 
 class Scheduler():

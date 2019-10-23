@@ -240,48 +240,63 @@ def get_all_algorithms(type:str):
 
 """"TODO calculate accuracy scores"""
 
-def calculate_statistics(cover_results, stego_results, paired=True):
+def calculate_statistics(detector_names, all_cover_results, all_stego_results, paired=True):
 	"""calculates all the relevant analyzer statistics"""
-	if paired:
-		assert(len(cover_results) == len(stego_results))
+	assert(len(all_cover_results) == len(all_stego_results) and len(all_cover_results) == len(detector_names))
+	# print(all_cover_results)
+	# print(all_stego_results)
+	all_results = []
 
-	total_stego = len(stego_results)
-	total_cover = len(cover_results)
-	total_results = total_stego + total_cover
-	
-	false_positive_total = sum(cover_results)
-	true_negative_total = len(cover_results) - false_positive_total
+	for idx, detector_info in enumerate(detector_names):
+		#TODO get rid of this sort of referencing
+		detector_name = detector_info[0]
+		cover_results = [1 if result[1] else 0 for result in all_cover_results[idx]]
+		stego_results = [1 if result[1] else 0 for result in all_stego_results[idx]]
 
-	true_positive_total = sum(stego_results)
-	false_negative_total = len(stego_results) - false_negative_total
+		if paired:
+			assert(len(cover_results) == len(stego_results))
 
-	fpr = false_positive_total / total_results
-	fnr = false_negative_total / total_results
+		total_stego = len(stego_results)
+		total_cover = len(cover_results)
+		total_results = total_stego + total_cover
+		
+		false_positive_total = sum(cover_results)
+		true_negative_total = len(cover_results) - false_positive_total
 
-	tpr = true_positive_total / total_stego
-	tnr = true_negative_total / total_cover
-	ppv = true_positive_total / (true_positive_total + false_positive_total)
-	npv = true_negative_total / (true_negative_total + false_negative_total)
-	fnr = 1 - tpr
-	fpr = 1 - tnr
-	fdr - 1 - ppv
-	for_score = 1 - npv
-	ts = true_positive_total / (true_positive_total + false_negative_total + false_positive_total)
+		true_positive_total = sum(stego_results)
+		false_negative_total = len(stego_results) - true_positive_total
 
-	accuracy = (true_positive_total + true_negative_total) / (total_results)
-	f1_score = 2 * ((ppv*tpr)/(ppv + tpr))
-	mcc = (true_positive_total*true_negative_total - false_positive_total*false_negative_total)
-	denominator = (true_positive_total + false_positive_total)*(true_positive_total + false_negative_total)*(true_negative_total + false_positive_total)*(true_negative_total + false_negative_total)
-	denominator = math.sqrt(denominator)
-	mcc /= denominator
+		fpr = false_positive_total / total_results
+		fnr = false_negative_total / total_results
 
-	return {
-		lookup.false_positive_rate: fpr,
-		lookup.false_negative_rate: fnr,
-		lookup.true_negative_rate: tnr,
-		lookup.negative_predictive_value: npv,
-		lookup.false_discovery_rate: fdr,
-		lookup.true_positive_rate: tpr,
-		lookup.positive_predictive_value: ppv,
-		lookup.accuracy: accuracy
-	}
+		tpr = true_positive_total / total_stego
+		tnr = true_negative_total / total_cover
+		ppv = true_positive_total / (true_positive_total + false_positive_total)
+		npv = true_negative_total / (true_negative_total + false_negative_total)
+		fnr = 1 - tpr
+		fpr = 1 - tnr
+		fdr = 1 - ppv
+		for_score = 1 - npv
+		ts = true_positive_total / (true_positive_total + false_negative_total + false_positive_total)
+
+		accuracy = (true_positive_total + true_negative_total) / (total_results)
+		f1_score = 2 * ((ppv*tpr)/(ppv + tpr))
+		mcc = (true_positive_total*true_negative_total - false_positive_total*false_negative_total)
+		denominator = (true_positive_total + false_positive_total)*(true_positive_total + false_negative_total)*(true_negative_total + false_positive_total)*(true_negative_total + false_negative_total)
+		denominator = math.sqrt(denominator)
+		mcc /= denominator
+
+		results = collections.OrderedDict()
+		results[lookup.false_positive_rate] = fpr
+		results[lookup.false_negative_rate] = fnr
+		results[lookup.true_negative_rate] = tnr
+		results[lookup.negative_predictive_value] = npv
+		results[lookup.false_discovery_rate] = fdr
+		results[lookup.true_positive_rate] = tpr
+		results[lookup.positive_predictive_value] = ppv
+		results[lookup.accuracy] = accuracy
+		results[lookup.detector] = detector_name
+
+		all_results.append(results)
+
+	return all_results

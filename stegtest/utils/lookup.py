@@ -66,6 +66,18 @@ true_positive_rate = 'tpr'
 positive_predictive_value = 'ppv'
 accuracy = 'acc'
 roc_auc = 'roc_auc'
+result = 'result'
+
+#file identifiers
+input_file_header = 'input'
+output_file_header = 'output'
+
+#IMAGE OPERATIONS
+add_noise = 'noise'
+crop = 'crop'
+resize = 'resize'
+rotate = 'rotate'
+
 
 def get_master_files():
 	master_files = {binding: join(binding, master_file) for binding in get_top_level_directories().values()}
@@ -88,8 +100,23 @@ def get_parameter_type(type):
      'uuid': uuid.UUID
     }[type]
 
+def get_image_operations():
+	return [add_noise, crop, resize, rotate]
+
+def get_default_image_operation_values():
+	return {
+		add_noise: 1.0,
+		crop: (512, 512),
+		resize: (512, 512),
+		rotate: (180),
+	}
+
 def all_supported_types():
 	return ['bmp', 'gif', 'jpeg', 'jpg', 'pgm', 'png']
+
+def get_statistics_header():
+	return [false_positive_rate, false_negative_rate, true_negative_rate, negative_predictive_value,
+	false_discovery_rate, true_positive_rate, positive_predictive_value, accuracy, detector]
 
 def get_metric_variables():
 	return [false_positive_rate, false_negative_rate, true_negative_rate, negative_predictive_value,

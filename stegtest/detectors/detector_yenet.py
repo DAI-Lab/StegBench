@@ -1,6 +1,7 @@
 
 import subprocess
 import stegtest.types.compatibility as compatibility
+import pandas as pd
 
 from stegtest.types.detector import Detector
 
@@ -21,5 +22,8 @@ class YeNet(Detector):
 		return result
 
 	def detect_bulk(self, input_list, path_to_directory=None):
-		results = list(map(self.detect, input_list))
+		results = self.model.detect(input_list)
+		results = pd.DataFrame(results)
+		results = list(zip(results.image_path, results.steganographic))
+
 		return results

@@ -1,9 +1,13 @@
 import stegtest.utils.filesystem as fs
 import stegtest.utils.lookup as lookup
 import stegtest.utils.images as img
+import collections
 
 from os import listdir
 from os.path import isfile, join, abspath
+
+from multiprocessing import Pool
+from functools import partial
 
 def process_image_file(path_to_image):
 	"""processes an image file"""
@@ -46,7 +50,30 @@ def process_steganographic_list(partition):
 
 	return info_images, compatible_types
 
-def process_image_directory(path_to_directory, db_name):
+def modify_images(input_directory, operation, args):
+	input_directory = abspath(input_directory)
+	file_names = [f for f in listdir(input_directory) if img.is_image_file(join(input_directory, f))]
+
+	tmp_directory = lookup.get_tmp_directories()[lookup.db]
+	output_directory_name = fs.get_uuid()
+	output_directory = join(tmp_directory, output_directory_name)
+	output_directory = abspath(output_directory)
+	fs.make_dir(output_directory)
+
+	input_files = [join(input_directory, f) for f in file_names]
+	output_files = [join(output_directory, f) for f in file_names]
+
+	partition = [{lookup.input_file_header: input_files[idx], lookup.output_file_header: output_files[idx]} for idx in range(len(file_names))]
+	operation_function = partial(img.apply_operation, operation, args) 
+
+	pool = Pool()
+	operation_results = pool.map(operation_function, partition)
+	pool.close()
+	pool.join()
+
+	return output_files
+
+def process_image_directory(path_to_directory, db_name, operation=None, args=None):
 	"""processes an image directory"""
 	db_master_file = lookup.get_master_files()[lookup.source]
 	dataset_directory = lookup.get_db_directories()[lookup.dataset]
@@ -62,6 +89,13 @@ def process_image_directory(path_to_directory, db_name):
 	absolute_path = abspath(path_to_directory)
 
 	files = [join(absolute_path, f) for f in listdir(absolute_path) if img.is_image_file(join(absolute_path, f))]
+
+	if operation:
+		if args is None:
+			args = lookup.get_default_image_operation_values()[operation]
+		files = modify_images(absolute_path, operation, args)
+	else:
+		files = [join(absolute_path, f) for f in listdir(absolute_path) if img.is_image_file(join(absolute_path, f))]
 
 	info_images, compatible_types = process_image_list(files)
 

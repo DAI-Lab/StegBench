@@ -84,11 +84,12 @@ def download(ctx, name, file, db):
 @pipeline.command()
 @click.option('-d', '--directory', help='specify an already downloaded database')
 @click.option('-n', '--name', help='specify the name for the database')
+@click.option('-o', '--operation', help='applies specified operation to all images', type=click.Choice(lookup.get_image_operations()))
 @click.pass_context
-def process(ctx, directory, name):
-    """processes a specified database"""
+def process(ctx, directory, name, operation):
+    """processes a specified database. select small for faster analysis speeds (512x512 images)"""
     assert(directory and name)
-    pr.process_image_directory(directory, name)
+    pr.process_image_directory(directory, name, operation, None)
 
 @pipeline.command()
 @click.option('-a', '--algorithm', help='specify an embedding routine', type=click.Choice(algo.get_algorithm_names(lookup.embeddor)))
@@ -234,9 +235,8 @@ def generate(ctx, embeddor, db):
 @pipeline.command()
 @click.option('-d', '--detector', help='uuid of the detector set being used')
 @click.option('-db', '--db', help='hash of the generated db set being used')
-@click.option('-o', '--output', help='output file to output results to')
 @click.pass_context
-def analyze(ctx, detector, db, output):
+def analyze(ctx, detector, db):
     """analyzes a set detectors using a pre-processed database"""
     #assert() something about number of detectors
     #should produce some sort of csv with statistics about each of the detectors
@@ -244,8 +244,8 @@ def analyze(ctx, detector, db, output):
     detector_set = algo.lookup_algorithm_set(lookup.detector, detector)
     analyzer = DefaultAnalyzer(detector_set)
 
-    analyzer.analyze(db)
-    click.echo('The results can be found here...')
+    output_file_path = analyzer.analyze(db, write_results=True)
+    click.echo('The results can be found here: ' + output_file_path)
 
 @pipeline.command()
 @click.option('-e', '--embeddor', help='name of the embeddor being used', type=click.Choice(algo.get_algorithm_names(lookup.embeddor)))

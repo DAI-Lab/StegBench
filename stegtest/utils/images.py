@@ -19,6 +19,53 @@ Image.MAX_IMAGE_PIXELS = None
 # I (32-bit signed integer pixels)
 # F (32-bit floating point pixels)
 
+def add_noise_to_image(path_to_input, path_to_output, noise_level):
+	"""adds noise to an image at specified noise level"""
+	raise NotImplementedError
+
+def crop_image(path_to_input, path_to_output, width, height):
+	"""crops an image to specified dimensions"""
+	img = Image.open(path_to_input)
+	current_width, current_height = img.size
+	if current_width < width:
+		width = current_width
+	if current_height < height:
+		height = current_height
+
+	cropped_img = img.crop(((current_width-width)//2, (current_height-height)//2, (current_width+width)//2, (current_height+height)//2))
+	cropped_img.save(path_to_output)
+	img.close()
+	cropped_img.close()
+
+def resize_image(path_to_input, path_to_output, width, height):
+	"""resizes an image to the specified dimensions"""
+	img = Image.open(path_to_input)
+
+	cropped_img = img.resize((width, height))
+	cropped_img.save(path_to_output)
+
+	img.close()
+	cropped_img.close()
+
+def rotate_image(path_to_input, path_to_output, degrees):
+	"""rotates image by specified degrees"""
+	img = Image.open(path_to_input)
+
+	cropped_img = img.rotate(degrees)
+	cropped_img.save(path_to_output)
+
+	img.close()
+	cropped_img.close()
+
+def apply_operation(operation, args, partition):
+	function = {
+		lookup.add_noise: add_noise_to_image,
+		lookup.crop: crop_image,
+		lookup.resize: resize_image,
+		lookup.rotate: rotate_image,
+	}[operation]
+
+	function(partition[lookup.input_file_header], partition[lookup.output_file_header], *args)
 
 def get_image_type(path_to_file):
 	#return imghdr.what(path_to_file)

@@ -31,7 +31,7 @@ def download_routine(name, *args):
 	dataset_folder = lookup.get_tmp_directories()
 	
 	download_directory = db_routines[name](dataset_folder[lookup.db], *args)
-	processor.process_image_directory(download_directory, name)
+	processor.process_image_directory(download_directory, name, lookup.crop, None)
 
 def download_from_file(file, name, header=False):
 	"""downloads from a properly formatted file"""
@@ -55,7 +55,7 @@ def download_from_file(file, name, header=False):
 
 		retrieve_file(image_url, join(download_directory, create_file_from_hash(image_url, image_type)))
 
-	processor.process_image_directory(download_directory, db_name)
+	processor.process_image_directory(download_directory, db_name, lookup.crop, None)
 
 def retrieve_file(url, path_to_file):
 	"""retrieves a zip file from a specified url and saves it to path_to_zip_file"""
@@ -103,7 +103,7 @@ def download_from_BOWS2(directory):
 def download_from_BURST(dir):
 	raise NotImplementedError
 
-def download_from_COCO(dir, params):
+def download_from_COCO(directory):
 	zip_file_name = 'test2017.zip'
 	unzip_directory = 'test2017'
 	path_to_zip_file = join(directory, zip_file_name)

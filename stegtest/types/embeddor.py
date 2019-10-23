@@ -19,9 +19,5 @@ class Embeddor(ABC):
 
     	num_images = len(input_list)
 
-    	for i in range(num_images): #can parallelize this code a lot
+    	for i in range(num_images): #TODO parallelize this code a lot
     		self.embed(input_list[i], output_list[i])
-
-
-#pool = multiprocessing.Pool(4)
-# out1, out2, out3 = zip(*pool.map(calc_stuff, range(0, 10 * offset, offset)))
