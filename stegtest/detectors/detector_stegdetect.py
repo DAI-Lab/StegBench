@@ -25,5 +25,6 @@ class StegDetect(Detector):
         return True
 
     def detect_bulk(self, input_list, path_to_directory=None):
+        print(len(input_list))
         results = list(map(self.detect, input_list))
         return results

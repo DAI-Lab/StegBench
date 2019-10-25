@@ -2,6 +2,9 @@ import stegtest.utils.filesystem as fs
 import uuid
 import ast 
 import os 
+import random
+import string
+import subprocess
 
 from os.path import join, abspath
 
@@ -261,6 +264,53 @@ def generate_output_list(output_directory:str, input_list:dict):
 		output_list.append(output_file_path)
 
 	return output_list
+
+def run_cmd(cmd:list):
+	print(' '.join(cmd))
+	subprocess.run(' '.join(cmd), shell=True)#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+def generate_random_string(byte_length=20):
+	return ''.join(random.choice(string.ascii_letters + string.digits) for x in range(byte_length))
+
+def generate_random_float():
+	return random.random()*10000
+
+def generate_random_int():
+	return int(generate_random_float())
+
+def generate_param(type, *args):
+	function = {
+		'str': generate_random_string, 
+		'float': generate_random_float,
+		'int': generate_random_int,
+	}[type]
+	return function(*args)
+
+def generate_password(byte_length):
+	return generate_random_string(byte_length)
+
+def convert_channels_to_int(channel:str):
+	return {
+		'L': 1,
+		'P': 1,
+		'RGB': 3,
+		'RGBA': 4,
+		'CMYK': 4,
+		'YCbCr': 3,
+		'LAB': 3,
+		'HSV': 3,
+	}[channel]
+
+def generate_secret_text(file_info, bpp):
+	width = int(file_info[image_width])
+	height = int(file_info[image_height])
+	channels = convert_channels_to_int(file_info[image_channels])
+
+	pixels = width*height*channels
+	strlen_in_bits = pixels*bpp
+	strlen_in_bytes = int(strlen_in_bits/8)
+
+	return generate_random_string(strlen_in_bytes)
 
 def initialize_filesystem(directory):
 	"""Clears and adds needed directories for stegdetect to work"""

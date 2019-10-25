@@ -21,9 +21,9 @@ class YeNet(Detector):
 		result = self.model.detect(path_to_input)
 		return result
 
-	# def detect_bulk(self, input_list, path_to_directory=None):
-	# 	results = self.model.detect(input_list)
-	# 	results = pd.DataFrame(results)
-	# 	results = list(zip(results.image_path, results.steganographic))
-
-	# 	return results
+	def detect_bulk(self, input_list, path_to_directory=None):
+		results = self.model.detect(input_list)
+		results = pd.DataFrame(results)
+		results = list(results.steganographic)
+		
+		return results

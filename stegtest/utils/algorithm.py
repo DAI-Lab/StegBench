@@ -1,8 +1,6 @@
 import inspect
 import ast
 import collections
-import random
-import string
 
 import stegtest.embeddors as embeddors
 import stegtest.detectors as detectors
@@ -12,30 +10,6 @@ import stegtest.utils.filesystem as fs
 import math
 
 from os.path import abspath, join
-
-
-###TODO 
-#1. NEED TO INSTANTIATE RANDOMLY 
-#2. NEED TO BE ABLE TO POINT AN ANALYZER TO AN ARBITRARY DIRECTORY
-#3. NEED TO BE ABLE TO 
-
-def generate_random_string():
-	return ''.join(random.choice(string.ascii_letters + string.digits) for x in range(50))
-
-def generate_random_float():
-	return random.random()*10000
-
-def generate_random_int():
-	return int(generate_random_float())
-
-def generate_param(type):
-	function = {
-		'str': generate_random_string, 
-		'float': generate_random_float,
-		'int': generate_random_int,
-	}[type]
-
-	return function()
 
 def create_algorithm_set(type:str, algorithm:str):
 	"""creates a new algorithm set"""
@@ -130,22 +104,10 @@ def get_all_algorithm_sets(type:str):
 
 	return all_set_info
 
-def instantiate_algorithm_random(type:str, name_of_method:str):
-	"""returns an instantiated class with random arguments""" 
-	algo_params = get_algorithm_info(type, name_of_method, params_only=True)
-
-	random_parameters = []
-	for param in algo_params.keys():
-		param_type = algo_params[param]
-		random_param_value = generate_param(param_type)
-
-		random_parameters.append(random_param_value)
-
-
-	return instantiate_algorithm(type, name_of_method, random_parameters)
-
-def instantiate_algorithm(type:str, name_of_method:str, parameters:list):
+def instantiate_algorithm(type:str, name_of_method:str):
 	"""returns an instantiated class with arguments args""" 
+
+	#TODO THIS WILL BE THE DOCKER INSTANTIATION
 	assert(type is not None)
 
 	algorithm_source = None
@@ -154,23 +116,16 @@ def instantiate_algorithm(type:str, name_of_method:str, parameters:list):
 	else:
 		algorithm_source = detectors
 
-	if parameters:
-		instance = getattr(algorithm_source, name_of_method)(*parameters)
-	else:
-		instance = getattr(algorithm_source, name_of_method)()
+	instance = getattr(algorithm_source, name_of_method)()
 
 	return instance
 
-def instantiate_algorithm_set(type:str, algorithm_set, params=None):
+def instantiate_algorithm_set(type:str, algorithm_set):
 	algorithm_names = algorithm_set[type]
 	algorithm_instances = []
 
-	if params:
-		for idx, name in enumerate(algorithm_names):
-			algorithm_instances.append(instantiate_algorithm(type, name[0], params[idx]))
-	else:
-		for idx, name in enumerate(algorithm_names):
-			algorithm_instances.append(instantiate_algorithm_random(type, name[0]))
+	for idx, name in enumerate(algorithm_names):
+		algorithm_instances.append(instantiate_algorithm(type, name[0]))
 
 	return algorithm_instances
 
@@ -219,11 +174,10 @@ def get_all_algorithms(type:str):
 		info[lookup.description] = algorithm_class.__doc__
 		info[lookup.compatibile_types_decorator] = lookup.get_compatible_types(steganographic_function)
 
-		#get required parameters for instantiation
-		args = inspect.signature(algorithm_class.__init__)
+		args = inspect.signature(steganographic_function)
 		parameters = list((tuple(args.parameters.values())))
 		parameters_dict = collections.OrderedDict()
-		parameters_without_self = list(filter(lambda p: p.name != 'self', parameters))
+		parameters_without_self = list(filter(lambda p: p.name not in ['self', 'path_to_input', 'path_to_output'], parameters))
 
 		for parameter in parameters_without_self:
 			parameter_name = parameter.name
@@ -237,7 +191,6 @@ def get_all_algorithms(type:str):
 
 	return algorithm_info
 
-
 """"TODO calculate accuracy scores"""
 
 def calculate_statistics(detector_names, all_cover_results, all_stego_results, paired=True):
@@ -245,7 +198,6 @@ def calculate_statistics(detector_names, all_cover_results, all_stego_results, p
 	assert(len(all_cover_results) == len(all_stego_results) and len(all_cover_results) == len(detector_names))
 	# print(all_cover_results)
 	# print(all_stego_results)
-	print(all_cover_results)
 	all_results = []
 
 	for idx, detector_info in enumerate(detector_names):
@@ -254,8 +206,11 @@ def calculate_statistics(detector_names, all_cover_results, all_stego_results, p
 		cover_results = [1 if result else 0 for result in all_cover_results[idx]]
 		stego_results = [1 if result else 0 for result in all_stego_results[idx]]
 
-		if paired:
-			assert(len(cover_results) == len(stego_results))
+		# print(cover_results)
+		# print(stego_results)
+
+		# if paired:
+		# 	assert(len(cover_results) == len(stego_results))
 
 		total_stego = len(stego_results)
 		total_cover = len(cover_results)

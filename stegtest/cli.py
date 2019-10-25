@@ -218,17 +218,18 @@ def reset(ctx):
 @pipeline.command()
 @click.option('-e', '--embeddor', help='uuid of the embeddor set being used')
 @click.option('-d', '--db', help='name or uuid of the db being used')
+@click.option('-b', '--bpp', help='bits per pixel to set', type=float)
 @click.pass_context
-def generate(ctx, embeddor, db):
-    """Generates an embedded db using embeddors and db images"""
-    #FOR NOW, max make make our datasets 10,000 images. 
-    #assert() something about number of embeddor
-    #this needs to be an orchestrator for some sort of parallelization parameter
+def embed(ctx, embeddor, db, bpp):
+    """Embeds a db using embeddors and db images"""
     assert(embeddor and db)
     embeddor_set = algo.lookup_algorithm_set(lookup.embeddor, embeddor)
     generator = DefaultGenerator(embeddor_set)
 
-    db_uuid = generator.generate(db)
+    if bpp:
+        db_uuid = generator.generate(db, bpp)
+    else:
+        db_uuid = generator.generate(db)
     click.echo('The UUID of the dataset you have created is: ' + db_uuid)
 
 
@@ -236,10 +237,8 @@ def generate(ctx, embeddor, db):
 @click.option('-d', '--detector', help='uuid of the detector set being used')
 @click.option('-db', '--db', help='hash of the generated db set being used')
 @click.pass_context
-def analyze(ctx, detector, db):
+def detect(ctx, detector, db):
     """analyzes a set detectors using a pre-processed database"""
-    #assert() something about number of detectors
-    #should produce some sort of csv with statistics about each of the detectors
     assert(detector and db)
     detector_set = algo.lookup_algorithm_set(lookup.detector, detector)
     analyzer = DefaultAnalyzer(detector_set)
@@ -262,9 +261,9 @@ def embedImage(ctx, embeddor, input, output):
     
     click.echo('Initializing embeddor...')
     parameter_values = list(parameters.values())
-    instance = algo.instantiate_algorithm(lookup.embeddor, embeddor, parameter_values)
+    instance = algo.instantiate_algorithm(lookup.embeddor, embeddor)
     click.echo('Embedding image...')
-    instance.embed(input, output)
+    instance.embed(input, output, *parameter_values)
 
 @pipeline.command()
 @click.option('-d', '--detector', help='name of the detector being used', type=click.Choice(algo.get_algorithm_names(lookup.detector)))

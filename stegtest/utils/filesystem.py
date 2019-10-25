@@ -98,6 +98,7 @@ def read_csv_file(path_to_file, return_as_dict=False):
         rows = [list(row) for row in reader]
 
     in_file.close()
+
     if return_as_dict:
         return convert_csv_to_dict(rows)
 

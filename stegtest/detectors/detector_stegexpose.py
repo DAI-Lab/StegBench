@@ -2,6 +2,7 @@ import subprocess
 import stegtest.types.compatibility as compatibility
 import stegtest.utils.filesystem as fs
 from stegtest.types.detector import Detector
+from stegtest.utils.lookup import run_cmd
 
 
 def generate_csv_file():
@@ -33,13 +34,12 @@ class StegExpose(Detector):
         csv_file = generate_csv_file() 
         commands.append(csv_file)
 
-        subprocess.run(' '.join(commands), shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        run_cmd(commands)
 
         csv_results = fs.read_csv_file(csv_file)
-        csv_results = csv_results[1:] #get rid of header
-        csv_results = [result[1] for result in csv_results]
+        csv_results = csv_results[2:] #get rid of header
+        csv_results = [(result[1])  for result in csv_results]
         csv_results = [True if result=='true' else False for result in csv_results]
 
         fs.remove_file(csv_file)
-
         return csv_results

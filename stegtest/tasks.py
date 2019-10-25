@@ -15,15 +15,16 @@ from os.path import abspath, join
 from pathos.multiprocessing import ThreadPool as Pool
 from functools import partial
 
-def embed_external(input_partition, output_partition, embeddors, idx):
+def embed_external(bpp_partition, input_partition, output_partition, embeddors, idx):
 	"""multiprocessing funtion for embedding"""
+	bpp = bpp_partition[idx]
 	input_list = input_partition[idx]
 	output_list = output_partition[idx]
 	embeddor = embeddors[idx]
 
 	print('generating for embeddor: ' + str(embeddor.__class__.__name__) + ' on ' + str(len(input_list)) + ' files')
 	try:
-		embeddor.embed_bulk(input_list, output_list)
+		embeddor.embed_bulk(bpp, input_list, output_list)
 		return True
 	except:
 		print("Unexpected error:", sys.exc_info()[0])
@@ -31,20 +32,15 @@ def embed_external(input_partition, output_partition, embeddors, idx):
 
 class DefaultGenerator(Generator):
 	""""runs all the generation tasks"""
-	def __init__(self, embeddor_set, params=None):
+	def __init__(self, embeddor_set):
 		embeddor_names = embeddor_set[lookup.embeddor]
-		assert(params is None or len(params) == len(embeddor_names))
 
 		self.embeddor_set = embeddor_set
 		self.compatible_types = set(self.embeddor_set[lookup.compatibile_types_decorator])
-		self.embeddors = algo.instantiate_algorithm_set(lookup.embeddor, embeddor_set, params)
+		self.embeddors = algo.instantiate_algorithm_set(lookup.embeddor, embeddor_set)
 
-	def generate(self, source_db:str, divided=True, random_parameters=False):
+	def generate(self, source_db:str, bpp=0.5, divided=True):
 		"""generates a test DB. if divided, embeddors are randomly distributed each of the db images. otherwise each image undergoes an operation by each embeddor"""
-		if random_parameters:
-			#need to update parameters for each embedding process (need some sort of bypass using update_parameters here
-			raise NotImplementedError
-		
 		db_information = lookup.get_source_db_info(source_db)
 		db_compatible_states = set(db_information[lookup.compatible_descriptor])
 
@@ -81,18 +77,23 @@ class DefaultGenerator(Generator):
 				input_list = image_dict[start_idx:end_idx].copy()
 
 				input_partition.append(input_list)
+
+			for idx in range(len(remainder)):
+				input_partition[idx].append(image_dict[idx + num_embeddors*images_per_embeddor].copy())
 		else:
 			input_partition = [image_dict.copy() for i in range(num_embeddors)]
 
 		output_partition = [lookup.generate_output_list(output_directory, input_list) for input_list in input_partition]
-		input_partition = [list(map(lambda img_info: img_info[lookup.file_path], partition)) for partition in input_partition]
+		bpp_partition = [[bpp for i in range(len(input_list))] for input_list in input_partition]
 
-		embed_bulk = partial(embed_external, input_partition, output_partition, self.embeddors)
+		embed_bulk = partial(embed_external, bpp_partition, input_partition, output_partition, self.embeddors)
 		embeddor_idx = list(range(len(self.embeddors)))
 
 		pool = Pool().map
 		embed_results = pool(embed_bulk, embeddor_idx)
 
+
+		input_partition = [list(map(lambda img_info: img_info[lookup.file_path], partition)) for partition in input_partition]
 		partition = [[(input_partition[idx][i], output_partition[idx][i], embeddor_names[idx][0]) for i in range(len(input_partition[idx]))] for idx in range(num_embeddors)]
 		db_uuid = processor.process_steganographic_directory(output_directory, partition, embeddor_set_uuid, source_db)
 
@@ -108,13 +109,12 @@ def analyze_detector(input_list, detector):
 
 class DefaultAnalyzer(Analyzer):
 	""""runs all the analyzer tasks"""
-	def __init__(self, detector_set, params=None):
+	def __init__(self, detector_set):
 		detector_names = detector_set[lookup.detector]
-		assert(params is None or len(params) == len(detector_names))
 
 		self.detector_set = detector_set
 		self.compatible_types = set(self.detector_set[lookup.compatibile_types_decorator])
-		self.detectors = algo.instantiate_algorithm_set(lookup.detector, detector_set, params)
+		self.detectors = algo.instantiate_algorithm_set(lookup.detector, detector_set)
 
 	def analyze(self, testdb_uuid:str, write_results=None):
 		print('preparing db for evaluation')
@@ -146,7 +146,7 @@ class DefaultAnalyzer(Analyzer):
 
 		if write_results:
 			output_directory = lookup.get_tmp_directories()[lookup.detector]
-			output_file_name = fs.create_file_from_hash(testdb_uuid + self.detector_set[lookup.uuid_descriptor], 'csv')
+			output_file_name = fs.create_file_from_hash(fs.get_uuid() , 'csv')
 
 			
 			output_file_path = abspath(join(output_directory, output_file_name))
