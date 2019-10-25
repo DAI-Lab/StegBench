@@ -11,6 +11,9 @@ from os import path
 def get_uuid():
     return str(uuid.uuid4())
 
+def get_directory(file_path):
+    return os.path.dirname(file_path)
+
 def get_extension(file_path):
     filename, file_extension = os.path.splitext(file_path)
     return file_extension

@@ -30,6 +30,7 @@ RUN apt-get update && \
                        atomicparsley && \
     pip3 install python-magic && \
     pip3 install setuptools && \
+    pip3 install pathos && \
     pip install tqdm
 
 ARG GITHUB_TOKEN
@@ -47,7 +48,7 @@ RUN find /tmp/install -name '*.sh' -exec chmod a+x {} + && \
     rm -rf /tmp/install
 
 RUN git config --global --unset url."https://${GITHUB_TOKEN}@github.com/".insteadOf
-    
+
 COPY . /tmp/stegtest
 WORKDIR /tmp/stegtest
 RUN sudo pip3 install -e .

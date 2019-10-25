@@ -21,7 +21,7 @@ class CloackedPixel(Embeddor):
     @compatibility.register(compatibility.file_check, compatibility.png)
     def embed(self, path_to_input:str, path_to_output:str):
         commands = ['cloackedpixel', 'hide', path_to_input, self.secret_txt, self.password]
-        subprocess.run(' '.join(commands), shell=True)
+        subprocess.run(' '.join(commands), shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         output_file_name = path_to_input + '-stego.png'
         shutil.move(output_file_name, path_to_output)

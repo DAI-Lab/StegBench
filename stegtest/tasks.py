@@ -1,6 +1,7 @@
 import os
 import shutil
 import random
+import sys
 
 import stegtest.utils.filesystem as fs
 import stegtest.utils.lookup as lookup
@@ -11,15 +12,21 @@ from stegtest.types.generator import Generator
 from stegtest.types.analyzer import Analyzer 
 
 from os.path import abspath, join
-from multiprocessing import Pool
+from pathos.multiprocessing import ThreadPool as Pool
 from functools import partial
 
 def embed_external(input_partition, output_partition, embeddors, idx):
 	"""multiprocessing funtion for embedding"""
+	input_list = input_partition[idx]
+	output_list = output_partition[idx]
+	embeddor = embeddors[idx]
+
+	print('generating for embeddor: ' + str(embeddor.__class__.__name__) + ' on ' + str(len(input_list)) + ' files')
 	try:
-		embeddors[idx].embed_bulk(input_partition[idx], output_partition[idx])
+		embeddor.embed_bulk(input_list, output_list)
 		return True
 	except:
+		print("Unexpected error:", sys.exc_info()[0])
 		return False
 
 class DefaultGenerator(Generator):
@@ -83,10 +90,8 @@ class DefaultGenerator(Generator):
 		embed_bulk = partial(embed_external, input_partition, output_partition, self.embeddors)
 		embeddor_idx = list(range(len(self.embeddors)))
 
-		pool = Pool()
-		embed_results = pool.map(embed_bulk, embeddor_idx)
-		pool.close()
-		pool.join()
+		pool = Pool().map
+		embed_results = pool(embed_bulk, embeddor_idx)
 
 		partition = [[(input_partition[idx][i], output_partition[idx][i], embeddor_names[idx][0]) for i in range(len(input_partition[idx]))] for idx in range(num_embeddors)]
 		db_uuid = processor.process_steganographic_directory(output_directory, partition, embeddor_set_uuid, source_db)
@@ -95,7 +100,9 @@ class DefaultGenerator(Generator):
 
 def analyze_detector(input_list, detector):
 	"""analyzes a detector on a specific list"""
-	results = detector.detect_bulk(input_list)
+	print('detecting for: ' + str(detector.__class__.__name__) + ' on ' + str(len(input_list)) + ' files')
+	directory = fs.get_directory(input_list[0]) #some sort of check here?
+	results = detector.detect_bulk(input_list, path_to_directory=directory)
 	return results
 
 
@@ -127,14 +134,12 @@ class DefaultAnalyzer(Analyzer):
 		analyze_cover = partial(analyze_detector, cover_files)
 		analyze_stego = partial(analyze_detector, stego_files)
 
-		pool = Pool()
+		pool = Pool().map
 		print('processing cover results...')
-		cover_results = pool.map(analyze_cover, self.detectors)
+		cover_results = pool(analyze_cover, self.detectors)
+		print(cover_results)
 		print('processing stego results...')
-		stego_results = pool.map(analyze_stego, self.detectors)
-		pool.close()
-		pool.join()
-
+		stego_results = pool(analyze_stego, self.detectors)
 		print('calcualating statistics...')
 		detector_names = self.detector_set[lookup.detector]
 		statistics = algo.calculate_statistics(detector_names, cover_results, stego_results)
@@ -143,6 +148,7 @@ class DefaultAnalyzer(Analyzer):
 			output_directory = lookup.get_tmp_directories()[lookup.detector]
 			output_file_name = fs.create_file_from_hash(testdb_uuid + self.detector_set[lookup.uuid_descriptor], 'csv')
 
+			
 			output_file_path = abspath(join(output_directory, output_file_name))
 
 			statistics_header = [lookup.get_statistics_header()]

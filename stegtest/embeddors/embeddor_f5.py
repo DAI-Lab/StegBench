@@ -16,4 +16,4 @@ class F5(Embeddor):
 	def embed(self, path_to_input:str, path_to_output:str):
 	    commands = ['f5 -t e -i', path_to_input, '-o', path_to_output, '-d', self.secret_txt]
 
-	    subprocess.run(' '.join(commands), shell=True)
+	    subprocess.run(' '.join(commands), shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

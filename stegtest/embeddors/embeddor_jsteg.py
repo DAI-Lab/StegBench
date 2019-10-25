@@ -18,5 +18,5 @@ class JSteg(Embeddor):
 
 	@compatibility.register(compatibility.file_check, compatibility.jpeg, compatibility.jpg)
 	def embed(self, path_to_input:str, path_to_output:str):
-	    commands = ['jsteg', 'hide', path_to_input, self.secret_txt, path_to_output]
-	    subprocess.run(' '.join(commands), shell=True)
+		commands = ['jsteg', 'hide', path_to_input, self.secret_txt, path_to_output]
+		subprocess.run(' '.join(commands), shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

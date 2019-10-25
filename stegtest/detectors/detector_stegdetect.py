@@ -11,7 +11,7 @@ from stegtest.types.detector import Detector
 """UNMAINTAINED"""
 
 class StegDetect(Detector):
-    """Statisticl Detector"""
+    """Statistical Detector"""
     def __init__(self, *args):
         super().__init__()
 

@@ -18,4 +18,4 @@ class LSB(Embeddor):
 	@compatibility.register(compatibility.file_check, compatibility.png, compatibility.bmp)
 	def embed(self, path_to_input:str, path_to_output:str):
 	    commands = ['LSBSteg', 'encode', '-i', path_to_input, '-o', path_to_output, '-f', self.secret_txt]
-	    subprocess.run(' '.join(commands), shell=True)
+	    subprocess.run(' '.join(commands), shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

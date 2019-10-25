@@ -146,12 +146,12 @@ def info(ctx, all, db, embeddor, detector):
 
     if all or db:
         click.echo(breaker)
-        click.echo('Source Databases processed: ')
-        db_info = lookup.get_all_dbs()
 
+        db_info = lookup.get_all_dbs()
         source_db = list(filter(lambda d: len(d.keys()) == len(lookup.db_header), db_info))
         steganographic_db = list(filter(lambda d: len(d.keys()) == len(lookup.steganographic_header), db_info))
 
+        click.echo('Source Databases processed: (' + str(len(source_db)) + ')')
         for db in source_db: 
             click.echo('\t' + str(db[lookup.db_descriptor]))
             click.echo('\t\t' + 'UUID: ' + str(db[lookup.uuid_descriptor]))
@@ -159,7 +159,7 @@ def info(ctx, all, db, embeddor, detector):
             click.echo('\t\t' + 'Image Types: ' + str(db[lookup.compatible_descriptor]))
         click.echo(breaker)
 
-        click.echo('Steganographic Databases processed: ')
+        click.echo('Steganographic Databases processed: (' + str(len(steganographic_db)) + ')')
         for db in steganographic_db: 
             click.echo('\t' + 'UUID: ' + str(db[lookup.uuid_descriptor]))
             click.echo('\t\t' + 'Source DB: ' + str(db[lookup.source_db]))
@@ -169,16 +169,16 @@ def info(ctx, all, db, embeddor, detector):
 
     if all or embeddor:
         click.echo(breaker)
-        click.echo('Embeddors available: ')
         embeddor_info = algo.get_all_algorithms(lookup.embeddor)
+        click.echo('Embeddors available: (' + str(len(embeddor_info)) + ')')
         for embeddor in embeddor_info:
             click.echo('\t' + str(embeddor[lookup.algorithm_name]))
             click.echo('\t\t' + ' Description: ' + str(embeddor[lookup.description]))
             click.echo('\t\t' + ' Compatible Types: ' + str(embeddor[lookup.compatibile_types_decorator]))
         click.echo(breaker)
 
-        click.echo('Embeddor sets available: ')
         embeddor_set_info = algo.get_all_algorithm_sets(lookup.embeddor)
+        click.echo('Embeddor sets available: (' + str(len(embeddor_set_info.keys())) + ')')
         for uuid in embeddor_set_info.keys():
             embeddor_set = embeddor_set_info[uuid]
             click.echo('\tUUID: ' + uuid)
@@ -188,16 +188,16 @@ def info(ctx, all, db, embeddor, detector):
 
     if all or detector:
         click.echo(breaker)
-        click.echo('Detectors available: ')
         detector_info = algo.get_all_algorithms(lookup.detector)
+        click.echo('Detectors available: (' + str(len(detector_info)) + ')')
         for detector in detector_info:
             click.echo('\t' + str(detector[lookup.algorithm_name]))
             click.echo('\t\t' + ' Description: ' + str(detector[lookup.description]))
             click.echo('\t\t' + ' Compatible Types: ' + str(detector[lookup.compatibile_types_decorator]))
         click.echo(breaker)
 
-        click.echo('Detector sets available: ')
         detector_set_info = algo.get_all_algorithm_sets(lookup.detector)
+        click.echo('Detector sets available: (' + str(len(detector_set_info.keys())) + ')')
         for uuid in detector_set_info.keys():
             detector_set = detector_set_info[uuid]
             click.echo('\tUUID: ' + uuid)

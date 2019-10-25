@@ -20,4 +20,4 @@ class StegHide(Embeddor):
     @compatibility.register(compatibility.file_check, compatibility.jpeg, compatibility.jpg, compatibility.bmp)
     def embed(self, path_to_input:str, path_to_output:str):
         commands = ['steghide embed -f -ef', self.secret_txt, '-cf', path_to_input, '-p', self.password, '-sf', path_to_output]
-        subprocess.run(' '.join(commands), shell=True)
+        subprocess.run(' '.join(commands), shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

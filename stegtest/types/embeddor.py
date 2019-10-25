@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from pathos.multiprocessing import ProcessingPool as Pool
+from functools import partial
 
 class Embeddor(ABC):
 
@@ -15,9 +17,5 @@ class Embeddor(ABC):
         raise NotImplementedError
 
     def embed_bulk(self, input_list, output_list):
-    	assert(len(input_list) == len(output_list))
-
-    	num_images = len(input_list)
-
-    	for i in range(num_images): #TODO parallelize this code a lot
-    		self.embed(input_list[i], output_list[i])
+        pool = Pool().map
+        pool(self.embed, input_list, output_list)

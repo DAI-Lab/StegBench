@@ -245,13 +245,14 @@ def calculate_statistics(detector_names, all_cover_results, all_stego_results, p
 	assert(len(all_cover_results) == len(all_stego_results) and len(all_cover_results) == len(detector_names))
 	# print(all_cover_results)
 	# print(all_stego_results)
+	print(all_cover_results)
 	all_results = []
 
 	for idx, detector_info in enumerate(detector_names):
 		#TODO get rid of this sort of referencing
 		detector_name = detector_info[0]
-		cover_results = [1 if result[1] else 0 for result in all_cover_results[idx]]
-		stego_results = [1 if result[1] else 0 for result in all_stego_results[idx]]
+		cover_results = [1 if result else 0 for result in all_cover_results[idx]]
+		stego_results = [1 if result else 0 for result in all_stego_results[idx]]
 
 		if paired:
 			assert(len(cover_results) == len(stego_results))

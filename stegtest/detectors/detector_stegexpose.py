@@ -1,16 +1,18 @@
 import subprocess
 import stegtest.types.compatibility as compatibility
+import stegtest.utils.filesystem as fs
 from stegtest.types.detector import Detector
+
+
+def generate_csv_file():
+    """generates a csv file for stegexpose results"""
+    return fs.create_file_from_hash(fs.get_uuid(), 'csv')
 
 class StegExpose(Detector):
     """Sample Pairs, RS Analysis, Chi Square Attack, Primary Sets"""
 
     def __init__(self):
         super().__init__()
-
-    def generate_csv_file(self, path_to_directory):
-        #some sort of hash
-        return 'default'
 
     def train(self, path_to_directory):
         pass
@@ -20,17 +22,24 @@ class StegExpose(Detector):
         #TODO -- need to move the image to it's own localized directory
         #read the csv results
         #return the csv results
+        commands = ['java -jar', '/usr/bin/StegExpose.jar', path_to_input, 'default', 'default']
+        commands.append(generate_csv_file())
+
+        subprocess.run(' '.join(commands), shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def detect_bulk(self, input_list, path_to_directory):
+        assert(path_to_directory is not None)
         commands = ['java -jar', '/usr/bin/StegExpose.jar', path_to_directory, 'default', 'default']
-        if self.output_csv:
-            commands.append(generate_csv_file(path_to_directory))
+        csv_file = generate_csv_file() 
+        commands.append(csv_file)
 
-        subprocess.run(commands)
+        subprocess.run(' '.join(commands), shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    def detect_bulk(self, input_list, path_to_directory=None):
-        commands = ['java -jar', '/usr/bin/StegExpose.jar', path_to_directory, 'default', 'default']
-        if self.output_csv:
-            commands.append(generate_csv_file(path_to_directory))
+        csv_results = fs.read_csv_file(csv_file)
+        csv_results = csv_results[1:] #get rid of header
+        csv_results = [result[1] for result in csv_results]
+        csv_results = [True if result=='true' else False for result in csv_results]
 
-        subprocess.run(commands)
+        fs.remove_file(csv_file)
 
-        results = [True for i in range(len(input_list))] #default for now
+        return csv_results
