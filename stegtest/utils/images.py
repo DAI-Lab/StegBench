@@ -83,6 +83,11 @@ def get_image_info(path_to_file):
 	width, height = im.size
 	channels = im.mode
 
+
+	##TODO Need to get im.quantization information possibly at different quantization levels (0, 25, 50, 75, 100)
+	##need to calculat the nonzero AC DCT coefficients (each 8x8 block has 63 of these coefficients)
+	# print(im.quantization)
+
 	info_dict = collections.OrderedDict()
 	info_dict[lookup.file_path] = path_to_file 
 	info_dict[lookup.image_type] = img_type 

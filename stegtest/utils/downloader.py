@@ -28,21 +28,22 @@ def download_routine(name, *args):
 	"""downloads using a specified routing"""
 	db_routines = get_download_routines() 
 	assert(name in db_routines.keys())
-	dataset_folder = lookup.get_tmp_directories()
+	dataset_folder = lookup.get_db_dirs()[lookup.dataset]
 	
-	download_directory = db_routines[name](dataset_folder[lookup.db], *args)
-	processor.process_image_directory(download_directory, name, lookup.crop, None)
+	download_directory = db_routines[name](dataset_folder, *args)
+	processor.process_image_directory(download_directory, name, None, None)
 
 def download_from_file(file, name, header=False):
 	"""downloads from a properly formatted file"""
+	raise NotImplementedError
 	file_data = fs.read_csv_file(file)
 
 	db_name = name
 	if name is None:
 		db_name = fs.get_uuid()
 
-	dataset_folder = lookup.get_tmp_directories()
-	download_directory = join(dataset_folder[lookup.db], db_name)
+	dataset_folder = lookup.get_db_dirs()[lookup.dataset]
+	download_directory = join(dataset_folder, db_name)
 	fs.make_dir(download_directory)
 
 	if header:

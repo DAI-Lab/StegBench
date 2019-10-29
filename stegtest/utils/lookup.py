@@ -15,26 +15,29 @@ tmp = 'tmp'
 
 #TOP DIRECTORY
 stegtest_tld = 'stegtest_asssets'
-directories_file = 'directories.csv'
 
 #SUB-DIRECTORY TYPES#
-embeddor = join(stegtest_tld, 'embeddor')
-detector = join(stegtest_tld, 'detector')
-db = join(stegtest_tld, 'db')
+embeddor = 'embeddor'
+detector = 'detector'
+db = 'db'
 config = 'config'
+
+embeddor_dir = join(stegtest_tld, embeddor)
+detector_dir = join(stegtest_tld, detector)
+db_dir = join(stegtest_tld, db)
 
 #DB DIRECTORIES AND FILES
 dataset = 'datasets'
 metadata = 'metadata'
-source = 'source_info' #TO DELETE
-embedded = 'embedded_info' #TO DELETE
 source_db_file = 'source.csv'
 embedded_db_file = 'embedded.csv'
+db_file = 'db.csv'
 
 #ALGORITHM DIRECTORIES AND FILES
 assets = 'assets'
-sets = 'sets'
-sets_master_file = 'sets.csv'
+sets_dir = 'sets'
+embeddors_set_dir = 'embeddors_sets'
+detectors_set_dir = 'detectors_sets'
 embeddors_file = 'embeddors.csv'
 detectors_file = 'detectors.csv'
 
@@ -57,18 +60,22 @@ source_embeddor_set = 'Source Embeddor Set'
 name_descriptor = 'Name'
 path_descriptor = 'Path'
 uuid_descriptor = 'UUID'
-compatible_descriptor = 'Compatible Types'
+compatible_descriptor = 'compatible_types'
+embedding_descriptor = 'max_embedding_ratio'
+
 filepath_descriptor = 'Filepath'
 db_descriptor = 'DB Name'
 db_image_count = 'Number of Images'
 
 #FILE HEADERS
-directories_header = [name_descriptor, path_descriptor]
-embeddor_header = [uuid_descriptor, compatible_descriptor, filepath_descriptor] 
-detector_header = [uuid_descriptor, compatible_descriptor, filepath_descriptor]
+
+master_algo_header = [uuid_descriptor, name_descriptor, filepath_descriptor] #points to a config file
+individual_set_header = [uuid_descriptor] #points to a master algo
+master_set_header = [uuid_descriptor, filepath_descriptor] #points to an individual set
+
+
 db_header = [uuid_descriptor, db_descriptor, db_image_count, compatible_descriptor]
 steganographic_header = [uuid_descriptor, source_db, source_embeddor_set, db_image_count, compatible_descriptor]
-algo_header = [uuid_descriptor, name_descriptor, compatible_descriptor, filepath_descriptor]
 
 #ALGORITHM TYPES
 algorithm_name = 'name'
@@ -100,61 +107,31 @@ crop = 'crop'
 resize = 'resize'
 rotate = 'rotate'
 
-#TO DELETE
-# def get_master_files():
-# 	master_files = {binding: join(binding, master_file) for binding in get_top_level_directories().values()}
-
-# 	db_directories = get_db_directories()
-# 	dataset_master_files = {binding: join(db_directories[binding], master_file) for binding in db_directories}
-
-# 	master_files.update(dataset_master_files)
-# 	return master_files
-
-# def get_db_directories():
-# 	return {
-# 	dataset: join(db, dataset), 
-# 	source: join(db, source), 
-# 	embedded: join(db, embedded),
-# 	}
-
-# def get_tmp_directories():
-# 	tld = get_top_level_directories()
-# 	tmp_directories = {tl: join(tl, tmp) for tl in tld}
-
-# 	return tmp_directories
-
-# def get_asset_directories():
-# 	tld = get_top_level_directories()
-# 	asset_directories = {tl: join(tl, assets) for tl in tld}
-
-# 	return asset_directories
-
-
-####TODO FIX HEADER NAMING CONVENTION. reorg the structure here for better naming
-
-def get_stegtest_dir_files():
-	return {directories_file: join(stegtest_tld, directories_file)}
-
 def get_top_level_dirs():
-	return {embeddor: embeddor, db: db, detector:detector}
+	return {embeddor: embeddor_dir, db: db_dir, detector:detector_dir}
 
 def get_db_dirs():
-	return {dataset: join(db, dataset), metadata: join(db, metadata)}
+	return {dataset: join(db_dir, dataset), metadata: join(db_dir, metadata)}
 
 def get_db_files():
-	return {source_db_file: join(db, source_db_file), embedded_db_file: join(db, embedded_db_file)}
+	return {source_db_file: join(db_dir, source_db_file), embedded_db_file: join(db_dir, embedded_db_file)}
 
 def get_algo_asset_dirs():
-	return {embeddor: join(embeddor, assets), detector: join(detector, assets)}
+	return {embeddor: join(embeddor_dir, assets), detector: join(detector_dir, assets)}
 
 def get_algo_set_dirs():
-	return {embeddor: join(embeddor, sets), detector: join(detector, sets)}
-
-def get_algo_set_files():
-	return {embeddor: join(embeddor, sets_master_file), detector: join(detector, sets_master_file)}
+	return {embeddor: join(embeddor_dir, sets_dir), detector: join(detector_dir, sets_dir)}
 
 def get_algo_master_files():
-	return {embeddors_file: join(embeddor, embeddors_file), detectors_file: join(detector, detectors_file)}
+	return {embeddor: embeddors_file, detector: detectors_file}
+
+def get_all_files():
+	return {
+		embeddors_file: join(embeddor_dir, embeddors_file),
+		detectors_file: join(detector_dir, detectors_file),
+		source_db_file: join(db_dir, source_db_file),
+		embedded_db_file: join(db_dir, embedded_db_file),
+	}
 
 def get_all_dirs():
 	top_level_dirs = list(get_top_level_dirs().values())
@@ -166,14 +143,10 @@ def get_all_dirs():
 
 def get_master_header(type:str):
 	return {
-		 embeddor: embeddor_header,
-		 detector: detector_header,
-		 embeddors_file: algo_header,
-		 detectors_file: algo_header,
+		 embeddors_file: master_algo_header,
+		 detectors_file: master_algo_header,
 		 source_db_file: db_header,
 		 embedded_db_file: steganographic_header,
-		 directories_file: directories_header,
-
 	}[type]
 
 def get_parameter_type(type):
@@ -230,13 +203,13 @@ def create_asset_file(type:str, content:str, shortened:bool=False):
 	return file_path
 
 def get_all_source_dbs():
-	source_master_file = get_master_files()[source]
+	source_master_file = get_db_files()[source_db_file]
 	source_rows = fs.read_csv_file(source_master_file, return_as_dict=True)
 
 	return source_rows
 
 def get_all_embedded_dbs():
-	embedded_master_file = get_master_files()[embedded]
+	embedded_master_file = get_db_files()[embedded_db_file]
 	embedded_rows = fs.read_csv_file(embedded_master_file, return_as_dict=True)
 
 	return embedded_rows
@@ -373,38 +346,10 @@ def initialize_filesystem(directory, config_directory=None): #TODO need to remov
 	for directory in directories:
 		fs.make_dir(directory)
 
-	print('initializing directory file...')
-	directory_files = get_stegtest_dir_files()
-	for file_type in directory_files.keys():
-		path_to_master_file = directory_files[file_type]
-		master_file_header = get_master_header(file_type)
-
-		data = [master_file_header]
-		if config_directory:
-			data.append([config, config_directory])
-
-		fs.write_to_csv_file(path_to_master_file, data)
-
-	print('initializing algo set files...')
-	algo_files = get_algo_set_files()
+	print('initializing all files...')
+	algo_files = get_all_files()
 	for file_type in algo_files.keys():
 		path_to_master_file = algo_files[file_type]
-		master_file_header = get_master_header(file_type)
-
-		fs.write_to_csv_file(path_to_master_file, [master_file_header])
-
-	print('initializing algo master files...')
-	algo_files = get_algo_master_files()
-	for file_type in algo_files.keys():
-		path_to_master_file = algo_files[file_type]
-		master_file_header = get_master_header(file_type)
-
-		fs.write_to_csv_file(path_to_master_file, [master_file_header])
-
-	print('initializing db master files...')
-	db_files = get_db_files()
-	for file_type in db_files.keys():
-		path_to_master_file = db_files[file_type]
 		master_file_header = get_master_header(file_type)
 
 		fs.write_to_csv_file(path_to_master_file, [master_file_header])

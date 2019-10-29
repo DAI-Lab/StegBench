@@ -54,9 +54,10 @@ def modify_images(input_directory, operation, args):
 	input_directory = abspath(input_directory)
 	file_names = [f for f in listdir(input_directory) if img.is_image_file(join(input_directory, f))]
 
-	tmp_directory = lookup.get_tmp_directories()[lookup.db]
+	dataset_directory = lookup.get_db_dirs()[lookup.dataset]
+
 	output_directory_name = fs.get_uuid()
-	output_directory = join(tmp_directory, output_directory_name)
+	output_directory = join(dataset_directory, output_directory_name)
 	output_directory = abspath(output_directory)
 	fs.make_dir(output_directory)
 
@@ -75,16 +76,14 @@ def modify_images(input_directory, operation, args):
 
 def process_image_directory(path_to_directory, db_name, operation=None, args=None):
 	"""processes an image directory"""
-	db_master_file = lookup.get_master_files()[lookup.source]
-	dataset_directory = lookup.get_db_directories()[lookup.dataset]
+	source_master_file = lookup.get_all_files()[lookup.source_db_file]
+	metadata_directory = lookup.get_db_dirs()[lookup.metadata]
 
 	db_uuid = fs.get_uuid()
-
-	target_directory_name = fs.create_name_from_hash(db_uuid)
-	target_directory = join(dataset_directory, target_directory_name)
+	target_directory = join(metadata_directory, db_uuid)
 
 	assert(fs.dir_exists(path_to_directory))
-	assert(fs.dir_exists(dataset_directory))
+	assert(fs.dir_exists(metadata_directory))
 
 	absolute_path = abspath(path_to_directory)
 
@@ -103,52 +102,38 @@ def process_image_directory(path_to_directory, db_name, operation=None, args=Non
 	rows = [variables] + info_images
 
 	fs.make_dir(target_directory)
-	fs.write_to_csv_file(join(target_directory, lookup.master_file), rows)
+	fs.write_to_csv_file(join(target_directory, lookup.db_file), rows)
 
 	num_images = len(files)
 	compatible_types = list(compatible_types)
 
 	dataset_info = [(db_uuid, db_name, num_images, compatible_types)]
-	fs.write_to_csv_file(db_master_file, dataset_info)
+	fs.write_to_csv_file(source_master_file, dataset_info)
 
 def process_steganographic_directory(output_directory, partition, embeddor_set_uuid, db_source):
 	"""processes a steganographic directory"""
-	db_master_file = lookup.get_master_files()[lookup.embedded] #TODO fix the master file that we are writing to, TODO fix how we are pulling information
-	dataset_directory = lookup.get_db_directories()[lookup.dataset]
+	embedded_master_file = lookup.get_all_files()[lookup.embedded_db_file]
+	metadata_directory = lookup.get_db_dirs()[lookup.metadata]
 
 	db_uuid = fs.get_uuid()
 
 	target_directory_name = fs.create_name_from_hash(db_uuid)
-	target_directory = join(dataset_directory, target_directory_name)
+	target_directory = join(metadata_directory, target_directory_name)
 
 	assert(fs.dir_exists(output_directory))
-	assert(fs.dir_exists(dataset_directory))
+	assert(fs.dir_exists(metadata_directory))
 
 	info_images, compatible_types = process_steganographic_list(partition)
 	variables = lookup.get_steganographic_info_variables()
 	rows = [variables] + info_images
 
 	fs.make_dir(target_directory)
-	fs.write_to_csv_file(join(target_directory, lookup.master_file), rows)
+	fs.write_to_csv_file(join(target_directory, lookup.db_file), rows)
 
 	num_images = len(info_images)
 	compatible_types = list(compatible_types)
 
 	steganographic_dataset_info = [(db_uuid, db_source, embeddor_set_uuid, num_images, compatible_types)]
-	fs.write_to_csv_file(db_master_file, steganographic_dataset_info)
+	fs.write_to_csv_file(embedded_master_file, steganographic_dataset_info)
 
 	return db_uuid
-
-def add_embeddor_to_file(algorithm, weight, path_to_file):
-    """adds embeddor"""
-    assert(file_exists(path_to_file))
-
-    embeddor_info = lookup.lookup_embeddor(algorithm)
-    embeddor_info.append(weight)
-
-def add_detector_to_file(algorithm, path_to_file):
-    """adds embeddor"""
-    assert(file_exists(path_to_file))
-
-    detector_info = lookup.lookup_detector(algorithm)
-    fs.write_to_csv_file(path_to_file, detector_info)

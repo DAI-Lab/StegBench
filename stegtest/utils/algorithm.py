@@ -2,6 +2,7 @@ import inspect
 import ast
 import collections
 
+from collections import defaultdict
 import stegtest.embeddors as embeddors
 import stegtest.detectors as detectors
 import stegtest.utils.lookup as lookup
@@ -9,202 +10,127 @@ import stegtest.utils.filesystem as fs
 
 import math
 
+from os import listdir
 from os.path import abspath, join
 
-def create_algorithm_set(type:str, algorithm:str):
+def get_set_files(algorithm_type:str):
+	set_file_directory = lookup.get_algo_set_dirs()[algorithm_type]
+	sets = [{lookup.uuid_descriptor: fs.get_filename(file), lookup.filepath_descriptor: abspath(join(set_file_directory, file))} for file in listdir(set_file_directory)]
+
+	return sets
+
+def create_algorithm_set(algorithm_type:str, algorithm_uuid:str):
 	"""creates a new algorithm set"""
-	master_algorithm_file = lookup.get_master_files()[type] #master.csv to write to
-	new_uuid = fs.get_uuid()
+	#create set file
+	set_uuid = fs.get_uuid()
+	set_file_directory = lookup.get_algo_set_dirs()[algorithm_type]
+	individual_set_file_path = join(set_file_directory, fs.create_name_from_uuid(set_uuid, 'csv'))
 
-	#might have to write parameter values for instantiation and create file
-	#might want to move file name procedure to filesystem.py
-	file_directory = lookup.get_tmp_directories()[type]
-	file_name = fs.create_file_from_hash(new_uuid, 'csv')
-	file_path = abspath(join(file_directory, file_name))
-	fs.make_file(file_path)
+	fs.make_file(individual_set_file_path)
 
-	algorithm_info = get_algorithm_info(type, algorithm)
-	compatible_types = algorithm_info[lookup.compatibile_types_decorator]
+	#gets the data to write to the individual set file
+	file_header = lookup.individual_set_header
+	algorithm_info = get_algorithm_info(algorithm_type, algorithm_uuid)
+	data_to_write = [file_header, [algorithm_info[lookup.uuid_descriptor]]]
+	fs.write_to_csv_file(individual_set_file_path, data_to_write)
 
-	algorithm_data = [algorithm]
-	fs.write_to_csv_file(file_path, [algorithm_data])
+	return set_uuid
 
-	row_data = [(new_uuid, compatible_types, file_path)]
-	fs.write_to_csv_file(master_algorithm_file, row_data)
-
-	return new_uuid
-
-def add_to_algorithm_set(type: str, uuid:str, algorithm:str):
+def add_to_algorithm_set(algorithm_type: str, set_uuid:str, algorithm_uuid:str):
 	"""adds to the current algorithm set"""
-	master_algorithm_file = lookup.get_master_files()[type]
-	master_file_data = fs.read_csv_file(master_algorithm_file)
+	algorithm_set = get_algorithm_set(algorithm_type, set_uuid)
+	algorithm_info = get_algorithm_info(algorithm_type, algorithm_uuid)
+	
+	compatible_types_set = set(algorithm_set[lookup.compatible_descriptor])
+	compatible_types_algorithm = set(algorithm_info[lookup.compatible_descriptor])
+	new_compatible_types = list(compatible_types_set.intersection(compatible_types_algorithm))
 
-	algorithm_sets = master_file_data[1:]
+	all_set_files = get_set_files(algorithm_type)
+	specific_set_file = list(filter(lambda set_file: set_file[lookup.uuid_descriptor] == set_uuid, all_set_files))
 
-	uuid_set = list(filter(lambda r: r[0] == uuid, algorithm_sets))
-	assert(len(uuid_set) == 1)
+	if len(specific_set_file) != 1:
+		raise ValueError('uuid: ' + set_uuid + ' not found among algorithm sets of type: ' + algorithm_type)
 
-	algorithm_set = uuid_set[0] 
-	(uuid, compatible_types_set, file_name) = algorithm_set
-	compatible_types_set = ast.literal_eval(compatible_types_set)
+	specific_set_info = specific_set_file[0]
+	set_file_path = specific_set_info[lookup.filepath_descriptor]
 
-	algorithm_info = get_algorithm_info(type, algorithm)
-	compatible_types_algorithm = algorithm_info[lookup.compatibile_types_decorator]
+	algorithm_data = [[algorithm_info[lookup.uuid_descriptor]]]
+	fs.write_to_csv_file(set_file_path, algorithm_data)
 
-	new_compatible_types = set(compatible_types_set).intersection(set(compatible_types_algorithm))
-	new_compatible_types = list(new_compatible_types)
+	return set_uuid
 
-	if(len(new_compatible_types) == 0):
-		raise ValueError('This algorithm cannot be added since it does not work on compatible file types')
+def get_algorithm_set(algorithm_type:str, set_uuid:str): #MAKE THIS FASTER by just reading relevant info
+	all_algorithm_sets = get_all_algorithm_sets(algorithm_type)
+	filtered_set = list(filter(lambda algo_set: algo_set[lookup.uuid_descriptor] == set_uuid, all_algorithm_sets))
 
-	if len(new_compatible_types) != len(compatible_types_set):
-		def update_function(row):
-			(uuid_row, compatible_types_set, file_name) = row
-			if uuid_row == uuid:
-				compatible_types_set = new_compatible_types
+	if len(filtered_set) != 1:
+		raise ValueError('uuid: ' + set_uuid + ' not found among algorithm sets of type: ' + algorithm_type)
 
-			return (uuid_row, compatible_types_set, file_name)
+	return filtered_set[0]
 
-		master_file_data_modified = list(map(update_function, master_file_data))
-		fs.write_to_csv_file(master_algorithm_file, master_file_data_modified, override=True)
-
-	algorithm_data = [algorithm]
-	fs.write_to_csv_file(file_name, [algorithm_data])
-
-	return uuid
-
-def lookup_algorithm_set(type:str, uuid:str):
-	all_algorithm_sets = get_all_algorithm_sets(type)
-	if uuid not in all_algorithm_sets.keys():
-		raise ValueError('uuid not found in algorithm sets of type: ' + type)
-
-	found_set = all_algorithm_sets[uuid]
-	found_set[lookup.compatibile_types_decorator] = ast.literal_eval(found_set[lookup.compatibile_types_decorator])
-	found_set[lookup.uuid_descriptor] = uuid
-
-	return found_set
-
-def get_all_algorithm_sets(type:str):
+def get_all_algorithm_sets(algorithm_type:str):
 	"""gets info on all the current sets of specified type that are in fs"""
-	master_algorithm_file = lookup.get_master_files()[type]
-	master_file_data = fs.read_csv_file(master_algorithm_file)
-	row_data = master_file_data[1:]
+	set_files = get_set_files(algorithm_type)
+	all_algorithm_info = get_all_algorithms(algorithm_type)
+	set_file_data = []
+	for set_info in set_files:
+		algorithm_set = {}
+		algorithm_set[lookup.uuid_descriptor] = set_info[lookup.uuid_descriptor]
 
-	all_set_info = {}
-	for algorithm_set in row_data:
-		set_info_dict = {}
+		algorithm_uuid = fs.read_csv_file(set_info[lookup.filepath_descriptor], return_as_dict=True)
+		algorithm_uuid = list(map(lambda uuid_info: uuid_info[lookup.uuid_descriptor], algorithm_uuid))
+		filtered_algorithms = list(filter(lambda algo: algo[lookup.uuid_descriptor] in algorithm_uuid, all_algorithm_info))
 
-		(uuid, compatible_types_set, set_file_path) = algorithm_set
-		set_info = fs.read_csv_file(set_file_path)
+		compatible_types_list = list(map(lambda algo: set(algo[lookup.compatible_descriptor]), filtered_algorithms))
+		compatible_types = set.intersection(*compatible_types_list)
+		algorithm_set[lookup.compatible_descriptor] = compatible_types
 
-		set_info_dict[lookup.compatibile_types_decorator] = compatible_types_set
-		set_info_dict[type] = set_info
+		if algorithm_type == lookup.embeddor:
+			embedding_rate_list = list(map(lambda algo: algo[lookup.embedding_descriptor], filtered_algorithms))
+			embedding_rate = min(embedding_rate_list)
+			algorithm_set[lookup.embedding_descriptor] = embedding_rate
 
-		all_set_info[uuid] = set_info_dict
+		algorithm_set[algorithm_type] = filtered_algorithms
+		set_file_data.append(algorithm_set)
 
-	return all_set_info
+	return set_file_data
 
-def instantiate_algorithm(type:str, name_of_method:str):
-	"""returns an instantiated class with arguments args""" 
+def get_algorithm_info(algorithm_type:str, algorithm_uuid:str): #MAKE this faster by just reading relevant info
+	all_info = get_all_algorithms(algorithm_type)
+	filtered_info = list(filter(lambda config: config[lookup.uuid_descriptor] == algorithm_uuid, all_info))
 
-	#TODO THIS WILL BE THE DOCKER INSTANTIATION
-	assert(type is not None)
+	if len(filtered_info) != 1:
+		raise ValueError('uuid: ' + algorithm_uuid + ' not found among algorithms: ' + algorithm_type)
 
-	algorithm_source = None
-	if type == lookup.embeddor:
-		algorithm_source = embeddors
-	else:
-		algorithm_source = detectors
+	return filtered_info[0]
 
-	instance = getattr(algorithm_source, name_of_method)()
+def get_all_algorithms(algorithm_type:str):
+	master_file_name = lookup.get_algo_master_files()[algorithm_type]
+	master_file_path = lookup.get_all_files()[master_file_name]
 
-	return instance
+	all_info = fs.read_csv_file(master_file_path, return_as_dict=True)
 
-def instantiate_algorithm_set(type:str, algorithm_set):
-	algorithm_names = algorithm_set[type]
-	algorithm_instances = []
+	#group all config files and batch read all the information properly... 
+	sorted_by_config = defaultdict(list)
+	for algorithm in all_info:
+		sorted_by_config[algorithm[lookup.filepath_descriptor]].append(algorithm)
 
-	for idx, name in enumerate(algorithm_names):
-		algorithm_instances.append(instantiate_algorithm(type, name[0]))
+	all_info = []
+	for config_file in sorted_by_config.keys():
+		algo_info = sorted_by_config[config_file]
+		config_info = fs.read_config_file(config_file) #move this to config.py
+		for algo_dict in algo_info:
+			assert(algo_dict[lookup.name_descriptor] in config_info)
+			algo_info = config_info[algo_dict[lookup.name_descriptor]]
 
-	return algorithm_instances
+			algo_info[lookup.compatible_descriptor] = ast.literal_eval(algo_info[lookup.compatible_descriptor])
+			if lookup.embedding_descriptor in algo_info.keys():
+				algo_info[lookup.embedding_descriptor] = float(algo_info[lookup.embedding_descriptor])
 
-def get_algorithm_info(type:str, name_of_method:str, params_only=False):
-	info = get_all_algorithms(type)
-	matching_algorithm = list(filter(lambda d: d[lookup.algorithm_name] == name_of_method, info))
+			algo_dict.update(algo_info)
+			all_info.append(algo_dict)
 
-	#TODO error handling#
-	if not matching_algorithm:
-		return {}
-	else:
-		matching_algorithm = matching_algorithm[0]
-
-	if params_only:
-		return matching_algorithm[lookup.parameters]
-
-	return matching_algorithm
-
-def get_algorithm_names(type:str):
-	info = get_all_algorithms(type)
-	return list(map(lambda d: d[lookup.algorithm_name], info))
-
-def get_all_algorithms(type:str):
-	assert(type is not None)
-
-	algorithm_source = None
-	func_name = None
-	if type == lookup.embeddor:
-		algorithm_source = embeddors
-		func_name = lookup.embed_function
-	else:
-		algorithm_source = detectors
-		func_name = lookup.detect_function
-
-	algorithm_names = set(n for n in algorithm_source.__all__ if getattr(algorithm_source, n))
-	algorithm_info = []
-
-	for name in algorithm_names:
-		info = {}
-		info[lookup.algorithm_name] = name
-
-		#get compatible image types 
-		algorithm_class = getattr(algorithm_source, name)
-		steganographic_function = getattr(algorithm_class, func_name)
-		
-		info[lookup.description] = algorithm_class.__doc__
-		info[lookup.compatibile_types_decorator] = lookup.get_compatible_types(steganographic_function)
-
-		args = inspect.signature(steganographic_function)
-		parameters = list((tuple(args.parameters.values())))
-		parameters_dict = collections.OrderedDict()
-		parameters_without_self = list(filter(lambda p: p.name not in ['self', 'path_to_input', 'path_to_output'], parameters))
-
-		for parameter in parameters_without_self:
-			parameter_name = parameter.name
-			parameter_type = parameter.annotation.__name__
-
-			parameters_dict[parameter_name] = parameter_type
-
-		info[lookup.parameters]= parameters_dict
-
-		algorithm_info.append(info)
-
-	return algorithm_info
-
-
-def get_all_algorithms_config():
-	assert(type is not None)
-	raise NotImplementedError
-
-	#gets the config directory
-	#reads the directory for information on the config file
-	#loads the config file 
-	#reads information on files present and returns in a reasonable way including params list
-	#config_directory = lookup.get_directory_path(lookup.config), give informationo on where the config directory is located
-	#config_files = get_config_files(config_directory)
-	#configs_json = [fs.read_json_file(file_path) for file_path in config_files]
-
-	#reads configs_json and gets relevant information. for now we can just return it.
+	return all_info
 
 """"TODO calculate accuracy scores"""
 
@@ -271,3 +197,7 @@ def calculate_statistics(detector_names, all_cover_results, all_stego_results, p
 		all_results.append(results)
 
 	return all_results
+
+
+
+

@@ -5,65 +5,105 @@ import stegtest.utils.filesystem as fs
 import stegtest.utils.lookup as lookup
 import stegtest.utils.bash as bash
 
+import configparser
+
 #METADATA
-METADATA = 'METADATA'
-NAME = 'NAME'
-TYPE = 'TYPE'
-COMPATIBLE_TYPES  = 'COMPATIBLE_TYPES'
-APPLICATION_TYPE = 'APPLICATION_TYPE'
+ALGORITHM_TYPE = 'algorithm_type'
+COMMAND_TYPE = 'command_type'
+COMPATIBLE_TYPES  = 'compatible_types'
+MAX_EMBEDDING_RATIO = 'max_embedding_ratio'
 
-#FLAGS
-FLAGS = 'FLAGS'
-BATCH_PROCESSING_FLAG = 'BATCH_PROCESSING_FLAG'
-SINGLE_PROCESSING_FLAG = 'SINGLE_PROCESSING_FLAG'
+#APPLICATION_SPECIFIC
+DOCKER_IMAGE = 'docker_image'
 
-#INSTALL
-INSTALL = 'INSTALL'
-DOWNLOAD_CMD = 'DOWNLOAD_CMD'
-INSTALL_CMD = 'INSTALL_CMD'
+#COMMAND SPECIFIC - COVER
+INPUT_IMAGE_DIRECTORY = 'INPUT_DIRECTORY'
+INPUT_IMAGE_NAME = 'INPUT_IMAGE_NAME'
+INPUT_IMAGE_PATH = 'INPUT_IMAGE_PATH'
 
-#RUN
-RUN = 'RUN'
-SINGLE_PROCESSING_CMD = 'SINGLE_PROCESSING_CMD'
-BATCH_PROCESSING_CMD = 'BATCH_PROCESSING_CMD'
+#COMMAND SPECIFIC - SECRET MESSAGE
+SECRET_TXT_PLAINTEXT = 'SECRET_TXT_PLAINTEXT'
+SECRET_TXT_FILE = 'SECRET_TXT_FILE'
 
-#PARAMS
-PARAMS = 'PARAMS'
-RANGE = 'RANGE'
+#COMMAND-SPECIFIC - SUPPORTED INPUT PARAMETERS
+PASSWORD = 'PASSWORD'
+BPP = 'BPP'
+bpnzAC = 'BPNZAC'
 
-#DEFAULT VALUES
-NONE = 'NONE'
-DOCKER_DEFAULT = 'DOCKER_DEFAULT'
+#COMMAND-SPECIFIC - OUTPUT
+OUTPUT_DIRECTORY = 'OUTPUT_DIRECTORY'
+OUTPUT_FILE_NAME = 'OUTPUT_FILE_NAME'
+OUTPUT_FILE_PATH = 'OUTPUT_FILE_PATH'
 
-config_template = {
-	METADATA: [NAME, TYPE, COMPATIBLE_TYPES, APPLICATION_TYPE],
-	FLAGS: [BATCH_PROCESSING_FLAG, SINGLE_PROCESSING_FLAG],
-	INSTALL: [DOWNLOAD_CMD, INSTALL_CMD],
-	RUN: [SINGLE_PROCESSING_CMD, BATCH_PROCESSING_CMD],
-	PARAMS: [PARAMS, RANGE]
-}
+# #FLAGS
+# FLAGS = 'FLAGS'
+# BATCH_PROCESSING_FLAG = 'BATCH_PROCESSING_FLAG'
+# SINGLE_PROCESSING_FLAG = 'SINGLE_PROCESSING_FLAG'
+
+# #INSTALL
+# INSTALL = 'INSTALL'
+# DOWNLOAD_CMD = 'DOWNLOAD_CMD'
+# INSTALL_CMD = 'INSTALL_CMD'
+
+# #RUN
+# RUN = 'RUN'
+# SINGLE_PROCESSING_CMD = 'SINGLE_PROCESSING_CMD'
+# BATCH_PROCESSING_CMD = 'BATCH_PROCESSING_CMD'
+
+# #PARAMS
+# PARAMS = 'PARAMS'
+# RANGE = 'RANGE'
+
+# #DEFAULT VALUES
+# NONE = 'NONE'
+# DOCKER_DEFAULT = 'DOCKER_DEFAULT'
+
+# config_template = {
+# 	METADATA: [NAME, TYPE, COMPATIBLE_TYPES, APPLICATION_TYPE],
+# 	FLAGS: [BATCH_PROCESSING_FLAG, SINGLE_PROCESSING_FLAG],
+# 	INSTALL: [DOWNLOAD_CMD, INSTALL_CMD],
+# 	RUN: [SINGLE_PROCESSING_CMD, BATCH_PROCESSING_CMD],
+# 	PARAMS: [PARAMS, RANGE]
+# }
+
+
+#META
 
 #need a way to define the possible values 
 #APPLICATION_TYPES = 'PYTHON', 'DOCKER', 'BASH'
 #COMPATIBLE_TYPES = ''
 
 def is_config_file(file):
-	return fs.get_extension(file) == '.json'
+	return fs.get_extension(file) == '.ini'
 
-def process_embeddor(embeddors_json):
-	print('embeddors', embeddors_json)
-	raise NotImplementedError
+def process_embeddor(embeddors_dict, config_file_path):
+	embeddor_file = lookup.get_all_files()[lookup.embeddors_file]
+	data_to_write = []
+	for name in embeddors_dict.keys():
+		embeddor_data = embeddors_dict[name]
+		data = [fs.get_uuid(), name, config_file_path]
 
-def process_detector(detectors_json):
-	print('detectors', detectors_json)
-	raise NotImplementedError
+		data_to_write.append(data)
 
-def process_configs(stegtest_directory, configs_json):
-	embeddors_json = list(filter(lambda config: config[METADATA][0][TYPE] == lookup.embeddor, configs_json))
-	detectors_json = list(filter(lambda config: config[METADATA][0][TYPE] == lookup.detector, configs_json))
+	fs.write_to_csv_file(embeddor_file, data_to_write)
 
-	process_embeddor(embeddors_json)
-	process_detector(detectors_json)
+def process_detector(detectors_dict, config_file_path):
+	detector_file = lookup.get_all_files()[lookup.detectors_file]
+	data_to_write = []
+	for name in detectors_dict.keys():
+		detector_data = detectors_dict[name]
+		data = [fs.get_uuid(), name, detector_data[COMPATIBLE_TYPES], config_file_path]
+
+		data_to_write.append(data)
+
+	fs.write_to_csv_file(detector_file, data_to_write)
+
+def process_configs(stegtest_directory, config_dict, config_file_path):
+	config_embeddors = {k:v for (k,v) in config_dict.items() if config_dict[k][ALGORITHM_TYPE] == lookup.embeddor}
+	config_detectors = {k:v for (k,v) in config_dict.items() if config_dict[k][ALGORITHM_TYPE] == lookup.detector}
+
+	process_embeddor(config_embeddors, config_file_path)
+	process_detector(config_detectors, config_file_path)
 
 def get_config_files(config_directory):
 	assert(fs.dir_exists(config_directory))
@@ -72,11 +112,13 @@ def get_config_files(config_directory):
 
 def initialize_configs(stegtest_directory, config_directory):
 	config_files = get_config_files(config_directory)
-	configs_json = [fs.read_json_file(file_path) for file_path in config_files]
+	config_dict = [(fs.read_config_file(file_path), abspath(file_path)) for file_path in config_files]
 
-	process_configs(stegtest_directory, configs_json)
+	for file_path in config_files:
+		config_dict = fs.read_config_file(file_path)
+		abs_file_path = abspath(file_path)
 
-	return configs_json
+		process_configs(stegtest_directory, config_dict, abs_file_path)
 
 def build_configs(configs):
 	for config in configs:

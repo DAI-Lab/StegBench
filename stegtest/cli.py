@@ -60,7 +60,7 @@ def start(ctx):
 @click.option('-d', '--directory', help='directory to save configs to', type=str)
 @click.pass_context
 def create_config(ctx, directory):
-    """initializes stegtest configurations"""
+    """creates configuration files"""
     # params_to_request = config.get_needed_parameters()
     # requested_parameters = request_parameters(params_to_request)
     if directory is None:
@@ -69,10 +69,20 @@ def create_config(ctx, directory):
     config_creator.create_config_file_default(directory, None)
 
 @pipeline.command()
+@click.option('-c', '--config', help='path to config file', type=str)
+@click.pass_context
+def create_config(ctx, config):
+    """adds stegtest configuration"""
+    # params_to_request = config.get_needed_parameters()
+    # requested_parameters = request_parameters(params_to_request)
+    raise NotImplementedError
+
+
+@pipeline.command()
 @click.option('-c', '--configs', help='directory to pull configs from', type=str)
 @click.option('-d', '--directory', help='directory to initalize files in', type=str)
 @click.pass_context
-def initialize_config(ctx, configs, directory):
+def initialize(ctx, configs, directory):
     """initializes stegtest configurations"""
     # if directory is not None:
     #     cwd = directory
@@ -80,36 +90,11 @@ def initialize_config(ctx, configs, directory):
     #     cwd = os.getcwd()
 
     # lookup.initialize_filesystem(cwd)
-
-
     if directory is None:
         directory = os.getcwd()
 
     lookup.initialize_filesystem(directory, configs)
     config_info = config_processor.initialize_configs(directory, configs)
-
-@pipeline.command()
-@click.option('-a', '--all', help='shows all available information', is_flag=True, default=False)
-@click.option('-db', '--db', help='database info', is_flag=True, default=False)
-@click.option('-e', '--embeddor', help='embeddor info', is_flag=True, default=False)
-@click.option('-d', '--detector', help='detector info', is_flag=True, default=False)
-@click.pass_context
-def info_config(ctx, all, db, embeddor, detector):
-    """retrieves info on stegtest configurations"""
-    raise NotImplementedError
-
-
-@pipeline.command()
-@click.option('-d', '--directory', help='directory to initalize stegtest files in', type=str, )
-@click.pass_context
-def initialize(ctx, directory):
-    """initializes stegtest filesystem"""
-    if directory is not None:
-        cwd = directory
-    else:
-        cwd = os.getcwd()
-
-    lookup.initialize_filesystem(cwd)
 
 #TODO downloads a certain database to a specific directory. Renames files. Adds some sort of metadata list a .txt file at the top. Adds 
 @pipeline.command()
@@ -137,8 +122,7 @@ def process(ctx, directory, name, operation):
     pr.process_image_directory(directory, name, operation, None)
 
 @pipeline.command()
-@click.option('-a', '--algorithm', help='specify an embedding routine', type=click.Choice(algo.get_algorithm_names(lookup.embeddor)))
-# @click.option('-w', '--weight', help='weight indicates embeddors weight for db generation', type=float) #TODO for v1.
+@click.option('-a', '--algorithm', help='specify an embedding routine by uuid', type=str)
 @click.option('-n', '--new', help='set new for a new embeddor set', is_flag=True, default=False)
 @click.option('-u', '--uuid', help='specifies an existing embeddor set')
 @click.pass_context
@@ -157,7 +141,7 @@ def add_embeddor(ctx, algorithm, new, uuid):
     click.echo(message + uuid)
 
 @pipeline.command()
-@click.option('-a', '--algorithm', type=click.Choice(algo.get_algorithm_names(lookup.detector)))
+@click.option('-a', '--algorithm', type=str)
 @click.option('-n', '--new', help='set new for a new detector set', is_flag=True, default=False, )
 @click.option('-u', '--uuid', help='specifies an existing embeddor set')
 @click.pass_context
@@ -217,18 +201,21 @@ def info(ctx, all, db, embeddor, detector):
         embeddor_info = algo.get_all_algorithms(lookup.embeddor)
         click.echo('Embeddors available: (' + str(len(embeddor_info)) + ')')
         for embeddor in embeddor_info:
-            click.echo('\t' + str(embeddor[lookup.algorithm_name]))
-            click.echo('\t\t' + ' Description: ' + str(embeddor[lookup.description]))
-            click.echo('\t\t' + ' Compatible Types: ' + str(embeddor[lookup.compatibile_types_decorator]))
+            click.echo('\t' + str(embeddor[lookup.name_descriptor]))
+            click.echo('\t\t' + 'UUID: ' + str(embeddor[lookup.uuid_descriptor]))
+            click.echo('\t\t' + 'Compatible Types: ' + str(embeddor[lookup.compatible_descriptor]))
+            click.echo('\t\t' + 'Maximum Embedding Ratio: ' + str(embeddor[lookup.embedding_descriptor]))
         click.echo(breaker)
 
         embeddor_set_info = algo.get_all_algorithm_sets(lookup.embeddor)
-        click.echo('Embeddor sets available: (' + str(len(embeddor_set_info.keys())) + ')')
-        for uuid in embeddor_set_info.keys():
-            embeddor_set = embeddor_set_info[uuid]
-            click.echo('\tUUID: ' + uuid)
-            click.echo('\t\t' + ' Compatible Types: ' + str(embeddor_set[lookup.compatibile_types_decorator]))
-            click.echo('\t\t' + ' Embeddors: ' + str(embeddor_set[lookup.embeddor]))
+        click.echo('Embeddor sets available: (' + str(len(embeddor_set_info)) + ')')
+        for embeddor_set in embeddor_set_info:
+            click.echo('\tUUID: ' + embeddor_set[lookup.uuid_descriptor])
+            click.echo('\t\t' + 'Compatible Types: ' + str(embeddor_set[lookup.compatible_descriptor]))
+            click.echo('\t\t' + 'Maximum Embedding Ratio: ' + str(embeddor_set[lookup.embedding_descriptor]))
+            click.echo('\t\t' + 'Embeddors: ' + str(len(embeddor_set[lookup.embeddor])))
+            for embeddor in embeddor_set[lookup.embeddor]:
+                click.echo('\t\t\t' + '(' + embeddor[lookup.name_descriptor] + ', ' + embeddor[lookup.uuid_descriptor] + ')')
         click.echo(breaker)
 
     if all or detector:
@@ -236,18 +223,19 @@ def info(ctx, all, db, embeddor, detector):
         detector_info = algo.get_all_algorithms(lookup.detector)
         click.echo('Detectors available: (' + str(len(detector_info)) + ')')
         for detector in detector_info:
-            click.echo('\t' + str(detector[lookup.algorithm_name]))
-            click.echo('\t\t' + ' Description: ' + str(detector[lookup.description]))
-            click.echo('\t\t' + ' Compatible Types: ' + str(detector[lookup.compatibile_types_decorator]))
+            click.echo('\t' + str(detector[lookup.name_descriptor]))
+            click.echo('\t\t' + 'UUID: ' + str(detector[lookup.uuid_descriptor]))
+            click.echo('\t\t' + 'Compatible Types: ' + str(detector[lookup.compatible_descriptor]))
         click.echo(breaker)
 
         detector_set_info = algo.get_all_algorithm_sets(lookup.detector)
-        click.echo('Detector sets available: (' + str(len(detector_set_info.keys())) + ')')
-        for uuid in detector_set_info.keys():
-            detector_set = detector_set_info[uuid]
-            click.echo('\tUUID: ' + uuid)
-            click.echo('\t\t' + ' Compatible Types: ' + str(detector_set[lookup.compatibile_types_decorator]))
-            click.echo('\t\t' + ' Detectors: ' + str(detector_set[lookup.detector]))
+        click.echo('Detector sets available: (' + str(len(detector_set_info)) + ')')
+        for detector_set in detector_set_info:
+            click.echo('\tUUID: ' + detector_set[lookup.uuid_descriptor])
+            click.echo('\t\t' + 'Compatible Types: ' + str(detector_set[lookup.compatible_descriptor]))
+            click.echo('\t\t' + 'Detectors: ' + str(len(detector_set[lookup.detector])))
+            for detector in detector_set[lookup.detector]:
+                click.echo('\t\t\t' + '(' + detector[lookup.name_descriptor] + ', ' + detector[lookup.uuid_descriptor] + ')')
         click.echo(breaker)
     
     click.echo(breaker)
@@ -290,7 +278,7 @@ def detect(ctx, detector, db):
     click.echo('The results can be found here: ' + output_file_path)
 
 @pipeline.command()
-@click.option('-e', '--embeddor', help='name of the embeddor being used', type=click.Choice(algo.get_algorithm_names(lookup.embeddor)))
+@click.option('-e', '--embeddor', help='uuid of the embeddor being used', type=str)
 @click.option('-i', '--input', help='path to image file')
 @click.option('-o', '--output', help='path to output file')
 @click.pass_context
@@ -309,7 +297,7 @@ def embedImage(ctx, embeddor, input, output):
     instance.embed(input, output, *parameter_values)
 
 @pipeline.command()
-@click.option('-d', '--detector', help='name of the detector being used', type=click.Choice(algo.get_algorithm_names(lookup.detector)))
+@click.option('-d', '--detector', help='uuid of the detector being used', type=str)
 @click.option('-i', '--image', help='path to image file')
 @click.pass_context
 def detectImage(ctx, detector, image):

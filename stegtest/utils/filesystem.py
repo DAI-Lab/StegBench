@@ -9,33 +9,31 @@ import json
 from hashlib import sha512
 from os import path
 
-def get_uuid():
-    return str(uuid.uuid4())
+import configparser
+
 
 def get_directory(file_path):
     return os.path.dirname(file_path)
+
+def get_filename(file_path):
+    filename, file_extension = os.path.splitext(file_path)
+    return filename
 
 def get_extension(file_path):
     filename, file_extension = os.path.splitext(file_path)
     return file_extension
 
-def create_name_from_hash(to_hash):
-    return sha512(to_hash.encode('utf-8')).hexdigest() 
+def get_uuid():
+    return str(uuid.uuid4())
 
-def create_file_from_hash(to_hash:str, type:str):
-    return create_name_from_hash(to_hash) + '.' + type
+def create_name_from_uuid(uuid:str, file_type:str):
+    return uuid + '.' + file_type
 
 def dir_exists(directory):
     return path.isdir(directory)
 
 def file_exists(file):
     return path.exists(file)
-
-def remove_file(file):
-    if not file_exists(file):
-        raise Error('file does not exist')
-
-    os.remove(file)
 
 def make_file(path):
     """Creates file if it does not exist."""
@@ -112,6 +110,13 @@ def read_csv_file(path_to_file, return_as_dict=False):
 
     return rows
 
+def read_config_file(path_to_file):
+    config = configparser.ConfigParser()
+    config.read(path_to_file)
+        
+    config_to_dict = {s:dict(config.items(s)) for s in config.sections()}
+    return config_to_dict
+
 def read_json_file(path_to_file):
     with open(path_to_file, 'r') as in_file:
         datastore = json.load(in_file)
@@ -120,9 +125,11 @@ def read_json_file(path_to_file):
 
     return datastore
 
-def remove_file(path_to_file):
-    if file_exists(path_to_file):
-        os.remove(path_to_file)
+def remove_file(file):
+    if not file_exists(file):
+        raise Error('file does not exist')
+
+    os.remove(file)
 
 def clean_filesystem(directories):
     """removes directories defined in bindings"""
