@@ -4,6 +4,7 @@ import csv
 import errno
 import uuid
 import shutil
+import json
 
 from hashlib import sha512
 from os import path
@@ -76,6 +77,13 @@ def write_to_csv_file(path_to_file, rows, override=False):
 
     out.close()
 
+def write_to_json_file(path_to_file, data):
+    """writes json data to a file"""
+    with open(path_to_file, 'w') as out:
+        json.dump(data, out)
+
+    out.close()
+
 def convert_csv_to_dict(rows):
     header = rows[0]
     data = rows[1:]
@@ -103,6 +111,14 @@ def read_csv_file(path_to_file, return_as_dict=False):
         return convert_csv_to_dict(rows)
 
     return rows
+
+def read_json_file(path_to_file):
+    with open(path_to_file, 'r') as in_file:
+        datastore = json.load(in_file)
+
+    in_file.close()
+
+    return datastore
 
 def remove_file(path_to_file):
     if file_exists(path_to_file):

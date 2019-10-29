@@ -11,6 +11,8 @@ import stegtest.utils.downloader as dl
 import stegtest.utils.processor as pr
 import stegtest.utils.filesystem as fs
 import stegtest.utils.algorithm as algo
+import stegtest.utils.configs.config_creator as config_creator
+import stegtest.utils.configs.config_processor as config_processor
 
 from stegtest.tasks import DefaultGenerator, DefaultAnalyzer
 
@@ -55,6 +57,49 @@ def start(ctx):
     subprocess.run(run_command)
 
 @pipeline.command()
+@click.option('-d', '--directory', help='directory to save configs to', type=str)
+@click.pass_context
+def create_config(ctx, directory):
+    """initializes stegtest configurations"""
+    # params_to_request = config.get_needed_parameters()
+    # requested_parameters = request_parameters(params_to_request)
+    if directory is None:
+        directory = os.getcwd()
+
+    config_creator.create_config_file_default(directory, None)
+
+@pipeline.command()
+@click.option('-c', '--configs', help='directory to pull configs from', type=str)
+@click.option('-d', '--directory', help='directory to initalize files in', type=str)
+@click.pass_context
+def initialize_config(ctx, configs, directory):
+    """initializes stegtest configurations"""
+    # if directory is not None:
+    #     cwd = directory
+    # else:
+    #     cwd = os.getcwd()
+
+    # lookup.initialize_filesystem(cwd)
+
+
+    if directory is None:
+        directory = os.getcwd()
+
+    lookup.initialize_filesystem(directory, configs)
+    config_info = config_processor.initialize_configs(directory, configs)
+
+@pipeline.command()
+@click.option('-a', '--all', help='shows all available information', is_flag=True, default=False)
+@click.option('-db', '--db', help='database info', is_flag=True, default=False)
+@click.option('-e', '--embeddor', help='embeddor info', is_flag=True, default=False)
+@click.option('-d', '--detector', help='detector info', is_flag=True, default=False)
+@click.pass_context
+def info_config(ctx, all, db, embeddor, detector):
+    """retrieves info on stegtest configurations"""
+    raise NotImplementedError
+
+
+@pipeline.command()
 @click.option('-d', '--directory', help='directory to initalize stegtest files in', type=str, )
 @click.pass_context
 def initialize(ctx, directory):
@@ -94,7 +139,7 @@ def process(ctx, directory, name, operation):
 @pipeline.command()
 @click.option('-a', '--algorithm', help='specify an embedding routine', type=click.Choice(algo.get_algorithm_names(lookup.embeddor)))
 # @click.option('-w', '--weight', help='weight indicates embeddors weight for db generation', type=float) #TODO for v1.
-@click.option('-n', '--new', help='set new for a new embeddor set', is_flag=True, default=False, )
+@click.option('-n', '--new', help='set new for a new embeddor set', is_flag=True, default=False)
 @click.option('-u', '--uuid', help='specifies an existing embeddor set')
 @click.pass_context
 def add_embeddor(ctx, algorithm, new, uuid):
@@ -212,8 +257,7 @@ def info(ctx, all, db, embeddor, detector):
 @click.pass_context
 def reset(ctx):
     """cleans up system"""
-    top_level_directories = lookup.get_top_level_directories().values()
-    fs.clean_filesystem(top_level_directories)
+    fs.clean_filesystem([lookup.stegtest_tld])
 
 @pipeline.command()
 @click.option('-e', '--embeddor', help='uuid of the embeddor set being used')
@@ -231,7 +275,6 @@ def embed(ctx, embeddor, db, bpp):
     else:
         db_uuid = generator.generate(db)
     click.echo('The UUID of the dataset you have created is: ' + db_uuid)
-
 
 @pipeline.command()
 @click.option('-d', '--detector', help='uuid of the detector set being used')

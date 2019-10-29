@@ -191,6 +191,21 @@ def get_all_algorithms(type:str):
 
 	return algorithm_info
 
+
+def get_all_algorithms_config():
+	assert(type is not None)
+	raise NotImplementedError
+
+	#gets the config directory
+	#reads the directory for information on the config file
+	#loads the config file 
+	#reads information on files present and returns in a reasonable way including params list
+	#config_directory = lookup.get_directory_path(lookup.config), give informationo on where the config directory is located
+	#config_files = get_config_files(config_directory)
+	#configs_json = [fs.read_json_file(file_path) for file_path in config_files]
+
+	#reads configs_json and gets relevant information. for now we can just return it.
+
 """"TODO calculate accuracy scores"""
 
 def calculate_statistics(detector_names, all_cover_results, all_stego_results, paired=True):

@@ -29,7 +29,7 @@ class Embeddor(ABC):
         
         #clean this up
         self.embed(file_input_info[lookup.file_path], path_to_output, secret_txt, *generated_params)
-
+        
     @abstractmethod
     def embed(self, path_to_input:str, path_to_output:str, secret_txt:str, *args):
         raise NotImplementedError
