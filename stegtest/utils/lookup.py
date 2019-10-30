@@ -8,11 +8,6 @@ import subprocess
 
 from os.path import join, abspath
 
-#TODO consider moving strings to a separate json/python file
-
-#TODELETE
-tmp = 'tmp'
-
 #TOP DIRECTORY
 stegtest_tld = 'stegtest_asssets'
 
@@ -107,6 +102,15 @@ crop = 'crop'
 resize = 'resize'
 rotate = 'rotate'
 
+#METADATA
+ALGORITHM_TYPE = 'algorithm_type'
+COMMAND_TYPE = 'command_type'
+COMPATIBLE_TYPES  = 'compatible_types'
+MAX_EMBEDDING_RATIO = 'max_embedding_ratio'
+
+#APPLICATION_SPECIFIC
+DOCKER_IMAGE = 'docker_image'
+
 def get_top_level_dirs():
 	return {embeddor: embeddor_dir, db: db_dir, detector:detector_dir}
 
@@ -180,15 +184,6 @@ def get_metric_variables():
 	return [false_positive_rate, false_negative_rate, true_negative_rate, negative_predictive_value,
 	false_discovery_rate, true_positive_rate, positive_predictive_value, accuracy, roc_auc]
 
-def get_compatible_types(steganographic_function):
-	compatibile_types = getattr(steganographic_function, compatibile_types_decorator)
-	compatibile_types = list(map(lambda ct: ct.__name__, compatibile_types))
-
-	all_types = all_supported_types()
-	compatibile_types = list(filter(lambda ct: ct in all_types, compatibile_types))
-
-	return compatibile_types
-
 def create_asset_file(type:str, content:str, shortened:bool=False):
 	"""creates a text asset for the specificied directory"""
 	asset_directory = get_asset_directories()[type]
@@ -251,7 +246,6 @@ def get_steganographic_info_variables():
 	return [file_path, image_type, image_width, image_height, image_channels, source_image, steganographic_function]
 
 def get_image_list(db_descriptor):
-	#get the master.csv file in the db/datasets folder
 	dir_name = fs.create_name_from_hash(db_descriptor)
 	dataset_directory = get_db_directories()[dataset]
 	db_directory = join(dataset_directory, dir_name)
@@ -262,6 +256,20 @@ def get_image_list(db_descriptor):
 
 	image_info = fs.read_csv_file(db_master_file, return_as_dict=True)
 	return image_info
+
+####TO MOVE THESE -- SINCE THESE ARE NOT LOOKUP BUT GENERATION####
+
+def convert_channels_to_int(channel:str):
+	return {
+		'L': 1,
+		'P': 1,
+		'RGB': 3,
+		'RGBA': 4,
+		'CMYK': 4,
+		'YCbCr': 3,
+		'LAB': 3,
+		'HSV': 3,
+	}[channel]
 
 def generate_output_list(output_directory:str, input_list:dict):
 	target_directory = output_directory
@@ -277,57 +285,8 @@ def generate_output_list(output_directory:str, input_list:dict):
 
 	return output_list
 
-def run_cmd(cmd:list):
-	print(' '.join(cmd))
-	subprocess.run(' '.join(cmd), shell=True)#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-def generate_random_string(byte_length=20):
-	return ''.join(random.choice(string.ascii_letters + string.digits) for x in range(byte_length))
-
-def generate_random_float():
-	return random.random()*10000
-
-def generate_random_int():
-	return int(generate_random_float())
-
-def generate_param(type, *args):
-	function = {
-		'str': generate_random_string, 
-		'float': generate_random_float,
-		'int': generate_random_int,
-	}[type]
-	return function(*args)
-
-def generate_password(byte_length):
-	return generate_random_string(byte_length)
-
-def convert_channels_to_int(channel:str):
-	return {
-		'L': 1,
-		'P': 1,
-		'RGB': 3,
-		'RGBA': 4,
-		'CMYK': 4,
-		'YCbCr': 3,
-		'LAB': 3,
-		'HSV': 3,
-	}[channel]
-
-def generate_secret_text(file_info, bpp):
-	width = int(file_info[image_width])
-	height = int(file_info[image_height])
-	channels = convert_channels_to_int(file_info[image_channels])
-
-	pixels = width*height*channels
-	strlen_in_bits = pixels*bpp
-	strlen_in_bytes = int(strlen_in_bits/8)
-
-	return generate_random_string(strlen_in_bytes)
-
-def initialize_filesystem(directory, config_directory=None): #TODO need to remove the None part
+def initialize_filesystem(directory): #TODO need to remove the None part
 	"""Clears and adds needed directories for stegdetect to work"""
-	if config_directory is not None:
-		config_directory = abspath(config_directory)
 	print('initializing fs at ' + directory)
 	try:
 		os.chdir(directory)

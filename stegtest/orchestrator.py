@@ -5,8 +5,9 @@ import sys
 
 import stegtest.utils.filesystem as fs
 import stegtest.utils.lookup as lookup
-import stegtest.utils.algorithm as algo
-import stegtest.utils.processor as processor
+
+import stegtest.algo.algorithm as algo
+import stegtest.db.processor as processor
 
 from stegtest.types.generator import Generator
 from stegtest.types.analyzer import Analyzer 

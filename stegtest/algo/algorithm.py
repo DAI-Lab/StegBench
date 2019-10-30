@@ -3,8 +3,7 @@ import ast
 import collections
 
 from collections import defaultdict
-import stegtest.embeddors as embeddors
-import stegtest.detectors as detectors
+
 import stegtest.utils.lookup as lookup
 import stegtest.utils.filesystem as fs
 
@@ -131,7 +130,7 @@ def get_all_algorithms(algorithm_type:str):
 			all_info.append(algo_dict)
 
 	return all_info
-
+	
 """"TODO calculate accuracy scores"""
 
 def calculate_statistics(detector_names, all_cover_results, all_stego_results, paired=True):

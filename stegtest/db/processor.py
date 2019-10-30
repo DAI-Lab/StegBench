@@ -1,6 +1,6 @@
 import stegtest.utils.filesystem as fs
 import stegtest.utils.lookup as lookup
-import stegtest.utils.images as img
+import stegtest.db.images as img
 import collections
 
 from os import listdir

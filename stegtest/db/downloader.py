@@ -1,11 +1,10 @@
 import stegtest.utils.lookup as lookup
-import stegtest.utils.processor as processor
 import stegtest.utils.filesystem as fs
+import stegtest.db.processor as processor
 
 import urllib.request as req
 import shutil
 import zipfile
-import stegtest.utils.filesystem as fs
 
 from os.path import join
 

@@ -7,14 +7,16 @@ import os
 import click
 
 import stegtest.utils.lookup as lookup
-import stegtest.utils.downloader as dl 
-import stegtest.utils.processor as pr
 import stegtest.utils.filesystem as fs
-import stegtest.utils.algorithm as algo
-import stegtest.utils.configs.config_creator as config_creator
-import stegtest.utils.configs.config_processor as config_processor
 
-from stegtest.tasks import DefaultGenerator, DefaultAnalyzer
+import stegtest.db.downloader as dl 
+import stegtest.db.processor as pr
+
+import stegtest.algo.algorithm as algo
+import stegtest.algo.config_processor as config_processor
+import stegtest.algo.config_cmd as config_cmd
+
+from stegtest.orchestrator import DefaultGenerator, DefaultAnalyzer
 
 @click.pass_context
 def request_parameters(ctx, parameters):
@@ -42,59 +44,23 @@ def pipeline(ctx):
     pass
 
 @pipeline.command()
-@click.pass_context
-def start(ctx):
-    """starts docker image"""
-    build_command = ['bin/build.sh']
-    run_command = ['bin/run.sh']
-
-    access_token = 'github access token'
-    parameters = request_parameters({access_token: 'str'})
-    build_command.append(parameters[access_token])
-    build_command = ' '.join(build_command)
-
-    subprocess.run(build_command, shell=True)
-    subprocess.run(run_command)
-
-@pipeline.command()
-@click.option('-d', '--directory', help='directory to save configs to', type=str)
-@click.pass_context
-def create_config(ctx, directory):
-    """creates configuration files"""
-    # params_to_request = config.get_needed_parameters()
-    # requested_parameters = request_parameters(params_to_request)
-    if directory is None:
-        directory = os.getcwd()
-
-    config_creator.create_config_file_default(directory, None)
-
-@pipeline.command()
 @click.option('-c', '--config', help='path to config file', type=str)
+@click.option('-d', '--directory', help='path to a directory of config files', type=str)
 @click.pass_context
-def create_config(ctx, config):
+def add_config(ctx, config, directory):
     """adds stegtest configuration"""
-    # params_to_request = config.get_needed_parameters()
-    # requested_parameters = request_parameters(params_to_request)
-    raise NotImplementedError
-
+    assert(config or directory)
+    if config:
+        config_processor.process_config_file(config)
+    if directory:
+        config_processor.process_config_directory(directory)
 
 @pipeline.command()
-@click.option('-c', '--configs', help='directory to pull configs from', type=str)
-@click.option('-d', '--directory', help='directory to initalize files in', type=str)
 @click.pass_context
-def initialize(ctx, configs, directory):
+def initialize(ctx):
     """initializes stegtest configurations"""
-    # if directory is not None:
-    #     cwd = directory
-    # else:
-    #     cwd = os.getcwd()
-
-    # lookup.initialize_filesystem(cwd)
-    if directory is None:
-        directory = os.getcwd()
-
-    lookup.initialize_filesystem(directory, configs)
-    config_info = config_processor.initialize_configs(directory, configs)
+    directory = os.getcwd()
+    lookup.initialize_filesystem(directory)
 
 #TODO downloads a certain database to a specific directory. Renames files. Adds some sort of metadata list a .txt file at the top. Adds 
 @pipeline.command()
@@ -242,12 +208,6 @@ def info(ctx, all, db, embeddor, detector):
     click.echo('All information printed.')
 
 @pipeline.command()
-@click.pass_context
-def reset(ctx):
-    """cleans up system"""
-    fs.clean_filesystem([lookup.stegtest_tld])
-
-@pipeline.command()
 @click.option('-e', '--embeddor', help='uuid of the embeddor set being used')
 @click.option('-d', '--db', help='name or uuid of the db being used')
 @click.option('-b', '--bpp', help='bits per pixel to set', type=float)
@@ -279,22 +239,23 @@ def detect(ctx, detector, db):
 
 @pipeline.command()
 @click.option('-e', '--embeddor', help='uuid of the embeddor being used', type=str)
+@click.option('-m', '--message', help='message to send the embeddor', type=str)
 @click.option('-i', '--input', help='path to image file')
 @click.option('-o', '--output', help='path to output file')
 @click.pass_context
-def embedImage(ctx, embeddor, input, output):
+def embedImage(ctx, embeddor, message, input, output):
     """Embeds a specific image using an embeddor"""
     assert(embeddor and input and output)
-    algorithm_parameters = algo.get_algorithm_info(lookup.embeddor, embeddor, params_only=True)
+    algorithm_info = algo.get_algorithm_info(lookup.embeddor, embeddor)
+    cmd = config_cmd.get_cmd(algorithm_info)
+    config_cmd.validate_batch(cmd)
+    cmd = config_cmd.generate_embed_command(cmd)
 
-    if algorithm_parameters:
-        parameters = request_parameters(algorithm_parameters)
-    
-    click.echo('Initializing embeddor...')
-    parameter_values = list(parameters.values())
-    instance = algo.instantiate_algorithm(lookup.embeddor, embeddor)
+    #something about populating the cmd
+    #something about running the cmd
+
     click.echo('Embedding image...')
-    instance.embed(input, output, *parameter_values)
+
 
 @pipeline.command()
 @click.option('-d', '--detector', help='uuid of the detector being used', type=str)
