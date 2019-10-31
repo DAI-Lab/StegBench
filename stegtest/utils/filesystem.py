@@ -13,14 +13,17 @@ import configparser
 
 
 def get_directory(file_path):
-    return os.path.dirname(file_path)
+    return path.dirname(file_path)
 
-def get_filename(file_path):
-    filename, file_extension = os.path.splitext(file_path)
-    return filename
+def get_filename(file_path, extension=True):
+    if extension:
+        return path.basename(file_path)
+    else:
+        filename, file_extension = path.splitext(file_path)
+        return filename
 
 def get_extension(file_path):
-    filename, file_extension = os.path.splitext(file_path)
+    filename, file_extension = path.splitext(file_path)
     return file_extension
 
 def get_uuid():

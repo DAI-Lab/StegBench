@@ -6,6 +6,9 @@ FOLDER="$(dirname $script)"
 source $FOLDER/shared.sh
 PROJECT_ROOT="$(abspath $FOLDER/..)"
 
+echo $PROJECT_ROOT
+echo $IMAGE_NAME
+
 echo "Starting container now..."
 docker run -it \
            --rm \

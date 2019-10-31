@@ -14,9 +14,8 @@ import stegtest.db.processor as pr
 
 import stegtest.algo.algorithm as algo
 import stegtest.algo.config_processor as config_processor
-import stegtest.algo.config_cmd as config_cmd
 
-from stegtest.orchestrator import DefaultGenerator, DefaultAnalyzer
+from stegtest.orchestrator import DefaultEmbeddor, DefaultDetector
 
 @click.pass_context
 def request_parameters(ctx, parameters):
@@ -208,20 +207,16 @@ def info(ctx, all, db, embeddor, detector):
     click.echo('All information printed.')
 
 @pipeline.command()
-@click.option('-e', '--embeddor', help='uuid of the embeddor set being used')
-@click.option('-d', '--db', help='name or uuid of the db being used')
-@click.option('-b', '--bpp', help='bits per pixel to set', type=float)
+@click.option('-e', '--embeddor', help='uuid of the embeddor set being used', type=str)
+@click.option('-d', '--db', help=' uuid of the db being used', type=str)
+@click.option('-r', '--ratio', help='embedding ratio to be used', type=float)
 @click.pass_context
-def embed(ctx, embeddor, db, bpp):
+def embed(ctx, embeddor, db, ratio):
     """Embeds a db using embeddors and db images"""
-    assert(embeddor and db)
-    embeddor_set = algo.lookup_algorithm_set(lookup.embeddor, embeddor)
-    generator = DefaultGenerator(embeddor_set)
-
-    if bpp:
-        db_uuid = generator.generate(db, bpp)
-    else:
-        db_uuid = generator.generate(db)
+    assert(embeddor and db and ratio) 
+    embeddor_set = algo.get_algorithm_set(lookup.embeddor, embeddor)
+    generator = DefaultEmbeddor(embeddor_set)
+    db_uuid = generator.embed(db, ratio)
     click.echo('The UUID of the dataset you have created is: ' + db_uuid)
 
 @pipeline.command()
@@ -232,49 +227,50 @@ def detect(ctx, detector, db):
     """analyzes a set detectors using a pre-processed database"""
     assert(detector and db)
     detector_set = algo.lookup_algorithm_set(lookup.detector, detector)
-    analyzer = DefaultAnalyzer(detector_set)
+    analyzer = DefaultDetector(detector_set)
 
     output_file_path = analyzer.analyze(db, write_results=True)
     click.echo('The results can be found here: ' + output_file_path)
 
-@pipeline.command()
-@click.option('-e', '--embeddor', help='uuid of the embeddor being used', type=str)
-@click.option('-m', '--message', help='message to send the embeddor', type=str)
-@click.option('-i', '--input', help='path to image file')
-@click.option('-o', '--output', help='path to output file')
-@click.pass_context
-def embedImage(ctx, embeddor, message, input, output):
-    """Embeds a specific image using an embeddor"""
-    assert(embeddor and input and output)
-    algorithm_info = algo.get_algorithm_info(lookup.embeddor, embeddor)
-    cmd = config_cmd.get_cmd(algorithm_info)
-    config_cmd.validate_batch(cmd)
-    cmd = config_cmd.generate_embed_command(cmd)
+# @pipeline.command()
+# @click.option('-e', '--embeddor', help='uuid of the embeddor being used', type=str)
+# @click.option('-m', '--message', help='message to send the embeddor', type=str)
+# @click.option('-i', '--input', help='path to image file')
+# @click.option('-o', '--output', help='path to output file')
+# @click.pass_context
+# def embedImage(ctx, embeddor, message, input, output):
+#     """Embeds a specific image using an embeddor"""
+#     assert(embeddor and fs.file_exists(input) and output)
 
-    #something about populating the cmd
-    #something about running the cmd
+#     click.echo('Retrieving embeddor...')
+#     algorithm_info = algo.get_algorithm_info(lookup.embeddor, embeddor)
 
-    click.echo('Embedding image...')
+#     click.echo('Embedding image...')
+#     params = {
+#         lookup.SECRET_TXT_PLAINTEXT: message,
+#         lookup.INPUT_IMAGE_PATH: input,
+#         lookup.OUTPUT_IMAGE_PATH: output,
+#     }
+#     algo.embed(lookup.SINGLE, algorithm_info, params)
 
+# @pipeline.command()
+# @click.option('-d', '--detector', help='uuid of the detector being used', type=str)
+# @click.option('-i', '--image', help='path to image file')
+# @click.pass_context
+# def detectImage(ctx, detector, image):
+#     """Detects a specific image using a detector"""
+#     algorithm_parameters = algo.get_algorithm_info(lookup.detector, detector, params_only=True)
+#     parameter_values = None
 
-@pipeline.command()
-@click.option('-d', '--detector', help='uuid of the detector being used', type=str)
-@click.option('-i', '--image', help='path to image file')
-@click.pass_context
-def detectImage(ctx, detector, image):
-    """Detects a specific image using a detector"""
-    algorithm_parameters = algo.get_algorithm_info(lookup.detector, detector, params_only=True)
-    parameter_values = None
-
-    if algorithm_parameters:
-        parameters = request_parameters(algorithm_parameters)
-        parameter_values = list(parameters.values())
+#     if algorithm_parameters:
+#         parameters = request_parameters(algorithm_parameters)
+#         parameter_values = list(parameters.values())
     
-    click.echo('Initializing detector...')
-    instance = algo.instantiate_algorithm(lookup.detector, detector, parameter_values)
-    click.echo('Analyzing image...')
-    result = instance.detect(image)
-    click.echo('The detector has found the following result: ' + str(result))
+#     click.echo('Initializing detector...')
+#     instance = algo.instantiate_algorithm(lookup.detector, detector, parameter_values)
+#     click.echo('Analyzing image...')
+#     result = instance.detect(image)
+#     click.echo('The detector has found the following result: ' + str(result))
 
 def main():
     pipeline(obj={})

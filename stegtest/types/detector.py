@@ -4,18 +4,9 @@ from pathos.multiprocessing import ProcessingPool as Pool
 class Detector(ABC):
 
     @abstractmethod
-    def __init__(self, *args):
+    def __init__(self, detector_set):
         pass
 
     @abstractmethod
-    def train(self, path_to_directory):
+    def detect(self, testdb:str, output_file:str=None):
         pass
-
-    @abstractmethod
-    def detect(self, path_to_input):
-        pass
-
-    def detect_bulk(self, input_list, path_to_directory=None):
-        pool = Pool().map
-        results = pool(self.detect, input_list)
-        return results

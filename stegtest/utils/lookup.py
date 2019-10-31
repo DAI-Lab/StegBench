@@ -108,8 +108,42 @@ COMMAND_TYPE = 'command_type'
 COMPATIBLE_TYPES  = 'compatible_types'
 MAX_EMBEDDING_RATIO = 'max_embedding_ratio'
 
+#COMMAND_TYPE OPTIONS
+DOCKER = 'docker'
+NATIVE = 'native'
+REST = 'rest'
+CLASS = 'class'
+
+#COMMAND ATTRIBUTE
+BATCH = 'batch'
+SINGLE = 'single'
+WORKING_DIR = 'working_dir'
+
 #APPLICATION_SPECIFIC
 DOCKER_IMAGE = 'docker_image'
+
+#COMMAND
+COMMAND = 'run'
+
+#COMMAND SPECIFIC - COVER
+INPUT_IMAGE_DIRECTORY = 'INPUT_DIRECTORY'
+INPUT_IMAGE_NAME = 'INPUT_IMAGE_NAME'
+INPUT_IMAGE_PATH = 'INPUT_IMAGE_PATH'
+
+#COMMAND SPECIFIC - SECRET MESSAGE
+SECRET_TXT_PLAINTEXT = 'SECRET_TXT_PLAINTEXT'
+SECRET_TXT_FILE = 'SECRET_TXT_FILE'
+
+#COMMAND-SPECIFIC - SUPPORTED INPUT PARAMETERS
+PASSWORD = 'PASSWORD'
+BPP = 'BPP'
+bpnzAC = 'BPNZAC'
+
+#COMMAND-SPECIFIC - OUTPUT
+OUTPUT_IMAGE_DIRECTORY = 'OUTPUT_DIRECTORY'
+OUTPUT_IMAGE_NAME = 'OUTPUT_IMAGE_NAME'
+OUTPUT_IMAGE_PATH = 'OUTPUT_IMAGE_PATH'
+
 
 def get_top_level_dirs():
 	return {embeddor: embeddor_dir, db: db_dir, detector:detector_dir}
@@ -246,10 +280,9 @@ def get_steganographic_info_variables():
 	return [file_path, image_type, image_width, image_height, image_channels, source_image, steganographic_function]
 
 def get_image_list(db_descriptor):
-	dir_name = fs.create_name_from_hash(db_descriptor)
-	dataset_directory = get_db_directories()[dataset]
-	db_directory = join(dataset_directory, dir_name)
-	db_master_file = join(db_directory, master_file)
+	metadata_directory = get_db_dirs()[metadata]
+	db_directory = join(metadata_directory, db_descriptor)
+	db_master_file = join(db_directory, db_file)
 
 	assert(fs.dir_exists(db_directory))
 	assert(fs.file_exists(db_master_file))
@@ -279,7 +312,7 @@ def generate_output_list(output_directory:str, input_list:dict):
 		file_name = file[file_path]
 		file_type = file[image_type]
 
-		output_file = fs.create_file_from_hash(file_name, file_type)
+		output_file = fs.create_name_from_uuid(fs.get_uuid(), file_type)
 		output_file_path = join(target_directory, output_file)
 		output_list.append(output_file_path)
 

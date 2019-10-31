@@ -3,7 +3,6 @@ from os.path import isfile, join, abspath
 
 import stegtest.utils.filesystem as fs
 import stegtest.utils.lookup as lookup
-import stegtest.utils.bash as bash
 
 import configparser
 
