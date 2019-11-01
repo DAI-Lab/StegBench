@@ -42,6 +42,7 @@ image_type = 'type'
 image_width = 'width'
 image_height = 'height'
 image_channels = 'channels'
+embedding_max = 'embedding_max'
 
 #STEGANOGRAPHIC INFORMATION FILE INFORMATION
 steganographic_function = 'Generating Algorithm'
@@ -113,6 +114,7 @@ DOCKER = 'docker'
 NATIVE = 'native'
 REST = 'rest'
 CLASS = 'class'
+END_DOCKER = 'end_docker'
 
 #COMMAND ATTRIBUTE
 BATCH = 'batch'
@@ -121,6 +123,7 @@ WORKING_DIR = 'working_dir'
 
 #APPLICATION_SPECIFIC
 DOCKER_IMAGE = 'docker_image'
+container_id = 'container_id'
 
 #COMMAND
 COMMAND = 'run'
@@ -207,8 +210,14 @@ def get_default_image_operation_values():
 		rotate: (180),
 	}
 
+def lossy_encoding_types():
+	return ['jpeg', 'jpg']
+
+def lossless_encoding_types():
+	return ['bmp', 'pgm', 'png']
+
 def all_supported_types():
-	return ['bmp', 'gif', 'jpeg', 'jpg', 'pgm', 'png']
+	return lossy_encoding_types() + lossless_encoding_types()
 
 def get_statistics_header():
 	return [false_positive_rate, false_negative_rate, true_negative_rate, negative_predictive_value,
@@ -274,10 +283,10 @@ def get_source_db_info(db_identifier):
 	return found_data
 
 def get_image_info_variables():
-	return [file_path, image_type, image_width, image_height, image_channels]
+	return [file_path, image_type, image_width, image_height, image_channels, embedding_max]
 
 def get_steganographic_info_variables():
-	return [file_path, image_type, image_width, image_height, image_channels, source_image, steganographic_function]
+	return [file_path, image_type, image_width, image_height, image_channels, embedding_max, source_image, steganographic_function]
 
 def get_image_list(db_descriptor):
 	metadata_directory = get_db_dirs()[metadata]
@@ -291,18 +300,6 @@ def get_image_list(db_descriptor):
 	return image_info
 
 ####TO MOVE THESE -- SINCE THESE ARE NOT LOOKUP BUT GENERATION####
-
-def convert_channels_to_int(channel:str):
-	return {
-		'L': 1,
-		'P': 1,
-		'RGB': 3,
-		'RGBA': 4,
-		'CMYK': 4,
-		'YCbCr': 3,
-		'LAB': 3,
-		'HSV': 3,
-	}[channel]
 
 def generate_output_list(output_directory:str, input_list:dict):
 	target_directory = output_directory

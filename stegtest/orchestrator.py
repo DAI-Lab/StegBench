@@ -12,21 +12,37 @@ import stegtest.algo.runner as runner
 
 import stegtest.db.processor as processor
 
-from stegtest.types.embeddor import Embeddor
-from stegtest.types.detector import Detector 
-
 from os.path import abspath, join
 from pathos.multiprocessing import ThreadPool as Pool
 from functools import partial
 
-class DefaultEmbeddor(Embeddor):
+class Embeddor():
 	""""runs all the generation tasks"""
 	def __init__(self, embeddor_set):
 		self.embeddors = embeddor_set[lookup.embeddor]
 		self.max_embedding_ratio = embeddor_set[lookup.embedding_descriptor]
 		self.compatible_types = embeddor_set[lookup.compatible_descriptor]
 
-	def embed(self, source_db:str, embedding_ratio:float):
+	def embed_list(self, partition):
+		all_pre_cmds = []
+		all_cmds = []
+		all_post_cmds = []
+		for idx, embeddor in enumerate(self.embeddors):
+			pre_cmds, cmds, post_cmds = cmd_generator.generate_commands(embeddor, partition[idx])
+			all_pre_cmds += pre_cmds
+			all_cmds += cmds
+			all_post_cmds += post_cmds 
+
+		runner.run_pool(all_pre_cmds)
+		runner.run_pool(all_cmds)
+		runner.run_pool(all_post_cmds)
+
+		# input_partition = [list(map(lambda img_info: img_info[lookup.file_path], partition)) for partition in input_partition]
+		# partition = [[(input_partition[idx][i], output_partition[idx][i], embeddor_names[idx][0]) for i in range(len(input_partition[idx]))] for idx in range(num_embeddors)]
+		# db_uuid = processor.process_steganographic_directory(output_directory, partition, embeddor_set_uuid, source_db)
+		return '1'
+
+	def embed_ratio(self, source_db:str, embedding_ratio:float):
 		"""generates a test DB. if divided, embeddors are randomly distributed each of the db images. otherwise each image undergoes an operation by each embeddor"""
 		db_information = lookup.get_source_db_info(source_db)
 		db_compatible_states = set(db_information[lookup.compatible_descriptor])
@@ -70,28 +86,23 @@ class DefaultEmbeddor(Embeddor):
 		for idx in range(remainder):
 			input_partition[idx].append(image_dict[idx + num_embeddors*images_per_embeddor].copy())
 
+		ratio_embeddor = partial(cmd_generator.secret_message_from_embedding, embedding_ratio) 
+		secret_message = [list(map(ratio_embeddor, input_list)) for input_list in input_partition]
 		output_partition = [lookup.generate_output_list(output_directory, input_list) for input_list in input_partition]
-		embedding_ratio = [[embedding_ratio for i in range(len(input_list))] for input_list in input_partition]
 
 		#using embedding ratio, calculate the secret message
+		partition = [[{
+						lookup.INPUT_IMAGE_PATH: input_partition[i][j][lookup.file_path], 
+						lookup.OUTPUT_IMAGE_PATH: output_partition[i][j],
+						# lookup.SECRET_TXT_PLAINTEXT: secret_message[i][j]
+						}
+		 			for j in range(len(input_partition[i]))] for i in range(num_embeddors)]
 
-		# print(input_partition)
-		# print(output_partition)
+		db_uuid = self.embed_list(partition)
 
-		cmds = [cmd_generator.generate_command(embeddor, input_partition, output_partition) for embeddor in self.embeddors]
-		print(cmds)
-		runner.run_pool(cmds)
+		return db_uuid
 
-		# embed_bulk = partial(embed_external, bpp_partition, input_partition, output_partition, self.embeddors)
-		# embeddor_idx = list(range(len(self.embeddors)))
-
-		# input_partition = [list(map(lambda img_info: img_info[lookup.file_path], partition)) for partition in input_partition]
-		# partition = [[(input_partition[idx][i], output_partition[idx][i], embeddor_names[idx][0]) for i in range(len(input_partition[idx]))] for idx in range(num_embeddors)]
-		# db_uuid = processor.process_steganographic_directory(output_directory, partition, embeddor_set_uuid, source_db)
-
-		return '1'
-
-class DefaultDetector(Detector):
+class Detector():
 	""""runs all the analyzer tasks"""
 	def __init__(self, detector_set):
 		detector_names = detector_set[lookup.detector]

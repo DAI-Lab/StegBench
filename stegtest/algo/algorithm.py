@@ -1,9 +1,9 @@
 import inspect
-import ast
 import collections
 
 from collections import defaultdict
 
+import stegtest.algo.config_processor as config_processor
 import stegtest.utils.lookup as lookup
 import stegtest.utils.filesystem as fs
 
@@ -14,7 +14,7 @@ from os.path import abspath, join
 
 def get_set_files(algorithm_type:str):
 	set_file_directory = lookup.get_algo_set_dirs()[algorithm_type]
-	sets = [{lookup.uuid_descriptor: fs.get_filename(file), lookup.filepath_descriptor: abspath(join(set_file_directory, file))} for file in listdir(set_file_directory)]
+	sets = [{lookup.uuid_descriptor: fs.get_filename(file, extension=False), lookup.filepath_descriptor: abspath(join(set_file_directory, file))} for file in listdir(set_file_directory)]
 
 	return sets
 
@@ -43,6 +43,9 @@ def add_to_algorithm_set(algorithm_type: str, set_uuid:str, algorithm_uuid:str):
 	compatible_types_set = set(algorithm_set[lookup.compatible_descriptor])
 	compatible_types_algorithm = set(algorithm_info[lookup.compatible_descriptor])
 	new_compatible_types = list(compatible_types_set.intersection(compatible_types_algorithm))
+
+	if(len(new_compatible_types) == 0):
+		raise ValueError('algorithm could not be added because it does not support compatible types')
 
 	all_set_files = get_set_files(algorithm_type)
 	specific_set_file = list(filter(lambda set_file: set_file[lookup.uuid_descriptor] == set_uuid, all_set_files))
@@ -117,15 +120,10 @@ def get_all_algorithms(algorithm_type:str):
 	all_info = []
 	for config_file in sorted_by_config.keys():
 		algo_info = sorted_by_config[config_file]
-		config_info = fs.read_config_file(config_file) #move this to config.py
+		config_info = config_processor.get_config_from_file(config_file) #move this to config.py
 		for algo_dict in algo_info:
 			assert(algo_dict[lookup.name_descriptor] in config_info)
 			algo_info = config_info[algo_dict[lookup.name_descriptor]]
-
-			algo_info[lookup.compatible_descriptor] = ast.literal_eval(algo_info[lookup.compatible_descriptor])
-			if lookup.embedding_descriptor in algo_info.keys():
-				algo_info[lookup.embedding_descriptor] = float(algo_info[lookup.embedding_descriptor])
-
 			algo_dict.update(algo_info)
 			all_info.append(algo_dict)
 

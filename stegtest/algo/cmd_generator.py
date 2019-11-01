@@ -1,5 +1,6 @@
 import stegtest.utils.lookup as lookup
 import stegtest.utils.filesystem as fs
+import stegtest.algo.runner as runner
 import random
 import string
 
@@ -60,30 +61,13 @@ def generate_param(type, *args):
 	}[type]
 	return function(*args)
 
-def secret_message_from_embedding(img_info, embedding_ratio):
-	str_len_in_bits = None
-	if img_info[lookup.image_type] is in lookup.get_frequency_types():
-		str_len_in_bits = (img_info[lookup.bpnzAC]*embedding_ratio)
-	else:
-		num_channels = lookup.convert_channels_to_int(img_info[])
-		str_len_in_bits = img_info[lookup.image_width]*img_info[lookup.image_height]*num_channels
-
-	strlen_in_bytes = int(strlen_in_bits/8)
+def secret_message_from_embedding(embedding_ratio, img_info):
+	str_len_in_bits = float(img_info[lookup.embedding_max])*embedding_ratio
+	strlen_in_bytes = int(str_len_in_bits/8)
 	return generate_random_string(strlen_in_bytes)
 
 def generate_password(byte_length):
 	return generate_random_string(byte_length)
-
-# def generate_secret_text(file_info, bpp):
-# 	width = int(file_info[lookup.image_width])
-# 	height = int(file_info[lookup.image_height])
-# 	channels = lookup.convert_channels_to_int(file_info[lookup.image_channels])
-
-# 	pixels = width*height*channels
-# 	strlen_in_bits = pixels*bpp
-# 	strlen_in_bytes = int(strlen_in_bits/8)
-
-# 	return generate_random_string(strlen_in_bytes)
 
 def validate_single(command):
 	if lookup.INPUT_IMAGE_PATH not in command:
@@ -107,42 +91,86 @@ def replace(cmd:str, replacements):
 	cmd = [subpart if subpart not in replacements else replacements[subpart] for subpart in cmd]
 	return ' '.join(cmd)
 
-def generate_docker_cmd(algorithm_info, params):
-	cmd = get_cmd(algorithm_info)
+##### DOCKER ####
+def preprocess_docker(algorithm_info, to_embed_list):
+	#need to start the docker process
+	image_name = algorithm_info[lookup.DOCKER_IMAGE]
+	container_id = runner.start_docker(image_name, volumes=None)
 	
-	replacements = {}
-	if lookup.INPUT_IMAGE_DIRECTORY in params: #TODO
-		raise NotImplementedError
-	elif lookup.INPUT_IMAGE_PATH in params:
-		input_path = abspath(params[lookup.INPUT_IMAGE_PATH])
-		file_name = fs.get_filename(input_path)
-		new_file_path = join(docker_input_mount, file_name)
-		replacements[lookup.INPUT_IMAGE_PATH] = new_file_path
+	for to_embed in to_embed_list:
+		to_embed[lookup.container_id] = container_id
 
-	if lookup.OUTPUT_IMAGE_DIRECTORY in params: #TODO
-		raise NotImplementedError
-	elif lookup.OUTPUT_IMAGE_PATH in params:
-		output_path = abspath(params[lookup.OUTPUT_IMAGE_PATH])
-		file_name = fs.get_filename(output_path)
-		new_file_path = join(docker_output_mount, file_name)
-		replacements[lookup.OUTPUT_IMAGE_PATH] = new_file_path
+	return [], to_embed_list
 
-	new_cmd = replace(cmd, replacements)
+def generate_docker_cmd(algorithm_info, to_embed):
+	cmd = get_cmd(algorithm_info)
+	new_cmd = replace(cmd, to_embed)
 
-	print(new_cmd)
-	return new_cmd
+	params = [to_embed[lookup.container_id], new_cmd]
+	if lookup.WORKING_DIR in algorithm_info:
+		params.append(algorithm_info[lookup.WORKING_DIR])
+
+	return {lookup.COMMAND_TYPE: lookup.DOCKER, lookup.COMMAND: params}
+
+def postprocess_docker(algorithm_info, embedded_list):
+	#need to end the docker process 
+	post_cmds = []
+	if not embedded_list:
+		return post_cmds
+
+	docker_containers = list(set(list(map(lambda embedded: embedded[lookup.container_id], embedded_list))))
+	for container_id in docker_containers:
+		post_cmds.append({lookup.COMMAND_TYPE: lookup.END_DOCKER, lookup.COMMAND: [container_id]})
+
+	return post_cmds
+
+### NATIVE ###
+
+def preprocess_native(algorithm_info, to_embed_list):
+	#probably need to transform from directory to list, vice versa.
+	raise NotImplementedError
 
 def generate_native_cmd(algorithm_info, params):
+	#need to do regular substitutions
+	raise NotImplementedError
+
+def postprocess_native(algorithm_info, embedded_list):
+	raise NotImplementedError
+
+### REST ###
+
+def preprocess_rest(algorithm_info, to_embed_list):
 	raise NotImplementedError
 
 def generate_rest_cmd(algorithm_info, params):
 	raise NotImplementedError
 
+def postprocess_rest(algorithm_info, embedded_list):
+	raise NotImplementedError
+
+### CLASS ###
+
+def preprocess_class(algorithm_info, to_embed_list):
+	raise NotImplementedError
+
 def generate_class_cmd(algorithm_info, params):
 	raise NotImplementedError
 
-def generate_command(algorithm_info, params):
+def postprocess_class(algorithm_info, embedded_list):
+	raise NotImplementedError
+
+def generate_commands(algorithm_info, to_embed_list):
 	command_type = algorithm_info[lookup.COMMAND_TYPE]
+
+	preprocess_function = {
+		lookup.DOCKER: preprocess_docker,
+		lookup.NATIVE: preprocess_native,
+		lookup.REST: preprocess_rest,
+		lookup.CLASS: preprocess_class,
+	}[command_type]
+
+	pre_cmds, updated_embed_list = preprocess_function(algorithm_info, to_embed_list)
+
 	generate_function = {
 		lookup.DOCKER: generate_docker_cmd,
 		lookup.NATIVE: generate_native_cmd,
@@ -150,10 +178,17 @@ def generate_command(algorithm_info, params):
 		lookup.CLASS: generate_class_cmd
 	}[command_type]
 
-	cmd = generate_function(algorithm_info, params)
-	return cmd
+	cmds = [generate_function(algorithm_info, to_embed) for to_embed in updated_embed_list]
 
-def generate_detect_command(command):
-	raise NotImplementedError
+	postprocess_function = {
+		lookup.DOCKER: postprocess_docker,
+		lookup.NATIVE: postprocess_native,
+		lookup.REST: postprocess_rest,
+		lookup.CLASS: postprocess_class
+	}[command_type]
 
+	post_cmds = postprocess_function(algorithm_info, updated_embed_list)
 
+	sequential_cmds = pre_cmds + cmds + post_cmds
+	
+	return pre_cmds, cmds, post_cmds

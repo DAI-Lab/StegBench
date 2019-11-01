@@ -15,7 +15,7 @@ import stegtest.db.processor as pr
 import stegtest.algo.algorithm as algo
 import stegtest.algo.config_processor as config_processor
 
-from stegtest.orchestrator import DefaultEmbeddor, DefaultDetector
+from stegtest.orchestrator import Embeddor, Detector
 
 @click.pass_context
 def request_parameters(ctx, parameters):
@@ -215,8 +215,8 @@ def embed(ctx, embeddor, db, ratio):
     """Embeds a db using embeddors and db images"""
     assert(embeddor and db and ratio) 
     embeddor_set = algo.get_algorithm_set(lookup.embeddor, embeddor)
-    generator = DefaultEmbeddor(embeddor_set)
-    db_uuid = generator.embed(db, ratio)
+    generator = Embeddor(embeddor_set)
+    db_uuid = generator.embed_ratio(db, ratio)
     click.echo('The UUID of the dataset you have created is: ' + db_uuid)
 
 @pipeline.command()
@@ -227,7 +227,7 @@ def detect(ctx, detector, db):
     """analyzes a set detectors using a pre-processed database"""
     assert(detector and db)
     detector_set = algo.lookup_algorithm_set(lookup.detector, detector)
-    analyzer = DefaultDetector(detector_set)
+    analyzer = Detector(detector_set)
 
     output_file_path = analyzer.analyze(db, write_results=True)
     click.echo('The results can be found here: ' + output_file_path)

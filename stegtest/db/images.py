@@ -2,22 +2,38 @@ import imghdr
 import collections
 import stegtest.utils.lookup as lookup
 import stegtest.utils.filesystem as fs
+from jpeg2dct.numpy import load
+import numpy as np
 
 from PIL import Image, ExifTags
 Image.MAX_IMAGE_PIXELS = None
 
-# 1 (1-bit pixels, black and white, stored with one pixel per byte)
-# L (8-bit pixels, black and white)
-# P (8-bit pixels, mapped to any other mode using a color palette)
-# RGB (3x8-bit pixels, true color)
-# RGBA (4x8-bit pixels, true color with transparency mask)
-# CMYK (4x8-bit pixels, color separation)
-# YCbCr (3x8-bit pixels, color video format)
-# Note that this refers to the JPEG, and not the ITU-R BT.2020, standard
-# LAB (3x8-bit pixels, the L*a*b color space)
-# HSV (3x8-bit pixels, Hue, Saturation, Value color space)
-# I (32-bit signed integer pixels)
-# F (32-bit floating point pixels)
+
+def convert_channels_to_int(channel:str):
+	"""
+		1 (1-bit pixels, black and white, stored with one pixel per byte)
+		L (8-bit pixels, black and white)
+		P (8-bit pixels, mapped to any other mode using a color palette)
+		RGB (3x8-bit pixels, true color)
+		RGBA (4x8-bit pixels, true color with transparency mask)
+		CMYK (4x8-bit pixels, color separation)
+		YCbCr (3x8-bit pixels, color video format)
+		Note that this refers to the JPEG, and not the ITU-R BT.2020, standard
+		LAB (3x8-bit pixels, the L*a*b color space)
+		HSV (3x8-bit pixels, Hue, Saturation, Value color space)
+		I (32-bit signed integer pixels)
+		F (32-bit floating point pixels)
+	"""
+	return {
+		'L': 1,
+		'P': 1,
+		'RGB': 3,
+		'RGBA': 4,
+		'CMYK': 4,
+		'YCbCr': 3,
+		'LAB': 3,
+		'HSV': 3,
+	}[channel]
 
 def add_noise_to_image(path_to_input, path_to_output, noise_level):
 	"""adds noise to an image at specified noise level"""
@@ -83,17 +99,19 @@ def get_image_info(path_to_file):
 	width, height = im.size
 	channels = im.mode
 
-
-	##TODO Need to get im.quantization information possibly at different quantization levels (0, 25, 50, 75, 100)
-	##need to calculat the nonzero AC DCT coefficients (each 8x8 block has 63 of these coefficients)
-	# print(im.quantization)
-
 	info_dict = collections.OrderedDict()
 	info_dict[lookup.file_path] = path_to_file 
 	info_dict[lookup.image_type] = img_type 
 	info_dict[lookup.image_width] = width
 	info_dict[lookup.image_height] = height
 	info_dict[lookup.image_channels] = channels
+
+	if img_type in lookup.lossy_encoding_types():
+		#TODO verify this, add information for quantization at different quality levels, 
+		coefficients = load(path_to_file)
+		info_dict[lookup.embedding_max] = np.count_nonzero(coefficients[0]) 
+	else:
+		info_dict[lookup.embedding_max] = width*height*channels
 
 	return info_dict
 
