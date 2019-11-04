@@ -29,7 +29,7 @@ def process_image_list(image_list):
 
 	return info_images, compatible_types
 
-def process_steganographic_list(partition):
+def process_steganographic_list(partition, embeddor_uuid):
 	"""processes a partition of steganographic images"""
 	info_images = []
 
@@ -37,7 +37,8 @@ def process_steganographic_list(partition):
 
 	for embeddor_generated_set in partition:
 		for file_set in embeddor_generated_set:
-			input_file, output_file, algorithm = file_set
+			input_file = file_set[lookup.INPUT_IMAGE_PATH]
+			output_file = file_set[lookup.OUTPUT_IMAGE_PATH]
 			
 			info_image = process_image_file(abspath(output_file))
 
@@ -45,7 +46,7 @@ def process_steganographic_list(partition):
 			info_image = list(info_image.values())
 
 			info_image.append(input_file)
-			info_image.append(algorithm)
+			info_image.append(embeddor_uuid)
 			info_images.append(info_image)
 
 	return info_images, compatible_types
@@ -110,20 +111,22 @@ def process_image_directory(path_to_directory, db_name, operation=None, args=Non
 	dataset_info = [(db_uuid, db_name, num_images, compatible_types)]
 	fs.write_to_csv_file(source_master_file, dataset_info)
 
-def process_steganographic_directory(output_directory, partition, embeddor_set_uuid, db_source):
+	return db_uuid
+
+def process_steganographic_directory(partition, embeddor_set, source_db_uuid):
 	"""processes a steganographic directory"""
 	embedded_master_file = lookup.get_all_files()[lookup.embedded_db_file]
 	metadata_directory = lookup.get_db_dirs()[lookup.metadata]
 
 	db_uuid = fs.get_uuid()
+	target_directory = join(metadata_directory, db_uuid)
 
-	target_directory_name = fs.create_name_from_hash(db_uuid)
-	target_directory = join(metadata_directory, target_directory_name)
-
-	assert(fs.dir_exists(output_directory))
 	assert(fs.dir_exists(metadata_directory))
 
-	info_images, compatible_types = process_steganographic_list(partition)
+	embeddor_names = [embeddor[lookup.name_descriptor] for embeddor in embeddor_set[lookup.embeddor]]
+	embeddor_set_uuid = embeddor_set[lookup.uuid_descriptor]
+
+	info_images, compatible_types = process_steganographic_list(partition, embeddor_names)
 	variables = lookup.get_steganographic_info_variables()
 	rows = [variables] + info_images
 
@@ -133,7 +136,7 @@ def process_steganographic_directory(output_directory, partition, embeddor_set_u
 	num_images = len(info_images)
 	compatible_types = list(compatible_types)
 
-	steganographic_dataset_info = [(db_uuid, db_source, embeddor_set_uuid, num_images, compatible_types)]
+	steganographic_dataset_info = [(db_uuid, source_db_uuid, embeddor_set_uuid, num_images, compatible_types)]
 	fs.write_to_csv_file(embedded_master_file, steganographic_dataset_info)
 
 	return db_uuid

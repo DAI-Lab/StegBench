@@ -2,6 +2,7 @@ import os
 import shutil
 import random
 import sys
+import copy
 
 import stegtest.utils.filesystem as fs
 import stegtest.utils.lookup as lookup
@@ -22,25 +23,31 @@ class Embeddor():
 		self.embeddors = embeddor_set[lookup.embeddor]
 		self.max_embedding_ratio = embeddor_set[lookup.embedding_descriptor]
 		self.compatible_types = embeddor_set[lookup.compatible_descriptor]
+		
+		self.embeddor_set = embeddor_set
 
-	def embed_list(self, partition):
+	def embed_db(self, partition, source_db_uuid):
 		all_pre_cmds = []
 		all_cmds = []
 		all_post_cmds = []
+		all_termination_cmds = []
+
 		for idx, embeddor in enumerate(self.embeddors):
-			pre_cmds, cmds, post_cmds = cmd_generator.generate_commands(embeddor, partition[idx])
+			embeddor_params = copy.deepcopy(partition[idx])
+			pre_cmds, cmds, post_cmds, terminiation_cmds = cmd_generator.generate_commands(embeddor, embeddor_params)
 			all_pre_cmds += pre_cmds
 			all_cmds += cmds
 			all_post_cmds += post_cmds 
+			all_termination_cmds + terminiation_cmds
 
 		runner.run_pool(all_pre_cmds)
 		runner.run_pool(all_cmds)
 		runner.run_pool(all_post_cmds)
+		runner.run_pool(all_termination_cmds)
 
-		# input_partition = [list(map(lambda img_info: img_info[lookup.file_path], partition)) for partition in input_partition]
-		# partition = [[(input_partition[idx][i], output_partition[idx][i], embeddor_names[idx][0]) for i in range(len(input_partition[idx]))] for idx in range(num_embeddors)]
-		# db_uuid = processor.process_steganographic_directory(output_directory, partition, embeddor_set_uuid, source_db)
-		return '1'
+		db_uuid = processor.process_steganographic_directory(partition, self.embeddor_set, source_db_uuid)
+
+		return db_uuid
 
 	def embed_ratio(self, source_db:str, embedding_ratio:float):
 		"""generates a test DB. if divided, embeddors are randomly distributed each of the db images. otherwise each image undergoes an operation by each embeddor"""
@@ -64,9 +71,6 @@ class Embeddor():
 
 		input_partition = []
 		output_partition = []
-
-		# embeddor_set_uuid = self.embeddor_set[lookup.uuid_descriptor]
-		# embeddor_names = self.embeddor_set[lookup.embeddor]
 
 		output_directory_name = fs.get_uuid()
 		output_directory = abspath(join(lookup.get_db_dirs()[lookup.dataset], output_directory_name))
@@ -94,11 +98,11 @@ class Embeddor():
 		partition = [[{
 						lookup.INPUT_IMAGE_PATH: input_partition[i][j][lookup.file_path], 
 						lookup.OUTPUT_IMAGE_PATH: output_partition[i][j],
-						# lookup.SECRET_TXT_PLAINTEXT: secret_message[i][j]
+						lookup.SECRET_TXT_PLAINTEXT: secret_message[i][j],
 						}
 		 			for j in range(len(input_partition[i]))] for i in range(num_embeddors)]
 
-		db_uuid = self.embed_list(partition)
+		db_uuid = self.embed_db(partition, source_db)
 
 		return db_uuid
 
@@ -129,13 +133,27 @@ class Detector():
 		analyze_cover = partial(analyze_detector, cover_files)
 		analyze_stego = partial(analyze_detector, stego_files)
 
-		pool = Pool().map
-		print('processing cover results...')
-		cover_results = pool(analyze_cover, self.detectors)
-		print(cover_results)
-		print('processing stego results...')
-		stego_results = pool(analyze_stego, self.detectors)
-		print('calcualating statistics...')
+		for idx, embeddor in enumerate(self.embeddors):
+			embeddor_params = copy.deepcopy(partition[idx])
+			pre_cmds, cmds, post_cmds, terminiation_cmds = cmd_generator.generate_commands(embeddor, embeddor_params)
+			all_pre_cmds += pre_cmds
+			all_cmds += cmds
+			all_post_cmds += post_cmds 
+			all_termination_cmds + terminiation_cmds
+
+		# pool = Pool().map
+		# print('processing cover results...')
+		# cover_results = pool(analyze_cover, self.detectors)
+		# print(cover_results)
+		# print('processing stego results...')
+		# stego_results = pool(analyze_stego, self.detectors)
+		# print('calcualating statistics...')
+
+		runner.run_pool(all_pre_cmds)
+		runner.run_pool(all_cmds)
+		runner.run_pool(all_post_cmds)
+		runner.run_pool(all_termination_cmds)
+
 		detector_names = self.detector_set[lookup.detector]
 		statistics = algo.calculate_statistics(detector_names, cover_results, stego_results)
 

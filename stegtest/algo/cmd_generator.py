@@ -3,6 +3,7 @@ import stegtest.utils.filesystem as fs
 import stegtest.algo.runner as runner
 import random
 import string
+import os
 
 from os.path import abspath, join
 
@@ -16,9 +17,9 @@ docker_precepts = {
 	docker_wdir_cmd: 'bash -c cd /my/app && for image in images; do'
 }
 
-input_dir = 'data-input'
-output_dir = 'data-output'
-asset_dir = 'data-asset'
+input_dir = '/data-input'
+output_dir = '/data-output'
+asset_dir = '/data-asset'
 
 #COMMAND SPECIFIC - COVER
 INPUT_IMAGE_DIRECTORY = 'INPUT_DIRECTORY'
@@ -41,6 +42,12 @@ OUTPUT_IMAGE_PATH = 'OUTPUT_IMAGE_PATH'
 
 def get_cmd(algorithm_info):
 	return algorithm_info[lookup.COMMAND]
+
+def get_post_cmd(algorithm_info):
+	if lookup.POST_COMMAND in algorithm_info:
+		return algorithm_info[lookup.POST_COMMAND]
+
+	return None
 
 def generate_random_string(byte_length=20):
 	return ''.join(random.choice(string.ascii_letters + string.digits) for x in range(byte_length))
@@ -87,16 +94,112 @@ def validate(command_type, algorithm_info):
 	validate_function(command)
 
 def replace(cmd:str, replacements):
-	cmd = cmd.split()
-	cmd = [subpart if subpart not in replacements else replacements[subpart] for subpart in cmd]
-	return ' '.join(cmd)
+	for replacement_key in replacements:
+		cmd = cmd.replace(replacement_key, replacements[replacement_key])
+	return cmd
+
+#### NATIVE ####
+def preprocess_native(algorithm_info, to_embed_list):
+	#probably need to transform from directory to list, vice versa.
+	cmd = get_cmd(algorithm_info)
+	if lookup.SECRET_TXT_FILE in cmd:
+		for to_embed in to_embed_list:
+			if lookup.SECRET_TXT_FILE not in cmd:
+				txt_file_path = lookup.create_asset_file(algorithm_info[lookup.ALGORITHM_TYPE], to_embed[lookup.SECRET_TXT_PLAINTEXT])
+				to_embed[lookup.SECRET_TXT_FILE] = txt_file_path
+
+	if lookup.INPUT_IMAGE_DIRECTORY in cmd:
+		raise NotImplementedError
+
+	if lookup.OUTPUT_IMAGE_DIRECTORY in cmd:
+		raise NotImplementedError
+
+	return [], to_embed_list
+
+def generate_native_cmd(algorithm_info, to_embed):
+	#need to do regular substitutions
+	cmd = get_cmd(algorithm_info)
+	new_cmd = replace(cmd, to_embed)
+
+	return {lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [new_cmd]}
+
+def postprocess_native(algorithm_info, embedded_list):
+	cmd = get_post_cmd(algorithm_info)
+	if cmd is None:
+		return []
+
+	new_cmd = replace(cmd, to_embed)
+	return [{lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: new_cmd}]
+
+def termination_native(algorithm_info, embedded_list):
+	cmd = get_cmd(algorithm_info)
+
+	removal_prefix = 'rm'
+	terminiation_cmds = []
+	if lookup.SECRET_TXT_FILE in cmd:
+		for embedded in embedded_list:
+			removal_cmd = ' '.join([removal_prefix, embedded[lookup.SECRET_TXT_FILE]])
+			terminiation_cmds.append({ lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd] })
+
+	return terminiation_cmds
 
 ##### DOCKER ####
 def preprocess_docker(algorithm_info, to_embed_list):
-	#need to start the docker process
+	"""starts docker command and updates parameters appropriately"""
 	image_name = algorithm_info[lookup.DOCKER_IMAGE]
-	container_id = runner.start_docker(image_name, volumes=None)
-	
+	cmd = get_cmd(algorithm_info)
+	volumes = {}
+
+	if lookup.SECRET_TXT_FILE in cmd:
+		#TODO write all the secret txt to the assets folder and update to_embed_list
+		for to_embed in to_embed_list:
+			if lookup.SECRET_TXT_FILE not in to_embed:
+				txt_file_path = lookup.create_asset_file(algorithm_info[lookup.ALGORITHM_TYPE], to_embed[lookup.SECRET_TXT_PLAINTEXT])
+			else:
+				txt_file_path = to_embed[lookup.SECRET_TXT_FILE]
+
+			local_asset_dir = fs.get_directory(txt_file_path)
+			volumes[local_asset_dir] = { 'bind': asset_dir, 'mode': 'rw'}
+
+			asset_filename = fs.get_filename(txt_file_path)
+			new_asset_path = join(asset_dir, asset_filename)
+			to_embed[lookup.SECRET_TXT_FILE] = new_asset_path
+
+	#inputs
+	# if lookup.INPUT_IMAGE_DIRECTORY in cmd:
+	# 	raise NotImplementedError
+	# 	#need to update the commands 
+
+	for to_embed in to_embed_list:
+		assert(lookup.INPUT_IMAGE_PATH in to_embed)
+		#TODO update this to be more dynamic
+		original_input_path = to_embed[lookup.INPUT_IMAGE_PATH]
+		original_input_path = abspath(original_input_path)
+
+		local_input_dir = fs.get_directory(original_input_path)
+		volumes[local_input_dir] = { 'bind': input_dir, 'mode': 'rw'}
+
+		input_filename = fs.get_filename(original_input_path)
+		new_input_path = join(input_dir, input_filename)
+		to_embed[lookup.INPUT_IMAGE_PATH] = new_input_path
+
+	#outputs
+	# if lookup.OUTPUT_IMAGE_DIRECTORY in cmd:
+	# 	raise NotImplementedError
+
+	for to_embed in to_embed_list:
+		assert(lookup.OUTPUT_IMAGE_PATH in to_embed)
+		original_output_path = to_embed[lookup.OUTPUT_IMAGE_PATH]
+		original_output_path = abspath(original_output_path)
+
+		local_output_dir = fs.get_directory(original_output_path)
+		volumes[local_output_dir] = { 'bind': output_dir, 'mode': 'rw'}
+
+		output_filename = fs.get_filename(original_output_path)
+		new_output_path = join(output_dir, output_filename)
+		to_embed[lookup.OUTPUT_IMAGE_PATH] = new_output_path
+
+	container_id = runner.start_docker(image_name, volumes=volumes)
 	for to_embed in to_embed_list:
 		to_embed[lookup.container_id] = container_id
 
@@ -115,30 +218,43 @@ def generate_docker_cmd(algorithm_info, to_embed):
 def postprocess_docker(algorithm_info, embedded_list):
 	#need to end the docker process 
 	post_cmds = []
-	if not embedded_list:
-		return post_cmds
+	post_cmd = get_post_cmd(algorithm_info)
 
-	docker_containers = list(set(list(map(lambda embedded: embedded[lookup.container_id], embedded_list))))
-	for container_id in docker_containers:
-		post_cmds.append({lookup.COMMAND_TYPE: lookup.END_DOCKER, lookup.COMMAND: [container_id]})
+	if post_cmd:
+		for embedded in embedded_list:
+			new_cmd = replace(post_cmd, embedded)
+			params = [embedded[lookup.container_id], new_cmd]
+			if lookup.WORKING_DIR in algorithm_info:
+				params.append(algorithm_info[lookup.WORKING_DIR])
+
+			docker_cmd = {lookup.COMMAND_TYPE: lookup.DOCKER, lookup.COMMAND: params}
+			post_cmds.append(docker_cmd)
 
 	return post_cmds
 
-### NATIVE ###
+def terimination_docker(algorithm_info, embedded_list):
+	termination_cmds = []
 
-def preprocess_native(algorithm_info, to_embed_list):
-	#probably need to transform from directory to list, vice versa.
-	raise NotImplementedError
+	docker_containers = list(set(list(map(lambda embedded: embedded[lookup.container_id], embedded_list))))
+	for container_id in docker_containers:
+		termination_cmds.append({lookup.COMMAND_TYPE: lookup.END_DOCKER, lookup.COMMAND: [container_id]})
 
-def generate_native_cmd(algorithm_info, params):
-	#need to do regular substitutions
-	raise NotImplementedError
+	cmd = get_cmd(algorithm_info)
+	removal_prefix = 'rm'
 
-def postprocess_native(algorithm_info, embedded_list):
-	raise NotImplementedError
+	if lookup.SECRET_TXT_FILE in cmd:
+		for embedded in embedded_list:
+			asset_file_name = fs.get_filename(embedded[lookup.SECRET_TXT_FILE])
+			asset_directory = lookup.get_algo_asset_dirs()[algorithm_info[lookup.ALGORITHM_TYPE]]
 
-### REST ###
+			old_asset_file_path = join(asset_directory, asset_file_name)
+			removal_cmd = ' '.join([removal_prefix, old_asset_file_path])
 
+			termination_cmds.append({ lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd] })
+
+	return termination_cmds
+
+#### REST ####
 def preprocess_rest(algorithm_info, to_embed_list):
 	raise NotImplementedError
 
@@ -148,8 +264,10 @@ def generate_rest_cmd(algorithm_info, params):
 def postprocess_rest(algorithm_info, embedded_list):
 	raise NotImplementedError
 
-### CLASS ###
+def termination_rest(algorithm_info, embedded_list):
+	raise NotImplementedError
 
+#### CLASS ####
 def preprocess_class(algorithm_info, to_embed_list):
 	raise NotImplementedError
 
@@ -157,6 +275,9 @@ def generate_class_cmd(algorithm_info, params):
 	raise NotImplementedError
 
 def postprocess_class(algorithm_info, embedded_list):
+	raise NotImplementedError
+
+def termination_class(algorithm_info, embedded_list):
 	raise NotImplementedError
 
 def generate_commands(algorithm_info, to_embed_list):
@@ -189,6 +310,12 @@ def generate_commands(algorithm_info, to_embed_list):
 
 	post_cmds = postprocess_function(algorithm_info, updated_embed_list)
 
-	sequential_cmds = pre_cmds + cmds + post_cmds
-	
-	return pre_cmds, cmds, post_cmds
+	terminiation_function = {
+		lookup.DOCKER: terimination_docker,
+		lookup.NATIVE: termination_native,
+		lookup.REST: termination_rest,
+		lookup.CLASS: termination_class
+	}[command_type]
+
+	termination_cmds = terminiation_function(algorithm_info, updated_embed_list)
+	return pre_cmds, cmds, post_cmds, termination_cmds

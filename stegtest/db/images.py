@@ -111,7 +111,7 @@ def get_image_info(path_to_file):
 		coefficients = load(path_to_file)
 		info_dict[lookup.embedding_max] = np.count_nonzero(coefficients[0]) 
 	else:
-		info_dict[lookup.embedding_max] = width*height*channels
+		info_dict[lookup.embedding_max] = width*height*convert_channels_to_int(channels)
 
 	return info_dict
 

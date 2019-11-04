@@ -84,7 +84,8 @@ def download(ctx, name, file, db):
 def process(ctx, directory, name, operation):
     """processes a specified database. select small for faster analysis speeds (512x512 images)"""
     assert(directory and name)
-    pr.process_image_directory(directory, name, operation, None)
+    db_uuid = pr.process_image_directory(directory, name, operation, None)
+    click.echo('The UUID of the dataset you have processed is: ' + db_uuid)
 
 @pipeline.command()
 @click.option('-a', '--algorithm', help='specify an embedding routine by uuid', type=str)
@@ -170,6 +171,7 @@ def info(ctx, all, db, embeddor, detector):
             click.echo('\t\t' + 'UUID: ' + str(embeddor[lookup.uuid_descriptor]))
             click.echo('\t\t' + 'Compatible Types: ' + str(embeddor[lookup.compatible_descriptor]))
             click.echo('\t\t' + 'Maximum Embedding Ratio: ' + str(embeddor[lookup.embedding_descriptor]))
+            click.echo('\t\t' + 'Command Type: ' + str(embeddor[lookup.COMMAND_TYPE]))
         click.echo(breaker)
 
         embeddor_set_info = algo.get_all_algorithm_sets(lookup.embeddor)
@@ -191,6 +193,7 @@ def info(ctx, all, db, embeddor, detector):
             click.echo('\t' + str(detector[lookup.name_descriptor]))
             click.echo('\t\t' + 'UUID: ' + str(detector[lookup.uuid_descriptor]))
             click.echo('\t\t' + 'Compatible Types: ' + str(detector[lookup.compatible_descriptor]))
+            click.echo('\t\t' + 'Command Type: ' + str(detector[lookup.COMMAND_TYPE]))
         click.echo(breaker)
 
         detector_set_info = algo.get_all_algorithm_sets(lookup.detector)

@@ -21,17 +21,14 @@ def get_container(container_id):
 			print('lock contention for docker container')
 			pass
 
-	print(container.logs())
 	return container
 
 def stop_docker(container_id):
 	container = get_container(container_id)
 	container.stop()
 
-def run_native(cmd, print_cmd=False):
-	if print_cmd:
-		print(cmd)
-	subprocess.run(cmd, shell=True)
+def run_native(cmds):
+	subprocess.run(cmds, shell=True)
 
 def run_docker(container_id, cmd, wdir=None):
 	container = get_container(container_id)
@@ -57,6 +54,7 @@ def run(cmd_info):
 	}[cmd_type]
 
 	run_info = cmd_info[lookup.COMMAND]
+	print(run_info)
 	run_function(*run_info)
 
 def run_pool(cmd_list, threads=None):

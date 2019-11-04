@@ -127,6 +127,7 @@ container_id = 'container_id'
 
 #COMMAND
 COMMAND = 'run'
+POST_COMMAND = 'post_run'
 
 #COMMAND SPECIFIC - COVER
 INPUT_IMAGE_DIRECTORY = 'INPUT_DIRECTORY'
@@ -227,14 +228,10 @@ def get_metric_variables():
 	return [false_positive_rate, false_negative_rate, true_negative_rate, negative_predictive_value,
 	false_discovery_rate, true_positive_rate, positive_predictive_value, accuracy, roc_auc]
 
-def create_asset_file(type:str, content:str, shortened:bool=False):
+def create_asset_file(type:str, content:str):
 	"""creates a text asset for the specificied directory"""
-	asset_directory = get_asset_directories()[type]
-	file_name = fs.create_file_from_hash(fs.get_uuid(), 'txt')
-
-	if shortened:
-		file_name = file_name[:10] + '.txt'
-
+	asset_directory = get_algo_asset_dirs()[type]
+	file_name = fs.create_name_from_uuid(fs.get_uuid()[:10], 'txt')
 	file_path = abspath(join(asset_directory, file_name))
 
 	fs.write_to_text_file(file_path, [content])
@@ -286,7 +283,7 @@ def get_image_info_variables():
 	return [file_path, image_type, image_width, image_height, image_channels, embedding_max]
 
 def get_steganographic_info_variables():
-	return [file_path, image_type, image_width, image_height, image_channels, embedding_max, source_image, steganographic_function]
+	return [file_path, image_type, image_width, image_height, image_channels, embedding_max, source_image, uuid_descriptor]
 
 def get_image_list(db_descriptor):
 	metadata_directory = get_db_dirs()[metadata]
