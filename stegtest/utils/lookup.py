@@ -112,7 +112,6 @@ MAX_EMBEDDING_RATIO = 'max_embedding_ratio'
 #COMMAND_TYPE OPTIONS
 DOCKER = 'docker'
 NATIVE = 'native'
-REST = 'rest'
 CLASS = 'class'
 END_DOCKER = 'end_docker'
 
@@ -121,13 +120,17 @@ BATCH = 'batch'
 SINGLE = 'single'
 WORKING_DIR = 'working_dir'
 
-#APPLICATION_SPECIFIC
+#APPLICATION_SPECIFIC - DOCKER
 DOCKER_IMAGE = 'docker_image'
 container_id = 'container_id'
+input_dir = '/data-input'
+output_dir = '/data-output'
+asset_dir = '/data-asset'
 
 #COMMAND
 COMMAND = 'run'
 POST_COMMAND = 'post_run'
+PIPE_OUTPUT = 'pipe_output'
 
 #COMMAND SPECIFIC - COVER
 INPUT_IMAGE_DIRECTORY = 'INPUT_DIRECTORY'
@@ -147,6 +150,8 @@ bpnzAC = 'BPNZAC'
 OUTPUT_IMAGE_DIRECTORY = 'OUTPUT_DIRECTORY'
 OUTPUT_IMAGE_NAME = 'OUTPUT_IMAGE_NAME'
 OUTPUT_IMAGE_PATH = 'OUTPUT_IMAGE_PATH'
+
+
 
 
 def get_top_level_dirs():
@@ -295,6 +300,15 @@ def get_image_list(db_descriptor):
 
 	image_info = fs.read_csv_file(db_master_file, return_as_dict=True)
 	return image_info
+
+def get_cmd(algorithm_info):
+	return algorithm_info[COMMAND]
+
+def get_post_cmd(algorithm_info):
+	if POST_COMMAND in algorithm_info:
+		return algorithm_info[POST_COMMAND]
+
+	return None
 
 ####TO MOVE THESE -- SINCE THESE ARE NOT LOOKUP BUT GENERATION####
 

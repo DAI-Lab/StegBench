@@ -1,97 +1,9 @@
 import stegtest.utils.lookup as lookup
 import stegtest.utils.filesystem as fs
 import stegtest.algo.runner as runner
-import random
-import string
 import os
 
 from os.path import abspath, join
-
-docker_run_cmd = 'docker_run'
-docker_wdir_cmd = 'docker_wdr'
-docker_input_mount = '/input'
-docker_output_mount = '/output'
-
-docker_precepts = {
-	docker_run_cmd: 'docker run --rm -d',
-	docker_wdir_cmd: 'bash -c cd /my/app && for image in images; do'
-}
-
-input_dir = '/data-input'
-output_dir = '/data-output'
-asset_dir = '/data-asset'
-
-#COMMAND SPECIFIC - COVER
-INPUT_IMAGE_DIRECTORY = 'INPUT_DIRECTORY'
-INPUT_IMAGE_NAME = 'INPUT_IMAGE_NAME'
-INPUT_IMAGE_PATH = 'INPUT_IMAGE_PATH'
-
-#COMMAND SPECIFIC - SECRET MESSAGE
-SECRET_TXT_PLAINTEXT = 'SECRET_TXT_PLAINTEXT'
-SECRET_TXT_FILE = 'SECRET_TXT_FILE'
-
-#COMMAND-SPECIFIC - SUPPORTED INPUT PARAMETERS
-PASSWORD = 'PASSWORD'
-BPP = 'BPP'
-bpnzAC = 'BPNZAC'
-
-#COMMAND-SPECIFIC - OUTPUT
-OUTPUT_IMAGE_DIRECTORY = 'OUTPUT_DIRECTORY'
-OUTPUT_IMAGE_NAME = 'OUTPUT_IMAGE_NAME'
-OUTPUT_IMAGE_PATH = 'OUTPUT_IMAGE_PATH'
-
-def get_cmd(algorithm_info):
-	return algorithm_info[lookup.COMMAND]
-
-def get_post_cmd(algorithm_info):
-	if lookup.POST_COMMAND in algorithm_info:
-		return algorithm_info[lookup.POST_COMMAND]
-
-	return None
-
-def generate_random_string(byte_length=20):
-	return ''.join(random.choice(string.ascii_letters + string.digits) for x in range(byte_length))
-
-def generate_random_float(max_flt=100):
-	return random.random()*max_flt
-
-def generate_random_int(max_int=100):
-	return int(generate_random_float(max_int))
-
-def generate_param(type, *args):
-	function = {
-		lookup.SECRET_TXT_PLAINTEXT: generate_random_string, 
-		lookup.SECRET_TXT_FILE: generate_random_string,
-		lookup.PASSWORD: generate_password,
-		lookup.BPP: generate_random_float,
-		lookup.bpnzAC: generate_random_float
-	}[type]
-	return function(*args)
-
-def secret_message_from_embedding(embedding_ratio, img_info):
-	str_len_in_bits = float(img_info[lookup.embedding_max])*embedding_ratio
-	strlen_in_bytes = int(str_len_in_bits/8)
-	return generate_random_string(strlen_in_bytes)
-
-def generate_password(byte_length):
-	return generate_random_string(byte_length)
-
-def validate_single(command):
-	if lookup.INPUT_IMAGE_PATH not in command:
-		raise ValueError('Command does not support single image inputs')
-
-def validate_batch(command):
-	if lookup.INPUT_IMAGE_DIRECTORY not in command:
-		raise ValueError('Command does not support batch image inputs')
-
-def validate(command_type, algorithm_info):
-	validate_function = {
-		lookup.SINGLE: validate_single,
-		lookup.BATCH: validate_batch,
-	}[command_type]
-
-	command = get_cmd(algorithm_info)
-	validate_function(command)
 
 def replace(cmd:str, replacements):
 	for replacement_key in replacements:
@@ -101,7 +13,7 @@ def replace(cmd:str, replacements):
 #### NATIVE ####
 def preprocess_native(algorithm_info, to_embed_list):
 	#probably need to transform from directory to list, vice versa.
-	cmd = get_cmd(algorithm_info)
+	cmd = lookup.get_cmd(algorithm_info)
 	if lookup.SECRET_TXT_FILE in cmd:
 		for to_embed in to_embed_list:
 			if lookup.SECRET_TXT_FILE not in cmd:
@@ -118,13 +30,13 @@ def preprocess_native(algorithm_info, to_embed_list):
 
 def generate_native_cmd(algorithm_info, to_embed):
 	#need to do regular substitutions
-	cmd = get_cmd(algorithm_info)
+	cmd = lookup.get_cmd(algorithm_info)
 	new_cmd = replace(cmd, to_embed)
 
 	return {lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [new_cmd]}
 
 def postprocess_native(algorithm_info, embedded_list):
-	cmd = get_post_cmd(algorithm_info)
+	cmd = lookup.get_post_cmd(algorithm_info)
 	if cmd is None:
 		return []
 
@@ -132,7 +44,7 @@ def postprocess_native(algorithm_info, embedded_list):
 	return [{lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: new_cmd}]
 
 def termination_native(algorithm_info, embedded_list):
-	cmd = get_cmd(algorithm_info)
+	cmd = lookup.get_cmd(algorithm_info)
 
 	removal_prefix = 'rm'
 	termination_cmds = []
@@ -147,7 +59,7 @@ def termination_native(algorithm_info, embedded_list):
 def preprocess_docker(algorithm_info, to_embed_list):
 	"""starts docker command and updates parameters appropriately"""
 	image_name = algorithm_info[lookup.DOCKER_IMAGE]
-	cmd = get_cmd(algorithm_info)
+	cmd = lookup.get_cmd(algorithm_info)
 	volumes = {}
 
 	if lookup.SECRET_TXT_FILE in cmd:
@@ -159,10 +71,10 @@ def preprocess_docker(algorithm_info, to_embed_list):
 				txt_file_path = to_embed[lookup.SECRET_TXT_FILE]
 
 			local_asset_dir = fs.get_directory(txt_file_path)
-			volumes[local_asset_dir] = { 'bind': asset_dir, 'mode': 'rw'}
+			volumes[local_asset_dir] = { 'bind': lookup.asset_dir, 'mode': 'rw'}
 
 			asset_filename = fs.get_filename(txt_file_path)
-			new_asset_path = join(asset_dir, asset_filename)
+			new_asset_path = join(lookup.asset_dir, asset_filename)
 			to_embed[lookup.SECRET_TXT_FILE] = new_asset_path
 
 	#inputs
@@ -177,10 +89,10 @@ def preprocess_docker(algorithm_info, to_embed_list):
 		original_input_path = abspath(original_input_path)
 
 		local_input_dir = fs.get_directory(original_input_path)
-		volumes[local_input_dir] = { 'bind': input_dir, 'mode': 'rw'}
+		volumes[local_input_dir] = { 'bind': lookup.input_dir, 'mode': 'rw'}
 
 		input_filename = fs.get_filename(original_input_path)
-		new_input_path = join(input_dir, input_filename)
+		new_input_path = join(lookup.input_dir, input_filename)
 		to_embed[lookup.INPUT_IMAGE_PATH] = new_input_path
 
 	#outputs
@@ -193,10 +105,10 @@ def preprocess_docker(algorithm_info, to_embed_list):
 		original_output_path = abspath(original_output_path)
 
 		local_output_dir = fs.get_directory(original_output_path)
-		volumes[local_output_dir] = { 'bind': output_dir, 'mode': 'rw'}
+		volumes[local_output_dir] = { 'bind': lookup.output_dir, 'mode': 'rw'}
 
 		output_filename = fs.get_filename(original_output_path)
-		new_output_path = join(output_dir, output_filename)
+		new_output_path = join(lookup.output_dir, output_filename)
 		to_embed[lookup.OUTPUT_IMAGE_PATH] = new_output_path
 
 	container_id = runner.start_docker(image_name, volumes=volumes)
@@ -206,7 +118,7 @@ def preprocess_docker(algorithm_info, to_embed_list):
 	return [], to_embed_list
 
 def generate_docker_cmd(algorithm_info, to_embed):
-	cmd = get_cmd(algorithm_info)
+	cmd = lookup.get_cmd(algorithm_info)
 	new_cmd = replace(cmd, to_embed)
 
 	params = [to_embed[lookup.container_id], new_cmd]
@@ -218,8 +130,9 @@ def generate_docker_cmd(algorithm_info, to_embed):
 def postprocess_docker(algorithm_info, embedded_list):
 	#need to end the docker process 
 	post_cmds = []
-	post_cmd = get_post_cmd(algorithm_info)
+	post_cmd = lookup.get_post_cmd(algorithm_info)
 
+	
 	if post_cmd:
 		for embedded in embedded_list:
 			new_cmd = replace(post_cmd, embedded)
@@ -239,7 +152,7 @@ def terimination_docker(algorithm_info, embedded_list):
 	for container_id in docker_containers:
 		termination_cmds.append({lookup.COMMAND_TYPE: lookup.END_DOCKER, lookup.COMMAND: [container_id]})
 
-	cmd = get_cmd(algorithm_info)
+	cmd = lookup.get_cmd(algorithm_info)
 	removal_prefix = 'rm'
 
 	if lookup.SECRET_TXT_FILE in cmd:
@@ -253,19 +166,6 @@ def terimination_docker(algorithm_info, embedded_list):
 			termination_cmds.append({ lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd] })
 
 	return termination_cmds
-
-#### REST ####
-def preprocess_rest(algorithm_info, to_embed_list):
-	raise NotImplementedError
-
-def generate_rest_cmd(algorithm_info, params):
-	raise NotImplementedError
-
-def postprocess_rest(algorithm_info, embedded_list):
-	raise NotImplementedError
-
-def termination_rest(algorithm_info, embedded_list):
-	raise NotImplementedError
 
 #### CLASS ####
 def preprocess_class(algorithm_info, to_embed_list):
@@ -286,7 +186,6 @@ def generate_commands(algorithm_info, to_embed_list):
 	preprocess_function = {
 		lookup.DOCKER: preprocess_docker,
 		lookup.NATIVE: preprocess_native,
-		lookup.REST: preprocess_rest,
 		lookup.CLASS: preprocess_class,
 	}[command_type]
 
@@ -295,7 +194,6 @@ def generate_commands(algorithm_info, to_embed_list):
 	generate_function = {
 		lookup.DOCKER: generate_docker_cmd,
 		lookup.NATIVE: generate_native_cmd,
-		lookup.REST: generate_rest_cmd,
 		lookup.CLASS: generate_class_cmd
 	}[command_type]
 
@@ -304,7 +202,6 @@ def generate_commands(algorithm_info, to_embed_list):
 	postprocess_function = {
 		lookup.DOCKER: postprocess_docker,
 		lookup.NATIVE: postprocess_native,
-		lookup.REST: postprocess_rest,
 		lookup.CLASS: postprocess_class
 	}[command_type]
 
@@ -313,7 +210,6 @@ def generate_commands(algorithm_info, to_embed_list):
 	termination_function = {
 		lookup.DOCKER: terimination_docker,
 		lookup.NATIVE: termination_native,
-		lookup.REST: termination_rest,
 		lookup.CLASS: termination_class
 	}[command_type]
 

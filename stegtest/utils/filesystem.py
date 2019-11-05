@@ -19,7 +19,7 @@ def get_filename(file_path, extension=True):
     if extension:
         return path.basename(file_path)
     else:
-        filename, file_extension = path.splitext(file_path)
+        filename, _ = path.splitext(path.basename(file_path))
         return filename
 
 def get_extension(file_path):

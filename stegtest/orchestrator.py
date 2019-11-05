@@ -6,9 +6,11 @@ import copy
 
 import stegtest.utils.filesystem as fs
 import stegtest.utils.lookup as lookup
+import stegtest.utils.param_generator as param_generator
 
 import stegtest.algo.algorithm as algo
-import stegtest.algo.cmd_generator as cmd_generator
+import stegtest.algo.embeddor_cmds as embeddor_cmds
+import stegtest.algo.detector_cmds as detector_cmds
 import stegtest.algo.runner as runner
 
 import stegtest.db.processor as processor
@@ -34,11 +36,11 @@ class Embeddor():
 
 		for idx, embeddor in enumerate(self.embeddors):
 			embeddor_params = copy.deepcopy(partition[idx])
-			pre_cmds, cmds, post_cmds, terminiation_cmds = cmd_generator.generate_commands(embeddor, embeddor_params)
+			pre_cmds, cmds, post_cmds, termination_cmds = embeddor_cmds.generate_commands(embeddor, embeddor_params)
 			all_pre_cmds += pre_cmds
 			all_cmds += cmds
 			all_post_cmds += post_cmds 
-			all_termination_cmds += terminiation_cmds
+			all_termination_cmds += termination_cmds
 
 		runner.run_pool(all_pre_cmds)
 		runner.run_pool(all_cmds)
@@ -90,7 +92,7 @@ class Embeddor():
 		for idx in range(remainder):
 			input_partition[idx].append(image_dict[idx + num_embeddors*images_per_embeddor].copy())
 
-		ratio_embeddor = partial(cmd_generator.secret_message_from_embedding, embedding_ratio) 
+		ratio_embeddor = partial(param_generator.secret_message_from_embedding, embedding_ratio) 
 		secret_message = [list(map(ratio_embeddor, input_list)) for input_list in input_partition]
 		output_partition = [lookup.generate_output_list(output_directory, input_list) for input_list in input_partition]
 
@@ -109,71 +111,83 @@ class Embeddor():
 class Detector():
 	""""runs all the analyzer tasks"""
 	def __init__(self, detector_set):
-		detector_names = detector_set[lookup.detector]
-
 		self.detector_set = detector_set
-		self.compatible_types = set(self.detector_set[lookup.compatibile_types_decorator])
-		self.detectors = algo.instantiate_algorithm_set(lookup.detector, detector_set)
+		self.detectors = detector_set[lookup.detector]
+		self.compatible_types = detector_set[lookup.compatible_descriptor]
 
-	def detect(self, testdb:str, output_file:str=None):
-		print('preparing db for evaluation')
-		db_information = lookup.get_steganographic_db_info(testdb)
-		db_compatible_states = set(db_information[lookup.compatible_descriptor])
+	def detect_list(self, image_list:str):
+		all_pre_cmds = []
+		all_cmds = []
+		all_post_cmds = []
+		all_termination_cmds = []
 
-		db_embed_compatible = db_compatible_states.intersection(self.compatible_types)
-		
-		if len(db_embed_compatible) <= 0:
-			raise ValueError('The embeddor set and dataset are not compatible')
-
-		image_dict = lookup.get_image_list(testdb)
-
-		cover_files = list(map(lambda img: img[lookup.source_image], image_dict))
-		stego_files = list(map(lambda img: img[lookup.file_path], image_dict))
-
-		analyze_cover = partial(analyze_detector, cover_files)
-		analyze_stego = partial(analyze_detector, stego_files)
-
-		for idx, embeddor in enumerate(self.embeddors):
-			embeddor_params = copy.deepcopy(partition[idx])
-			pre_cmds, cmds, post_cmds, terminiation_cmds = cmd_generator.generate_commands(embeddor, embeddor_params)
+		for idx, detector in enumerate(self.detectors):
+			pre_cmds, cmds, post_cmds, termination_cmds = detector_cmds.generate_commands(detector, copy.deepcopy(image_list))
 			all_pre_cmds += pre_cmds
 			all_cmds += cmds
 			all_post_cmds += post_cmds 
-			all_termination_cmds + terminiation_cmds
-
-		# pool = Pool().map
-		# print('processing cover results...')
-		# cover_results = pool(analyze_cover, self.detectors)
-		# print(cover_results)
-		# print('processing stego results...')
-		# stego_results = pool(analyze_stego, self.detectors)
-		# print('calcualating statistics...')
+			all_termination_cmds += termination_cmds
 
 		runner.run_pool(all_pre_cmds)
 		runner.run_pool(all_cmds)
 		runner.run_pool(all_post_cmds)
 		runner.run_pool(all_termination_cmds)
 
-		detector_names = self.detector_set[lookup.detector]
-		statistics = algo.calculate_statistics(detector_names, cover_results, stego_results)
+		# cover_files = list(map(lambda img: img[lookup.source_image], image_dict))
+		# stego_files = list(map(lambda img: img[lookup.file_path], image_dict))
 
-		if output_file:
-			output_directory = lookup.get_tmp_directories()[lookup.detector]
-			output_file_name = fs.create_name_from_uuid(fs.get_uuid() , 'csv')
+		# algorithm.process_evaluation_results()
+		return []
 
-			output_file_path = abspath(join(output_directory, output_file_name))
+		#something to do with output file processing lmao
 
-			statistics_header = [lookup.get_statistics_header()]
-			statistics_rows = [list(detector_statistic.values()) for detector_statistic in statistics]
-			print('writing statistics to file...')
 
-			statistics_data = statistics_header + statistics_rows
+	def detect(self, testdb:str):
+		print('preparing db for evaluation')
+		stego_db_info = lookup.get_steganographic_db_info(testdb)
+		sourcedb = stego_db_info[lookup.source_db]
+		source_db_info = lookup.get_source_db_info(sourcedb)
 
-			fs.write_to_csv_file(output_file_path, statistics_data)
+		source_compatible_states = set(source_db_info[lookup.compatible_descriptor])
+		embedded_compatible_states = set(stego_db_info[lookup.compatible_descriptor])
 
-			return output_file_path
+		db_embed_compatible = embedded_compatible_states.intersection(source_compatible_states).intersection(self.compatible_types)
+		
+		if len(db_embed_compatible) != len(embedded_compatible_states):
+			raise ValueError('The embeddor set and dataset are not compatible')
 
+		source_image_dict = lookup.get_image_list(sourcedb)
+		stego_image_dict = lookup.get_image_list(testdb)
+
+		results_file_name = fs.get_uuid()
+
+
+		source_image_list = list(map(lambda cover: {lookup.INPUT_IMAGE_PATH: cover[lookup.file_path]}, source_image_dict))
+		stego_image_list = list(map(lambda cover: {lookup.INPUT_IMAGE_PATH: cover[lookup.file_path]}, stego_image_dict))
+
+
+		source_results = self.detect_list(source_image_list)
+		stego_results = self.detect_list(stego_image_list)
+
+		statistics = algo.calculate_statistics(self.detectors, source_results, stego_results)
 		return statistics
+		# if output_file:
+		# 	output_directory = lookup.get_tmp_directories()[lookup.detector]
+		# 	output_file_name = fs.create_name_from_uuid(fs.get_uuid() , 'csv')
+
+		# 	output_file_path = abspath(join(output_directory, output_file_name))
+
+		# 	statistics_header = [lookup.get_statistics_header()]
+		# 	statistics_rows = [list(detector_statistic.values()) for detector_statistic in statistics]
+		# 	print('writing statistics to file...')
+
+		# 	statistics_data = statistics_header + statistics_rows
+
+		# 	fs.write_to_csv_file(output_file_path, statistics_data)
+
+		# 	return output_file_path
+
+		# return statistics
 
 class Scheduler():
 	"""schedules the generator and analyzer task"""

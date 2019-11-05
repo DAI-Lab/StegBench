@@ -21,9 +21,6 @@ def validate_docker(config):
 def validate_native(config):
 	assert(config[lookup.COMMAND])
 
-def validate_rest(config):
-	raise NotImplementedError
-
 def validate_class(config):
 	raise NotImplementedError
 
@@ -36,7 +33,6 @@ def validate_config(config):
 	validate_function = {
 		lookup.DOCKER: validate_docker,
 		lookup.NATIVE: validate_native,
-		lookup.REST: validate_rest,
 		lookup.CLASS: validate_class
 	}[config[lookup.COMMAND_TYPE]]
 
@@ -102,9 +98,6 @@ def check_config_native(config_details):
 	raise NotImplementedError
 
 def check_config_class(config_details):
-	raise NotImplementedError
-
-def check_config_rest(config_details):
 	raise NotImplementedError
 
 def check_config_info(config_details):

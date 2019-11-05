@@ -229,10 +229,9 @@ def embed(ctx, embeddor, db, ratio):
 def detect(ctx, detector, db):
     """analyzes a set detectors using a pre-processed database"""
     assert(detector and db)
-    detector_set = algo.lookup_algorithm_set(lookup.detector, detector)
+    detector_set = algo.get_algorithm_set(lookup.detector, detector)
     analyzer = Detector(detector_set)
-
-    output_file_path = analyzer.analyze(db, write_results=True)
+    output_file_path = analyzer.detect(db)
     click.echo('The results can be found here: ' + output_file_path)
 
 # @pipeline.command()

@@ -40,15 +40,11 @@ def run_docker(container_id, cmd, wdir=None):
 def run_class(cmd):
 	raise NotImplementedError
 
-def run_rest(cmd):
-	raise NotImplementedError
-
 def run(cmd_info):
 	cmd_type = cmd_info[lookup.COMMAND_TYPE]
 	run_function = {
 		lookup.DOCKER: run_docker,
 		lookup.NATIVE: run_native,
-		lookup.REST: run_rest,
 		lookup.CLASS: run_class,
 		lookup.END_DOCKER: stop_docker,
 	}[cmd_type]
