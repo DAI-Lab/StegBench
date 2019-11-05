@@ -135,13 +135,13 @@ def termination_native(algorithm_info, embedded_list):
 	cmd = get_cmd(algorithm_info)
 
 	removal_prefix = 'rm'
-	terminiation_cmds = []
+	termination_cmds = []
 	if lookup.SECRET_TXT_FILE in cmd:
 		for embedded in embedded_list:
 			removal_cmd = ' '.join([removal_prefix, embedded[lookup.SECRET_TXT_FILE]])
-			terminiation_cmds.append({ lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd] })
+			termination_cmds.append({ lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd] })
 
-	return terminiation_cmds
+	return termination_cmds
 
 ##### DOCKER ####
 def preprocess_docker(algorithm_info, to_embed_list):
@@ -310,12 +310,12 @@ def generate_commands(algorithm_info, to_embed_list):
 
 	post_cmds = postprocess_function(algorithm_info, updated_embed_list)
 
-	terminiation_function = {
+	termination_function = {
 		lookup.DOCKER: terimination_docker,
 		lookup.NATIVE: termination_native,
 		lookup.REST: termination_rest,
 		lookup.CLASS: termination_class
 	}[command_type]
 
-	termination_cmds = terminiation_function(algorithm_info, updated_embed_list)
+	termination_cmds = termination_function(algorithm_info, updated_embed_list)
 	return pre_cmds, cmds, post_cmds, termination_cmds

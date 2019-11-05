@@ -38,7 +38,7 @@ class Embeddor():
 			all_pre_cmds += pre_cmds
 			all_cmds += cmds
 			all_post_cmds += post_cmds 
-			all_termination_cmds + terminiation_cmds
+			all_termination_cmds += terminiation_cmds
 
 		runner.run_pool(all_pre_cmds)
 		runner.run_pool(all_cmds)
