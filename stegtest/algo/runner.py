@@ -25,7 +25,7 @@ def get_container(container_id):
 
 def stop_docker(container_id):
 	container = get_container(container_id)
-	container.stop()
+	# container.stop()
 
 def run_native(cmds):
 	subprocess.run(cmds, shell=True)

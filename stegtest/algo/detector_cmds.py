@@ -10,8 +10,17 @@ def replace(cmd:str, replacements):
 		cmd = cmd.replace(replacement_key, replacements[replacement_key])
 	return cmd
 
-def generate_result_file_name(algorithm_info, cmd:str, to_detect):
+def generate_temp_file_name(algorithm_info, cmd:str, to_detect):
 	output_file_name = algorithm_info[lookup.uuid_descriptor]
+
+	output_directory = None
+	if algorithm_info[lookup.COMMAND_TYPE] == lookup.DOCKER:
+		output_directory = lookup.result_dir
+	else:
+		output_directory = lookup.get_algo_asset_dirs()[lookup.detector]
+
+	print(output_directory)
+
 	if lookup.INPUT_IMAGE_PATH in cmd:
 		assert(lookup.INPUT_IMAGE_PATH in to_detect)
 		output_file_name += '_' + fs.get_filename(to_detect[lookup.INPUT_IMAGE_PATH], extension=False) + '.txt'
@@ -22,7 +31,29 @@ def generate_result_file_name(algorithm_info, cmd:str, to_detect):
 		#TODO NEED TO FIX THIS PART
 		output_file_name += '_' + fs.get_filename(to_detect[lookup.INPUT_IMAGE_DIRECTORY]) + '.txt'
 
-	return output_file_name
+	return join(output_directory ,output_file_name)
+
+def generate_result_file_name(algorithm_info, cmd:str, to_detect):
+	output_file_name = algorithm_info[lookup.uuid_descriptor]
+
+	output_directory = None
+	if algorithm_info[lookup.COMMAND_TYPE] == lookup.DOCKER:
+		output_directory = lookup.result_dir
+	else:
+		output_directory = lookup.get_algo_asset_dirs()[lookup.detector]
+
+
+	if lookup.INPUT_IMAGE_PATH in cmd:
+		assert(lookup.INPUT_IMAGE_PATH in to_detect)
+		output_file_name += '_' + fs.get_filename(to_detect[lookup.INPUT_IMAGE_PATH], extension=False) + '.txt'
+
+
+	elif lookup.INPUT_IMAGE_DIRECTORY in cmd:
+		assert(lookup.INPUT_IMAGE_DIRECTORY in to_detect)
+		#TODO NEED TO FIX THIS PART
+		output_file_name += '_' + fs.get_filename(to_detect[lookup.INPUT_IMAGE_DIRECTORY]) + '.txt'
+
+	return join(output_directory ,output_file_name)
 
 #### NATIVE ####
 def preprocess_native(algorithm_info, to_detect_list):
@@ -68,14 +99,14 @@ def postprocess_native(algorithm_info, detected_list):
 def termination_native(algorithm_info, detected_list):
 	termination_cmds = []
 
-	if algorithm_info[lookup.PIPE_OUTPUT]:
-		cmd = lookup.get_cmd(algorithm_info)
-		removal_prefix = 'rm'
-		for detected in detected_list:
-			result_file = generate_result_file_name(algorithm_info, cmd, detected)
-			removal_cmd = ' '.join([removal_prefix, result_file])
+	# if algorithm_info[lookup.PIPE_OUTPUT]:
+	# 	cmd = lookup.get_cmd(algorithm_info)
+	# 	removal_prefix = 'rm'
+	# 	for detected in detected_list:
+	# 		result_file = generate_result_file_name(algorithm_info, cmd, detected)
+	# 		removal_cmd = ' '.join([removal_prefix, result_file])
 
-			termination_cmds.append({lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd]})
+	# 		termination_cmds.append({lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd]})
 
 	return termination_cmds
 
@@ -103,9 +134,12 @@ def preprocess_docker(algorithm_info, to_detect_list):
 		new_input_path = join(lookup.input_dir, input_filename)
 		to_detect[lookup.INPUT_IMAGE_PATH] = new_input_path
 
-	#need to mount the results stuff here....
-	#TODO
+	result_directory = abspath(lookup.get_algo_asset_dirs()[lookup.detector])
+	assert(fs.dir_exists(result_directory))
+	
+	volumes[result_directory] = { 'bind': lookup.result_dir, 'mode': 'rw' }
 
+	print(volumes)
 
 	container_id = runner.start_docker(image_name, volumes=volumes)
 	for to_detect in to_detect_list:

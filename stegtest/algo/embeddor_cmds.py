@@ -153,7 +153,7 @@ def terimination_docker(algorithm_info, embedded_list):
 		termination_cmds.append({lookup.COMMAND_TYPE: lookup.END_DOCKER, lookup.COMMAND: [container_id]})
 
 	cmd = lookup.get_cmd(algorithm_info)
-	removal_prefix = 'rm'
+	removal_prefix = ''
 
 	if lookup.SECRET_TXT_FILE in cmd:
 		for embedded in embedded_list:

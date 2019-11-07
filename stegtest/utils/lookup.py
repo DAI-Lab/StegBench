@@ -126,6 +126,7 @@ container_id = 'container_id'
 input_dir = '/data-input'
 output_dir = '/data-output'
 asset_dir = '/data-asset'
+result_dir = '/data-result'
 
 #COMMAND
 COMMAND = 'run'

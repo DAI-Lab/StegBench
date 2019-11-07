@@ -109,7 +109,7 @@ def get_image_info(path_to_file):
 	if img_type in lookup.lossy_encoding_types():
 		#TODO verify this, add information for quantization at different quality levels, 
 		coefficients = load(path_to_file)
-		info_dict[lookup.embedding_max] = np.count_nonzero(coefficients[0]) 
+		info_dict[lookup.embedding_max] = np.count_nonzero(coefficients[0])
 	else:
 		info_dict[lookup.embedding_max] = width*height*convert_channels_to_int(channels)
 
