@@ -9,7 +9,6 @@ client = docker.from_env()
 
 def start_docker(image_name, volumes):
 	container = client.containers.run(image_name, volumes=volumes, tty=True, detach=True)
-
 	return container.id
 
 def get_container(container_id):
@@ -25,7 +24,7 @@ def get_container(container_id):
 
 def stop_docker(container_id):
 	container = get_container(container_id)
-	# container.stop()
+	container.stop()
 
 def run_native(cmds):
 	subprocess.run(cmds, shell=True)
@@ -33,7 +32,7 @@ def run_native(cmds):
 def run_docker(container_id, cmd, wdir=None):
 	container = get_container(container_id)
 	if wdir:
-		container.run_exec(cmd, workdir=wdir)
+		container.exec_run(cmd, workdir=wdir)
 	else:
 		container.exec_run(cmd)
 

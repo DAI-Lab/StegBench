@@ -23,37 +23,42 @@ def generate_temp_file_name(algorithm_info, cmd:str, to_detect):
 
 	if lookup.INPUT_IMAGE_PATH in cmd:
 		assert(lookup.INPUT_IMAGE_PATH in to_detect)
-		output_file_name += '_' + fs.get_filename(to_detect[lookup.INPUT_IMAGE_PATH], extension=False) + '.txt'
+		output_file_name += '_' + fs.get_filename(to_detect[lookup.INPUT_IMAGE_PATH], extension=False)
 
 
 	elif lookup.INPUT_IMAGE_DIRECTORY in cmd:
 		assert(lookup.INPUT_IMAGE_DIRECTORY in to_detect)
 		#TODO NEED TO FIX THIS PART
-		output_file_name += '_' + fs.get_filename(to_detect[lookup.INPUT_IMAGE_DIRECTORY]) + '.txt'
+		output_file_name += '_' + fs.get_filename(to_detect[lookup.INPUT_IMAGE_DIRECTORY])
 
-	return join(output_directory ,output_file_name)
+	output_file_name += '.txt'
+
+	return join(output_directory , output_file_name)
 
 def generate_result_file_name(algorithm_info, cmd:str, to_detect):
 	output_file_name = algorithm_info[lookup.uuid_descriptor]
 
-	output_directory = None
-	if algorithm_info[lookup.COMMAND_TYPE] == lookup.DOCKER:
-		output_directory = lookup.result_dir
-	else:
-		output_directory = lookup.get_algo_asset_dirs()[lookup.detector]
+	# output_directory = None
+	# if algorithm_info[lookup.COMMAND_TYPE] == lookup.DOCKER:
+	# 	output_directory = lookup.result_dir
+	# else:
+	
+	output_directory = abspath(lookup.get_algo_asset_dirs()[lookup.detector])
 
 
 	if lookup.INPUT_IMAGE_PATH in cmd:
 		assert(lookup.INPUT_IMAGE_PATH in to_detect)
-		output_file_name += '_' + fs.get_filename(to_detect[lookup.INPUT_IMAGE_PATH], extension=False) + '.txt'
+		output_file_name += '_' + fs.get_filename(to_detect[lookup.INPUT_IMAGE_PATH], extension=False)
 
 
 	elif lookup.INPUT_IMAGE_DIRECTORY in cmd:
 		assert(lookup.INPUT_IMAGE_DIRECTORY in to_detect)
 		#TODO NEED TO FIX THIS PART
-		output_file_name += '_' + fs.get_filename(to_detect[lookup.INPUT_IMAGE_DIRECTORY]) + '.txt'
+		output_file_name += '_' + fs.get_filename(to_detect[lookup.INPUT_IMAGE_DIRECTORY])
 
-	return join(output_directory ,output_file_name)
+	output_file_name += '.txt'
+
+	return join(output_directory , output_file_name)
 
 #### NATIVE ####
 def preprocess_native(algorithm_info, to_detect_list):
@@ -154,15 +159,16 @@ def generate_docker_cmd(algorithm_info, to_detect):
 	if algorithm_info[lookup.PIPE_OUTPUT]:
 		result_file = generate_result_file_name(algorithm_info, cmd, to_detect)
 		result_file = join(lookup.input_dir, result_file)
-		write_to_result_cmd = ' >> ' + result_file
-
-		new_cmd += write_to_result_cmd
+		#need to return a native command for now -- HACKY FIX
+		result_file_path = generate_result_file_name(algorithm_info, cmd, to_detect)
+		write_to_result_cmd = ' >> ' + result_file_path
+		docker_cmd = ' '.join(['docker exec', str(to_detect[lookup.container_id]), new_cmd, write_to_result_cmd])
+		return {lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [docker_cmd]}
 
 	params = [to_detect[lookup.container_id], new_cmd]
 	if lookup.WORKING_DIR in algorithm_info:
 		params.append(algorithm_info[lookup.WORKING_DIR])
-
-
+		
 	return {lookup.COMMAND_TYPE: lookup.DOCKER, lookup.COMMAND: params}
 
 def postprocess_docker(algorithm_info, detected_list):
