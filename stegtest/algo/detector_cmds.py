@@ -157,8 +157,6 @@ def generate_docker_cmd(algorithm_info, to_detect):
 	new_cmd = replace(cmd, to_detect)
 
 	if algorithm_info[lookup.PIPE_OUTPUT]:
-		result_file = generate_result_file_name(algorithm_info, cmd, to_detect)
-		result_file = join(lookup.input_dir, result_file)
 		#need to return a native command for now -- HACKY FIX
 		result_file_path = generate_result_file_name(algorithm_info, cmd, to_detect)
 		write_to_result_cmd = ' >> ' + result_file_path
