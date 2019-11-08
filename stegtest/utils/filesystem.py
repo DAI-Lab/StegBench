@@ -101,6 +101,12 @@ def convert_csv_to_dict(rows):
 
     return data_to_dict
 
+def read_txt_file(path_to_file):
+    with open(path_to_file) as in_file:
+        lines = in_file.readlines()
+
+    return lines
+
 def read_csv_file(path_to_file, return_as_dict=False):
     with open(path_to_file, 'r') as in_file:
         reader = csv.reader(in_file)

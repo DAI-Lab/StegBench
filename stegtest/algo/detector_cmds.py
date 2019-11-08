@@ -144,8 +144,6 @@ def preprocess_docker(algorithm_info, to_detect_list):
 	
 	volumes[result_directory] = { 'bind': lookup.result_dir, 'mode': 'rw' }
 
-	print(volumes)
-
 	container_id = runner.start_docker(image_name, volumes=volumes)
 	for to_detect in to_detect_list:
 		to_detect[lookup.container_id] = container_id
@@ -166,7 +164,7 @@ def generate_docker_cmd(algorithm_info, to_detect):
 	params = [to_detect[lookup.container_id], new_cmd]
 	if lookup.WORKING_DIR in algorithm_info:
 		params.append(algorithm_info[lookup.WORKING_DIR])
-		
+
 	return {lookup.COMMAND_TYPE: lookup.DOCKER, lookup.COMMAND: params}
 
 def postprocess_docker(algorithm_info, detected_list):

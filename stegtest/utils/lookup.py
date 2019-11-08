@@ -152,7 +152,9 @@ OUTPUT_IMAGE_DIRECTORY = 'OUTPUT_DIRECTORY'
 OUTPUT_IMAGE_NAME = 'OUTPUT_IMAGE_NAME'
 OUTPUT_IMAGE_PATH = 'OUTPUT_IMAGE_PATH'
 
-
+#FILTER SPECIFIC
+regex_filter_yes = 'regex_filter_yes'
+regex_filter_no = 'regex_filter_no'
 
 
 def get_top_level_dirs():

@@ -8,6 +8,7 @@ import stegtest.utils.lookup as lookup
 import stegtest.utils.filesystem as fs
 
 import math
+import re
 
 from os import listdir
 from os.path import abspath, join
@@ -128,7 +129,35 @@ def get_all_algorithms(algorithm_type:str):
 			all_info.append(algo_dict)
 
 	return all_info
+
+def compile_detector_results(algorithm_info, experiment_info):
+	source_db = experiment_info[lookup.source_db]
+	algorithm_uuid = algorithm_info[lookup.uuid_descriptor]
+	asset_dir = abspath(lookup.get_algo_asset_dirs()[lookup.detector])
 	
+	image_files = lookup.get_image_list(source_db)
+	image_filenames = [fs.get_filename(file[lookup.file_path], extension=False) for file in image_files]
+	result_files = [algorithm_uuid + '_' + image_file + '.txt' for image_file in image_filenames]
+	result_files = [join(asset_dir, result_file) for result_file in result_files]
+
+	yes_filter = algorithm_info[lookup.regex_filter_yes]
+	no_filter = algorithm_info[lookup.regex_filter_no]
+
+	results = []
+
+	for file in result_files:
+		results = fs.read_txt_file(file)
+		stego = re.match(yes_filter, ''.join(results))
+		cover = re.match(no_filter, ''.join(results))
+
+		assert (stego or cover and not (stego and cover))
+		if stego:
+			results.append({lookup.file_path: file, lookup.result: True})
+		else:
+			results.append({lookup.file_path: file, lookup.result: False})
+
+	return results
+
 """"TODO calculate accuracy scores"""
 
 def calculate_statistics(detector_names, all_cover_results, all_stego_results, paired=True):
