@@ -6,6 +6,7 @@ import stegtest.utils.filesystem as fs
 import stegtest.utils.lookup as lookup
 
 import configparser
+import re
 
 def is_config_file(file):
 	return fs.get_extension(file) == '.ini'
@@ -91,14 +92,71 @@ def build_configs(configs):
 	for config in configs:
 		build_config_file(config[INSTALL][0])
 
-def check_config_docker(config_details):
+def compile_csv_directory(algorithm_info, source_db):
+	algorithm_uuid = algorithm_info[lookup.uuid_descriptor]
+	asset_dir = abspath(lookup.get_algo_asset_dirs()[lookup.detector])
+
+	result_csv_file = algorithm_uuid + '_' + source_db + '.csv'
+	result_csv_file = join(asset_dir, result_csv_file)
+
+	results = fs.read_csv_file(result_csv_file, return_as_dict=True)
+
+	return results
+
+def compile_csv_results(algorithm_info, source_db):
+	algorithm_uuid = algorithm_info[lookup.uuid_descriptor]
+	asset_dir = abspath(lookup.get_algo_asset_dirs()[lookup.detector])
+
+	image_files = lookup.get_image_list(source_db)
+	image_filepath = [abspath(file[lookup.file_path]) for file in image_files]
+
+	result_files = [algorithm_uuid + '_' + fs.get_filename(file[lookup.file_path], extension=False) + '.csv' for file in image_files]
+	result_files = [join(asset_dir, result_file) for result_file in result_files]
+
 	raise NotImplementedError
 
-def check_config_native(config_details):
+def compile_txt_results(algorithm_info, source_db):
+	#TODO THIS IS NOT TESTED AND IS HACKY -- NEED TO VALIDATE THIS PIPELINE
+	algorithm_uuid = algorithm_info[lookup.uuid_descriptor]
+	asset_dir = abspath(lookup.get_algo_asset_dirs()[lookup.detector])
+	
+	image_files = lookup.get_image_list(source_db)
+	image_filepath = [abspath(file[lookup.file_path]) for file in image_files]
+
+	result_files = [algorithm_uuid + '_' + fs.get_filename(file[lookup.file_path], extension=False) + '.txt' for file in image_files]
+	result_files = [join(asset_dir, result_file) for result_file in result_files]
+
+	yes_filter = algorithm_info[lookup.regex_filter_yes]
+	no_filter = algorithm_info[lookup.regex_filter_no]
+
+	results = []
+
+	for idx, file in enumerate(result_files):
+		file_result = fs.read_txt_file(file)
+		file_result = ' '.join(file_result)
+
+		stego = re.search(yes_filter, file_result)
+		cover = re.search(no_filter, file_result)
+		assert (stego or cover and not (stego and cover))
+
+		if stego:
+			results.append({lookup.file_path: image_filepath[idx], lookup.result: True})
+		else:
+			results.append({lookup.file_path: image_filepath[idx], lookup.result: False})
+
+	return results
+
+def compile_results(algorithm_info, source_db):
+	#TODO NEED TO FIX THIS SO IT PROPERLY ROUTES TO THE CORRECT PROCESSOR
+	cmd = lookup.get_cmd(algorithm_info)
+	if lookup.PIPE_OUTPUT in algorithm_info and lookup.INPUT_IMAGE_PATH in cmd:
+		return compile_txt_results(algorithm_info, source_db)
+	elif lookup.PIPE_OUTPUT in algorithm_info and lookup.INPUT_IMAGE_DIRECTORY in cmd:
+		pass
+	elif lookup.RESULT_CSV_FILE in cmd and lookup.INPUT_IMAGE_PATH in cmd:
+		return compile_csv_directory(algorithm_info, source_db)
+	elif lookup.RESULT_CSV_FILE in cmd and lookup.INPUT_IMAGE_DIRECTORY in cmd:
+		return compile_csv_results(algorithm_info, source_db)
+
 	raise NotImplementedError
 
-def check_config_class(config_details):
-	raise NotImplementedError
-
-def check_config_info(config_details):
-	return True

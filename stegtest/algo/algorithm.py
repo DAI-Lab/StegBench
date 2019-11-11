@@ -3,12 +3,11 @@ import collections
 
 from collections import defaultdict
 
-import stegtest.algo.config_processor as config_processor
+import stegtest.algo.algo_processor as algo_processor
 import stegtest.utils.lookup as lookup
 import stegtest.utils.filesystem as fs
 
 import math
-import re
 
 from os import listdir
 from os.path import abspath, join
@@ -121,7 +120,7 @@ def get_all_algorithms(algorithm_type:str):
 	all_info = []
 	for config_file in sorted_by_config.keys():
 		algo_info = sorted_by_config[config_file]
-		config_info = config_processor.get_config_from_file(config_file) #move this to config.py
+		config_info = algo_processor.get_config_from_file(config_file) #move this to config.py
 		for algo_dict in algo_info:
 			assert(algo_dict[lookup.name_descriptor] in config_info)
 			algo_info = config_info[algo_dict[lookup.name_descriptor]]
@@ -130,54 +129,17 @@ def get_all_algorithms(algorithm_type:str):
 
 	return all_info
 
-def compile_detector_results(algorithm_info, experiment_info):
-	source_db = experiment_info[lookup.source_db]
-	algorithm_uuid = algorithm_info[lookup.uuid_descriptor]
-	asset_dir = abspath(lookup.get_algo_asset_dirs()[lookup.detector])
-	
-	image_files = lookup.get_image_list(source_db)
-	image_filenames = [fs.get_filename(file[lookup.file_path], extension=False) for file in image_files]
-	result_files = [algorithm_uuid + '_' + image_file + '.txt' for image_file in image_filenames]
-	result_files = [join(asset_dir, result_file) for result_file in result_files]
-
-	yes_filter = algorithm_info[lookup.regex_filter_yes]
-	no_filter = algorithm_info[lookup.regex_filter_no]
-
-	results = []
-
-	for file in result_files:
-		results = fs.read_txt_file(file)
-		stego = re.match(yes_filter, ''.join(results))
-		cover = re.match(no_filter, ''.join(results))
-
-		assert (stego or cover and not (stego and cover))
-		if stego:
-			results.append({lookup.file_path: file, lookup.result: True})
-		else:
-			results.append({lookup.file_path: file, lookup.result: False})
-
-	return results
-
-""""TODO calculate accuracy scores"""
-
-def calculate_statistics(detector_names, all_cover_results, all_stego_results, paired=True):
+def calculate_statistics(all_cover_results, all_stego_results):
 	"""calculates all the relevant analyzer statistics"""
-	assert(len(all_cover_results) == len(all_stego_results) and len(all_cover_results) == len(detector_names))
-	# print(all_cover_results)
-	# print(all_stego_results)
+
+	""""TODO calculate accuracy scores"""
+	assert(len(all_cover_results) == len(all_stego_results))
 	all_results = []
 
-	for idx, detector_info in enumerate(detector_names):
+	for detector in all_cover_results:
 		#TODO get rid of this sort of referencing
-		detector_name = detector_info[0]
-		cover_results = [1 if result else 0 for result in all_cover_results[idx]]
-		stego_results = [1 if result else 0 for result in all_stego_results[idx]]
-
-		# print(cover_results)
-		# print(stego_results)
-
-		# if paired:
-		# 	assert(len(cover_results) == len(stego_results))
+		cover_results = [1 if prediction[lookup.result] else 0 for prediction in all_cover_results[detector]]
+		stego_results = [1 if prediction[lookup.result] else 0 for prediction in all_stego_results[detector]]
 
 		total_stego = len(stego_results)
 		total_cover = len(cover_results)
@@ -194,31 +156,31 @@ def calculate_statistics(detector_names, all_cover_results, all_stego_results, p
 
 		tpr = true_positive_total / total_stego
 		tnr = true_negative_total / total_cover
-		ppv = true_positive_total / (true_positive_total + false_positive_total)
-		npv = true_negative_total / (true_negative_total + false_negative_total)
-		fnr = 1 - tpr
-		fpr = 1 - tnr
-		fdr = 1 - ppv
-		for_score = 1 - npv
-		ts = true_positive_total / (true_positive_total + false_negative_total + false_positive_total)
+		# ppv = true_positive_total / (true_positive_total + false_positive_total)
+		# npv = true_negative_total / (true_negative_total + false_negative_total)
+		# fnr = 1 - tpr
+		# fpr = 1 - tnr
+		# fdr = 1 - ppv
+		# for_score = 1 - npv
+		# ts = true_positive_total / (true_positive_total + false_negative_total + false_positive_total)
 
 		accuracy = (true_positive_total + true_negative_total) / (total_results)
-		f1_score = 2 * ((ppv*tpr)/(ppv + tpr))
-		mcc = (true_positive_total*true_negative_total - false_positive_total*false_negative_total)
-		denominator = (true_positive_total + false_positive_total)*(true_positive_total + false_negative_total)*(true_negative_total + false_positive_total)*(true_negative_total + false_negative_total)
-		denominator = math.sqrt(denominator)
-		mcc /= denominator
+		# f1_score = 2 * ((ppv*tpr)/(ppv + tpr))
+		# mcc = (true_positive_total*true_negative_total - false_positive_total*false_negative_total)
+		# denominator = (true_positive_total + false_positive_total)*(true_positive_total + false_negative_total)*(true_negative_total + false_positive_total)*(true_negative_total + false_negative_total)
+		# denominator = math.sqrt(denominator)
+		# mcc /= denominator
 
 		results = collections.OrderedDict()
 		results[lookup.false_positive_rate] = fpr
 		results[lookup.false_negative_rate] = fnr
 		results[lookup.true_negative_rate] = tnr
-		results[lookup.negative_predictive_value] = npv
-		results[lookup.false_discovery_rate] = fdr
-		results[lookup.true_positive_rate] = tpr
-		results[lookup.positive_predictive_value] = ppv
+		# results[lookup.negative_predictive_value] = npv
+		# results[lookup.false_discovery_rate] = fdr
+		# results[lookup.true_positive_rate] = tpr
+		# results[lookup.positive_predictive_value] = ppv
 		results[lookup.accuracy] = accuracy
-		results[lookup.detector] = detector_name
+		results[lookup.detector] = detector
 
 		all_results.append(results)
 

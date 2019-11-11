@@ -13,7 +13,7 @@ import stegtest.db.downloader as dl
 import stegtest.db.processor as pr
 
 import stegtest.algo.algorithm as algo
-import stegtest.algo.config_processor as config_processor
+import stegtest.algo.algo_processor as algo_processor
 
 from stegtest.orchestrator import Embeddor, Detector
 
@@ -50,9 +50,9 @@ def add_config(ctx, config, directory):
     """adds stegtest configuration"""
     assert(config or directory)
     if config:
-        config_processor.process_config_file(config)
+        algo_processor.process_config_file(config)
     if directory:
-        config_processor.process_config_directory(directory)
+        algo_processor.process_config_directory(directory)
 
 @pipeline.command()
 @click.pass_context
@@ -213,12 +213,13 @@ def info(ctx, all, db, embeddor, detector):
 @click.option('-e', '--embeddor', help='uuid of the embeddor set being used', type=str)
 @click.option('-d', '--db', help=' uuid of the db being used', type=str)
 @click.option('-r', '--ratio', help='embedding ratio to be used', type=float)
+@click.option('-v', '--verify', help='verify data upon embedding', is_flag=True, default=False)
 @click.pass_context
-def embed(ctx, embeddor, db, ratio):
+def embed(ctx, embeddor, db, ratio, verify):
     """Embeds a db using embeddors and db images"""
     assert(embeddor and db and ratio) 
     embeddor_set = algo.get_algorithm_set(lookup.embeddor, embeddor)
-    generator = Embeddor(embeddor_set)
+    generator = Embeddor(embeddor_set, verify)
     db_uuid = generator.embed_ratio(db, ratio)
     click.echo('The UUID of the dataset you have created is: ' + db_uuid)
 
@@ -231,48 +232,8 @@ def detect(ctx, detector, db):
     assert(detector and db)
     detector_set = algo.get_algorithm_set(lookup.detector, detector)
     analyzer = Detector(detector_set)
-    output_file_path = analyzer.detect(db)
-    click.echo('The results can be found here: ' + output_file_path)
-
-# @pipeline.command()
-# @click.option('-e', '--embeddor', help='uuid of the embeddor being used', type=str)
-# @click.option('-m', '--message', help='message to send the embeddor', type=str)
-# @click.option('-i', '--input', help='path to image file')
-# @click.option('-o', '--output', help='path to output file')
-# @click.pass_context
-# def embedImage(ctx, embeddor, message, input, output):
-#     """Embeds a specific image using an embeddor"""
-#     assert(embeddor and fs.file_exists(input) and output)
-
-#     click.echo('Retrieving embeddor...')
-#     algorithm_info = algo.get_algorithm_info(lookup.embeddor, embeddor)
-
-#     click.echo('Embedding image...')
-#     params = {
-#         lookup.SECRET_TXT_PLAINTEXT: message,
-#         lookup.INPUT_IMAGE_PATH: input,
-#         lookup.OUTPUT_IMAGE_PATH: output,
-#     }
-#     algo.embed(lookup.SINGLE, algorithm_info, params)
-
-# @pipeline.command()
-# @click.option('-d', '--detector', help='uuid of the detector being used', type=str)
-# @click.option('-i', '--image', help='path to image file')
-# @click.pass_context
-# def detectImage(ctx, detector, image):
-#     """Detects a specific image using a detector"""
-#     algorithm_parameters = algo.get_algorithm_info(lookup.detector, detector, params_only=True)
-#     parameter_values = None
-
-#     if algorithm_parameters:
-#         parameters = request_parameters(algorithm_parameters)
-#         parameter_values = list(parameters.values())
-    
-#     click.echo('Initializing detector...')
-#     instance = algo.instantiate_algorithm(lookup.detector, detector, parameter_values)
-#     click.echo('Analyzing image...')
-#     result = instance.detect(image)
-#     click.echo('The detector has found the following result: ' + str(result))
+    results = analyzer.detect(db)
+    click.echo('The results are: ' + str(results))
 
 def main():
     pipeline(obj={})

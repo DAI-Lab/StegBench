@@ -9,6 +9,7 @@ import stegtest.utils.lookup as lookup
 import stegtest.utils.param_generator as param_generator
 
 import stegtest.algo.algorithm as algo
+import stegtest.algo.algo_processor as algo_processor
 import stegtest.algo.embeddor_cmds as embeddor_cmds
 import stegtest.algo.detector_cmds as detector_cmds
 import stegtest.algo.runner as runner
@@ -21,12 +22,13 @@ from functools import partial
 
 class Embeddor():
 	""""runs all the generation tasks"""
-	def __init__(self, embeddor_set):
+	def __init__(self, embeddor_set, verify):
 		self.embeddors = embeddor_set[lookup.embeddor]
 		self.max_embedding_ratio = embeddor_set[lookup.embedding_descriptor]
 		self.compatible_types = embeddor_set[lookup.compatible_descriptor]
 		
 		self.embeddor_set = embeddor_set
+		self.verify = verify
 
 	def embed_db(self, partition, source_db_uuid):
 		all_pre_cmds = []
@@ -133,15 +135,6 @@ class Detector():
 		runner.run_pool(all_post_cmds)
 		runner.run_pool(all_termination_cmds)
 
-		# cover_files = list(map(lambda img: img[lookup.source_image], image_dict))
-		# stego_files = list(map(lambda img: img[lookup.file_path], image_dict))
-
-		# algorithm.process_evaluation_results()
-		return []
-
-		#something to do with output file processing lmao
-
-
 	def detect(self, testdb:str):
 		print('preparing db for evaluation')
 		stego_db_info = lookup.get_steganographic_db_info(testdb)
@@ -158,36 +151,18 @@ class Detector():
 
 		source_image_dict = lookup.get_image_list(sourcedb)
 		stego_image_dict = lookup.get_image_list(testdb)
-
-		results_file_name = fs.get_uuid()
-
-
 		source_image_list = list(map(lambda cover: {lookup.INPUT_IMAGE_PATH: cover[lookup.file_path]}, source_image_dict))
 		stego_image_list = list(map(lambda cover: {lookup.INPUT_IMAGE_PATH: cover[lookup.file_path]}, stego_image_dict))
+		self.detect_list(source_image_list)
+		self.detect_list(stego_image_list)
 
 
-		source_results = self.detect_list(source_image_list)
-		stego_results = self.detect_list(stego_image_list)
+		source_results = {algorithm_info[lookup.uuid_descriptor]: algo_processor.compile_results(algorithm_info, sourcedb) for algorithm_info in self.detectors}
+		cover_results = {algorithm_info[lookup.uuid_descriptor]: algo_processor.compile_results(algorithm_info, testdb) for algorithm_info in self.detectors}
 
-		statistics = algo.calculate_statistics(self.detectors, source_results, stego_results)
+		statistics = algo.calculate_statistics(source_results, cover_results)
 		return statistics
-		# if output_file:
-		# 	output_directory = lookup.get_tmp_directories()[lookup.detector]
-		# 	output_file_name = fs.create_name_from_uuid(fs.get_uuid() , 'csv')
 
-		# 	output_file_path = abspath(join(output_directory, output_file_name))
-
-		# 	statistics_header = [lookup.get_statistics_header()]
-		# 	statistics_rows = [list(detector_statistic.values()) for detector_statistic in statistics]
-		# 	print('writing statistics to file...')
-
-		# 	statistics_data = statistics_header + statistics_rows
-
-		# 	fs.write_to_csv_file(output_file_path, statistics_data)
-
-		# 	return output_file_path
-
-		# return statistics
 
 class Scheduler():
 	"""schedules the generator and analyzer task"""

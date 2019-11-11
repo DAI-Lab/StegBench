@@ -80,7 +80,7 @@ def generate_native_cmd(algorithm_info, to_detect):
 
 	if algorithm_info[lookup.PIPE_OUTPUT]:
 		result_file = generate_result_file_name(algorithm_info, cmd, to_detect)
-		write_to_result_cmd = ' >> ' + result_file
+		write_to_result_cmd = ' > ' + result_file
 
 		new_cmd += write_to_result_cmd
 	#stuff to do with piping output
@@ -157,7 +157,7 @@ def generate_docker_cmd(algorithm_info, to_detect):
 	if algorithm_info[lookup.PIPE_OUTPUT]:
 		#need to return a native command for now -- HACKY FIX
 		result_file_path = generate_result_file_name(algorithm_info, cmd, to_detect)
-		write_to_result_cmd = ' >> ' + result_file_path
+		write_to_result_cmd = ' > ' + result_file_path
 		docker_cmd = ' '.join(['docker exec', str(to_detect[lookup.container_id]), new_cmd, write_to_result_cmd])
 		return {lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [docker_cmd]}
 
