@@ -26,5 +26,5 @@ def secret_message_from_embedding(embedding_ratio, img_info):
 	strlen_in_bytes = int(str_len_in_bits/8)
 	return generate_random_string(strlen_in_bytes)
 
-def generate_password(byte_length):
+def generate_password(byte_length=20):
 	return generate_random_string(byte_length)

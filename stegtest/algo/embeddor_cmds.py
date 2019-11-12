@@ -2,6 +2,7 @@ import stegtest.utils.lookup as lookup
 import stegtest.utils.filesystem as fs
 import stegtest.algo.runner as runner
 import os
+from collections import defaultdict
 
 from os.path import abspath, join
 
@@ -9,7 +10,7 @@ removal_prefix = 'rm'
 
 def replace(cmd:str, replacements):
 	for replacement_key in replacements:
-		cmd = cmd.replace(replacement_key, replacements[replacement_key])
+		cmd = cmd.replace(replacement_key, str(replacements[replacement_key]))
 	return cmd
 
 #### NATIVE ####
@@ -64,57 +65,78 @@ def preprocess_docker(algorithm_info, to_embed_list):
 	cmd = lookup.get_cmd(algorithm_info)
 	volumes = {}
 
-	if lookup.SECRET_TXT_FILE in cmd:
-		#TODO write all the secret txt to the assets folder and update to_embed_list
-		for to_embed in to_embed_list:
-			if lookup.SECRET_TXT_FILE not in to_embed:
-				txt_file_path = lookup.create_asset_file(algorithm_info[lookup.ALGORITHM_TYPE], to_embed[lookup.SECRET_TXT_PLAINTEXT])
-			else:
-				txt_file_path = to_embed[lookup.SECRET_TXT_FILE]
+	updated_embed_list = to_embed_list
 
+	if lookup.SECRET_TXT_FILE in cmd: #creates secret txt file
+		for to_embed in updated_embed_list:
+			txt_file_path = lookup.create_asset_file(algorithm_info[lookup.ALGORITHM_TYPE], to_embed[lookup.SECRET_TXT_PLAINTEXT])
 			local_asset_dir = fs.get_directory(txt_file_path)
 			volumes[local_asset_dir] = { 'bind': lookup.asset_dir, 'mode': 'rw'}
-
 			asset_filename = fs.get_filename(txt_file_path)
 			new_asset_path = join(lookup.asset_dir, asset_filename)
 			to_embed[lookup.SECRET_TXT_FILE] = new_asset_path
 
-	if lookup.INPUT_IMAGE_DIRECTORY in cmd:
-		raise NotImplementedError
-	if lookup.OUTPUT_IMAGE_DIRECTORY in cmd:
-		raise NotImplementedError
+	if lookup.INPUT_IMAGE_DIRECTORY in cmd: #mount input directory 
+		directories = lookup.get_directories(updated_embed_list)
+		sorted_by_directory = defaultdict(list)
+		for to_embed in updated_embed_list:
+			sorted_by_directory[fs.get_directory(abspath(to_embed[lookup.INPUT_IMAGE_PATH]))].append(to_embed)
 
-	for to_embed in to_embed_list:
-		assert(lookup.INPUT_IMAGE_PATH in to_embed)
-		#TODO update this to be more dynamic
-		original_input_path = to_embed[lookup.INPUT_IMAGE_PATH]
-		original_input_path = abspath(original_input_path)
+		new_embed_list = []
+		for input_directory in sorted_by_directory:
+			files = sorted_by_directory[input_directory]
+			payloads = set(list(map(lambda f: f[lookup.PAYLOAD], files)))
+			output_directories = set(list(map(lambda f: fs.get_directory(abspath(f[lookup.OUTPUT_IMAGE_PATH])), files)))
+			assert(len(payloads) == 1)
+			assert(len(output_directories) == 1)
+			payload = payloads.pop()
+			output_directory = output_directories.pop()
 
-		local_input_dir = fs.get_directory(original_input_path)
-		volumes[local_input_dir] = { 'bind': lookup.input_dir, 'mode': 'rw'}
+			docker_input_dir = '/' + fs.get_uuid()
+			volumes[input_directory] = { 'bind': docker_input_dir, 'mode': 'rw'}
 
-		input_filename = fs.get_filename(original_input_path)
-		new_input_path = join(lookup.input_dir, input_filename)
-		to_embed[lookup.INPUT_IMAGE_PATH] = new_input_path
+			docker_output_dir = '/' + fs.get_uuid()
+			volumes[output_directory] = { 'bind': docker_output_dir, 'mode': 'rw'}
 
+			new_embed_list.append({lookup.INPUT_IMAGE_DIRECTORY: docker_input_dir, lookup.PAYLOAD: payload, lookup.OUTPUT_IMAGE_DIRECTORY: docker_output_dir})
 
-	for to_embed in to_embed_list:
-		assert(lookup.OUTPUT_IMAGE_PATH in to_embed)
-		original_output_path = to_embed[lookup.OUTPUT_IMAGE_PATH]
-		original_output_path = abspath(original_output_path)
+		updated_embed_list = new_embed_list
 
-		local_output_dir = fs.get_directory(original_output_path)
-		volumes[local_output_dir] = { 'bind': lookup.output_dir, 'mode': 'rw'}
+	else: #mount input path volumes
+		for to_embed in updated_embed_list:
+			original_input_path = to_embed[lookup.INPUT_IMAGE_PATH]
+			original_input_path = abspath(original_input_path)
 
-		output_filename = fs.get_filename(original_output_path)
-		new_output_path = join(lookup.output_dir, output_filename)
-		to_embed[lookup.OUTPUT_IMAGE_PATH] = new_output_path
+			local_input_dir = fs.get_directory(original_input_path)
+			volumes[local_input_dir] = { 'bind': lookup.input_dir, 'mode': 'rw'}
+
+			input_filename = fs.get_filename(original_input_path)
+			new_input_path = join(lookup.input_dir, input_filename)
+			to_embed[lookup.INPUT_IMAGE_PATH] = new_input_path
+
+		#mount output paths for directory
+		if lookup.OUTPUT_IMAGE_DIRECTORY in cmd:
+			for to_embed in updated_embed_list:
+				docker_directory = '/' + fs.get_uuid()
+				local_output_dir = fs.get_directory(abspath(to_embed[lookup.OUTPUT_IMAGE_PATH]))
+				volumes[local_output_dir] = { 'bind': docker_directory, 'mode': 'rw'}
+				to_embed[lookup.OUTPUT_IMAGE_DIRECTORY] = docker_directory
+
+		elif look.OUTPUT_IMAGE_PATH in cmd:
+			for to_embed in updated_embed_list:
+				original_output_path = abspath(to_embed[lookup.OUTPUT_IMAGE_PATH])
+				local_output_dir = fs.get_directory(original_output_path)
+				volumes[local_output_dir] = { 'bind': lookup.output_dir, 'mode': 'rw'}
+
+				output_filename = fs.get_filename(original_output_path)
+				new_output_path = join(lookup.output_dir, output_filename)
+				to_embed[lookup.OUTPUT_IMAGE_PATH] = new_output_path
 
 	container_id = runner.start_docker(image_name, volumes=volumes)
-	for to_embed in to_embed_list:
+	for to_embed in updated_embed_list:
 		to_embed[lookup.container_id] = container_id
 
-	return [], to_embed_list
+	return [], updated_embed_list
 
 def generate_docker_cmd(algorithm_info, to_embed):
 	cmd = lookup.get_cmd(algorithm_info)
@@ -168,7 +190,7 @@ def terimination_docker(algorithm_info, embedded_list):
 def generate_native(algorithm_info, to_detect_list):
 	pre_cmds, updated_detect_list = preprocess_native(algorithm_info, to_detect_list)
 	cmds = [generate_native_cmd(algorithm_info, to_detect) for to_detect in updated_detect_list]
-	post_cmds = postprocess_native_cm(algorithm_info, updated_detect_list)
+	post_cmds = postprocess_native(algorithm_info, updated_detect_list)
 	termination_cmds = termination_native(algorithm_info, updated_detect_list)
 	return pre_cmds, cmds, post_cmds, termination_cmds	
 

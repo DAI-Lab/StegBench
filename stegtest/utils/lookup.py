@@ -36,6 +36,65 @@ detectors_set_dir = 'detectors_sets'
 embeddors_file = 'embeddors.csv'
 detectors_file = 'detectors.csv'
 
+#METADATA
+ALGORITHM_TYPE = 'algorithm_type'
+COMMAND_TYPE = 'command_type'
+COMPATIBLE_TYPES  = 'compatible_types'
+MAX_EMBEDDING_RATIO = 'max_embedding_ratio'
+
+#COMMAND_TYPE OPTIONS
+DOCKER = 'docker'
+NATIVE = 'native'
+CLASS = 'class'
+END_DOCKER = 'end_docker'
+
+#APPLICATION_SPECIFIC - DOCKER
+DOCKER_IMAGE = 'docker_image'
+WORKING_DIR = 'working_dir'
+
+container_id = 'container_id'
+input_dir = '/data-input'
+output_dir = '/data-output'
+asset_dir = '/data-asset'
+result_dir = '/data-result'
+
+#COMMAND
+PRE_COMMAND = 'pre_run'
+COMMAND = 'run'
+POST_COMMAND = 'post_run'
+VERIFY_COMMAND = 'verify'
+PIPE_OUTPUT = 'pipe_output'
+
+#COMMAND SPECIFIC - COVER
+INPUT_IMAGE_DIRECTORY = 'INPUT_IMAGE_DIRECTORY'
+INPUT_IMAGE_NAME = 'INPUT_IMAGE_NAME'
+INPUT_IMAGE_PATH = 'INPUT_IMAGE_PATH'
+
+#COMMAND SPECIFIC - SECRET MESSAGE
+SECRET_TXT_PLAINTEXT = 'SECRET_TXT_PLAINTEXT'
+SECRET_TXT_FILE = 'SECRET_TXT_FILE'
+VERIFY_TXT_FILE = 'VERIFY_TXT_FILE'
+
+#COMMAND-SPECIFIC - SUPPORTED INPUT PARAMETERS
+PASSWORD = 'PASSWORD'
+PAYLOAD = 'PAYLOAD'
+
+#COMMAND-SPECIFIC - OUTPUT
+OUTPUT_IMAGE_DIRECTORY = 'OUTPUT_IMAGE_DIRECTORY'
+OUTPUT_IMAGE_NAME = 'OUTPUT_IMAGE_NAME'
+OUTPUT_IMAGE_PATH = 'OUTPUT_IMAGE_PATH'
+
+
+#COMMAND-SPECIFIC - OUTPUT
+RESULT_CSV_FILE = 'RESULT_CSV_FILE'
+RESULT_TXT_FILE = 'RESULT_TXT_FILE'
+TEMP_CSV_FILE = 'TEMP_CSV_FILE'
+TEMP_TXT_FILE = 'TEMP_TXT_FILE'
+
+#FILTER SPECIFIC
+regex_filter_yes = 'regex_filter_yes'
+regex_filter_no = 'regex_filter_no'
+
 #IMAGE INFORMATION
 file_path = 'file'
 image_type = 'type'
@@ -47,11 +106,13 @@ embedding_max = 'embedding_max'
 #STEGANOGRAPHIC INFORMATION FILE INFORMATION
 steganographic_function = 'Generating Algorithm'
 source_image = 'Source Image'
+secret_txt_length = 'Secret Text Length'
 
 #STEGANOGRAPHIC METADATA
 source_db = 'Source Database'
 source_embeddor_set = 'Source Embeddor Set'
-secret_txt_length = 'Secret Text Length'
+embedding_ratio = 'Embedding Ratio'
+
 
 #HEADER VARIABLES
 name_descriptor = 'Name'
@@ -66,14 +127,14 @@ db_image_count = 'Number of Images'
 
 #FILE HEADERS
 cover_image_header = [file_path, image_type, image_width, image_height, image_channels, embedding_max]
-steganographic_image_header = [file_path, image_type, image_width, image_height, image_channels, embedding_max, source_image, uuid_descriptor, secret_txt_length]
+steganographic_image_header = cover_image_header + [source_image, uuid_descriptor, secret_txt_length, PASSWORD]
 
 master_algo_header = [uuid_descriptor, name_descriptor, filepath_descriptor] #points to a config file
 individual_set_header = [uuid_descriptor] #points to a master algo
 master_set_header = [uuid_descriptor, filepath_descriptor] #points to an individual set
 
 db_header = [uuid_descriptor, db_descriptor, db_image_count, compatible_descriptor]
-steganographic_header = [uuid_descriptor, source_db, source_embeddor_set, db_image_count, compatible_descriptor]
+steganographic_header = [uuid_descriptor, source_db, source_embeddor_set, embedding_ratio, db_image_count, compatible_descriptor]
 
 #ALGORITHM TYPES
 algorithm_name = 'name'
@@ -104,71 +165,6 @@ add_noise = 'noise'
 crop = 'crop'
 resize = 'resize'
 rotate = 'rotate'
-
-#METADATA
-ALGORITHM_TYPE = 'algorithm_type'
-COMMAND_TYPE = 'command_type'
-COMPATIBLE_TYPES  = 'compatible_types'
-MAX_EMBEDDING_RATIO = 'max_embedding_ratio'
-
-#COMMAND_TYPE OPTIONS
-DOCKER = 'docker'
-NATIVE = 'native'
-CLASS = 'class'
-END_DOCKER = 'end_docker'
-
-#COMMAND ATTRIBUTE
-BATCH = 'batch'
-SINGLE = 'single'
-WORKING_DIR = 'working_dir'
-
-#APPLICATION_SPECIFIC - DOCKER
-DOCKER_IMAGE = 'docker_image'
-container_id = 'container_id'
-input_dir = '/data-input'
-output_dir = '/data-output'
-asset_dir = '/data-asset'
-result_dir = '/data-result'
-
-#COMMAND
-PRE_COMMAND = 'pre_run'
-COMMAND = 'run'
-POST_COMMAND = 'post_run'
-VERIFY_COMMAND = 'verify'
-PIPE_OUTPUT = 'pipe_output'
-
-#COMMAND SPECIFIC - COVER
-INPUT_IMAGE_DIRECTORY = 'INPUT_IMAGE_DIRECTORY'
-INPUT_IMAGE_NAME = 'INPUT_IMAGE_NAME'
-INPUT_IMAGE_PATH = 'INPUT_IMAGE_PATH'
-
-#COMMAND SPECIFIC - SECRET MESSAGE
-SECRET_TXT_PLAINTEXT = 'SECRET_TXT_PLAINTEXT'
-SECRET_TXT_FILE = 'SECRET_TXT_FILE'
-VERIFY_TXT_FILE = 'VERIFY_TXT_FILE'
-
-
-#COMMAND-SPECIFIC - SUPPORTED INPUT PARAMETERS
-PASSWORD = 'PASSWORD'
-BPP = 'BPP'
-bpnzAC = 'BPNZAC'
-
-#COMMAND-SPECIFIC - OUTPUT
-OUTPUT_IMAGE_DIRECTORY = 'OUTPUT_IMAGE_DIRECTORY'
-OUTPUT_IMAGE_NAME = 'OUTPUT_IMAGE_NAME'
-OUTPUT_IMAGE_PATH = 'OUTPUT_IMAGE_PATH'
-
-
-#COMMAND-SPECIFIC - OUTPUT
-RESULT_CSV_FILE = 'RESULT_CSV_FILE'
-RESULT_TXT_FILE = 'RESULT_TXT_FILE'
-TEMP_CSV_FILE = 'TEMP_CSV_FILE'
-TEMP_TXT_FILE = 'TEMP_TXT_FILE'
-
-#FILTER SPECIFIC
-regex_filter_yes = 'regex_filter_yes'
-regex_filter_no = 'regex_filter_no'
-
 
 def get_top_level_dirs():
 	return {embeddor: embeddor_dir, db: db_dir, detector:detector_dir}
@@ -334,6 +330,19 @@ def get_verify_cmd(algorithm_info):
 	return algorithm_info[VERIFY_COMMAND]
 
 ####TO MOVE THESE -- SINCE THESE ARE NOT LOOKUP BUT GENERATION####
+
+def get_directories(params):
+	directories = set()
+	for param in params:
+		if INPUT_IMAGE_PATH in param:
+			directories.add(fs.get_directory(abspath(param[INPUT_IMAGE_PATH])))
+		elif INPUT_IMAGE_DIRECTORY in param:
+			directories.add(abspath(param[INPUT_IMAGE_DIRECTORY]))
+
+	directories = list(directories)
+	directories = list(map(lambda directory: {INPUT_IMAGE_DIRECTORY: directory}, directories))
+
+	return directories
 
 def generate_verify_file(algorithm_info, to_verify):
 	command_type = algorithm_info[COMMAND_TYPE]

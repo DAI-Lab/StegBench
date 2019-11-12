@@ -11,52 +11,29 @@ from os.path import join
 BOSS_URL = 'http://dde.binghamton.edu/download/ImageDB/BOSSbase_1.01.zip'
 BOWS2_URL = 'http://bows2.ec-lille.fr/BOWS2OrigEp3.tgz'
 COCO_URL = 'http://images.cocodataset.org/zips/test2017.zip'
+DIV2K_URL = 'http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_valid_HR.zip'
 
 def get_download_routines():
 	return { 
-	'BOSS': download_from_BOSS, 
-	'BOWS2': download_from_BOWS2, 
-	'BURST': download_from_BURST, 
-	'COCO': download_from_COCO, 
-	'DRESDEN': download_from_DRESDEN, 
-	'RAISE': download_from_RAISE, 
-	'ImageNet': download_from_ImageNet
+		'BOSS': download_from_BOSS, 
+		'BOWS2': download_from_BOWS2, 
+		'BURST': download_from_BURST, 
+		'COCO': download_from_COCO, 
+		'DRESDEN': download_from_DRESDEN, 
+		'DIV2K': download_from_DIV2K,
+		'RAISE': download_from_RAISE, 
+		'ImageNet': download_from_ImageNet
 	}
 
-def download_routine(name, *args):
+def download_routine(name):
 	"""downloads using a specified routing"""
 	db_routines = get_download_routines() 
 	assert(name in db_routines.keys())
 	dataset_folder = lookup.get_db_dirs()[lookup.dataset]
 	
-	download_directory = db_routines[name](dataset_folder, *args)
-	processor.process_image_directory(download_directory, name, None, None)
-
-def download_from_file(file, name, header=False):
-	"""downloads from a properly formatted file"""
-	raise NotImplementedError
-	file_data = fs.read_csv_file(file)
-
-	db_name = name
-	if name is None:
-		db_name = fs.get_uuid()
-
-	dataset_folder = lookup.get_db_dirs()[lookup.dataset]
-	download_directory = join(dataset_folder, db_name)
-	fs.make_dir(download_directory)
-
-	if header:
-		file_data = file_data[1:]
-
-	for row in file_data:
-		assert(len(row) > 1)
-		image_url = row[0]
-		image_type = row[1]
-
-		retrieve_file(image_url, join(download_directory, create_file_from_hash(image_url, image_type)))
-
-	processor.process_image_directory(download_directory, db_name, lookup.crop, None)
-
+	download_directory = db_routines[name](dataset_folder)
+	return download_directory
+	
 def retrieve_file(url, path_to_file):
 	"""retrieves a zip file from a specified url and saves it to path_to_zip_file"""
 	print('Downloading from: ' + url + ' to: ' + path_to_file)
@@ -100,7 +77,7 @@ def download_from_BOWS2(directory):
 
 	return path_to_unzip_directory
 
-def download_from_BURST(dir):
+def download_from_BURST(directory):
 	raise NotImplementedError
 
 def download_from_COCO(directory):
@@ -116,11 +93,25 @@ def download_from_COCO(directory):
 
 	return path_to_unzip_directory
 
-def download_from_DRESDEN(dir, params):
+def download_from_DRESDEN(directory):
 	raise NotImplementedError
 
-def download_from_RAISE(dir):
+def download_from_DIV2K(directory):
+	zip_file_name = 'DIV2K_valid_HR.zip'
+	unzip_directory = 'DIV2K_valid_HR'
+
+	path_to_zip_file = join(directory, zip_file_name)
+	path_to_unzip_directory = join(directory, unzip_directory)
+	
+	retrieve_file(DIV2K_URL, path_to_zip_file)
+	unzip_file(path_to_zip_file, directory)
+
+	assert(fs.dir_exists(path_to_unzip_directory))
+
+	return path_to_unzip_directory
+
+def download_from_RAISE(directory):
 	raise NotImplementedError
 
-def download_from_ImageNet(dir, params):
+def download_from_ImageNet(directory):
 	raise NotImplementedError

@@ -10,6 +10,7 @@ import stegtest.utils.lookup as lookup
 import stegtest.utils.filesystem as fs
 
 import stegtest.db.downloader as dl 
+import stegtest.db.images as img
 import stegtest.db.processor as pr
 
 import stegtest.algo.algorithm as algo
@@ -24,9 +25,7 @@ def request_parameters(ctx, parameters):
 
     for parameter_name in parameters.keys():
         parameter_type = parameters[parameter_name]
-        click_type = lookup.get_parameter_type(parameter_type)
-
-        value = click.prompt(prompt_string + parameter_name, type=click_type)
+        value = click.prompt(prompt_string + parameter_name, type=parameter_type)
         parameter_values[parameter_name] = value
 
     click.echo('\nYou have set the following parameters: ' + str(parameter_values))
@@ -61,21 +60,23 @@ def initialize(ctx):
     directory = os.getcwd()
     lookup.initialize_filesystem(directory)
 
-#TODO downloads a certain database to a specific directory. Renames files. Adds some sort of metadata list a .txt file at the top. Adds 
 @pipeline.command()
-@click.option('-n', '--name', help='specify a pre-loaded download routine', type=click.Choice(dl.get_download_routines().keys()))
-@click.option('-f', '--file', help='specify a properly-formatted file (<img_name, img_url, *args> for each row) to download from')
-@click.option('-db', '--db', help='specify the name of the db if you want to override the default')
+@click.option('-r', '--routine', help='specify a pre-loaded download routine', type=click.Choice(dl.get_download_routines().keys()))
+@click.option('-n', '--name', help='specify the name for the database')
+@click.option('-o', '--operation', help='applies specified operation to all images', type=click.Choice(lookup.get_image_operations()))
 @click.pass_context
-def download(ctx, name, file, db):
+def download(ctx, routine, name, operation):
     """downloads a specified database"""
-    assert ((name and not file) or (file and not name))
-    if name:
-        dl.download_routine(name)
-    else:
-        dl.download_from_file(file, db)
+    assert(routine)
+    operation_parameters = None
+    if operation:
+        operation_parameters = request_parameters(img.get_operation_args(operation))
+        operation_parameters = list(operation_parameters.values())
 
-#TODO downloads a certain database to a specific directory. Renames files. Adds some sort of metadata list a .txt file at the top. Adds 
+    download_directory = dl.download_routine(routine)
+    db_uuid = pr.process_image_directory(download_directory, name, operation, operation_parameters)
+    click.echo('The UUID of the dataset you have processed is: ' + db_uuid)
+
 @pipeline.command()
 @click.option('-d', '--directory', help='specify an already downloaded database')
 @click.option('-n', '--name', help='specify the name for the database')
@@ -84,7 +85,11 @@ def download(ctx, name, file, db):
 def process(ctx, directory, name, operation):
     """processes a specified database. select small for faster analysis speeds (512x512 images)"""
     assert(directory and name)
-    db_uuid = pr.process_image_directory(directory, name, operation, None)
+    if operation:
+        operation_parameters = request_parameters(img.get_operation_args(operation))
+        db_uuid = pr.process_image_directory(directory, name, operation, list(operation_parameters.values()))
+    else:
+        db_uuid = pr.process_image_directory(directory, name)
     click.echo('The UUID of the dataset you have processed is: ' + db_uuid)
 
 @pipeline.command()
@@ -162,6 +167,7 @@ def info(ctx, all, db, embeddor, detector):
             click.echo('\t\t' + 'Source DB: ' + str(db[lookup.source_db]))
             click.echo('\t\t' + 'Source Embeddor Set: ' + str(db[lookup.source_embeddor_set]))
             click.echo('\t\t' + 'Image Types: ' + str(db[lookup.compatible_descriptor]))
+            click.echo('\t\t' + 'Payload: ' + str(db[lookup.embedding_ratio]))
         click.echo(breaker)
 
     if all or embeddor:
@@ -235,10 +241,34 @@ def detect(ctx, detector, db):
     analyzer = Detector(detector_set)
     results = analyzer.detect(db)
 
+    db_info = lookup.get_steganographic_db_info(db)
+
     breaker = ['-' for i in range(100)]
     breaker = ''.join(breaker)
+    click.echo('Experiment information')
+    click.echo(breaker)
+    click.echo(breaker)
+    click.echo('Database Information')
+    click.echo('\t' + 'UUID: ' + str(db_info[lookup.uuid_descriptor]))
+    click.echo('\t\t' + 'Source DB: ' + str(db_info[lookup.source_db]))
+    click.echo('\t\t' + 'Source Embeddor Set: ' + str(db_info[lookup.source_embeddor_set]))
+    click.echo('\t\t' + 'Image Types: ' + str(db_info[lookup.compatible_descriptor]))
+    click.echo('\t\t' + 'Payload: ' + str(db_info[lookup.embedding_ratio]))
+    click.echo(breaker)
+
+    click.echo('Embeddor Set Information')
+    embeddor_set = algo.get_algorithm_set(lookup.embeddor, str(db_info[lookup.source_embeddor_set]))
+    click.echo('\tUUID: ' + embeddor_set[lookup.uuid_descriptor])
+    click.echo('\t\t' + 'Compatible Types: ' + str(embeddor_set[lookup.compatible_descriptor]))
+    click.echo('\t\t' + 'Embeddors: ' + str(len(embeddor_set[lookup.embeddor])))
+    for embeddor in embeddor_set[lookup.embeddor]:
+        click.echo('\t\t\t' + '(' + embeddor[lookup.name_descriptor] + ', ' + embeddor[lookup.uuid_descriptor] + ')')
+    click.echo(breaker)
+
+    click.echo(breaker)
     click.echo('Listing all results...')
     click.echo(breaker)
+
     for detector_uuid in results:
         detector_info = algo.get_algorithm_info(lookup.detector, detector_uuid)
         click.echo('\tName: ' + detector_info[lookup.name_descriptor])

@@ -73,6 +73,16 @@ def rotate_image(path_to_input, path_to_output, degrees):
 	img.close()
 	cropped_img.close()
 
+def get_operation_args(operation):
+	args = {
+		lookup.add_noise: collections.OrderedDict({'noise_level': float}),
+		lookup.crop: collections.OrderedDict({'width': int, 'height': int}),
+		lookup.resize: collections.OrderedDict({'width': int, 'height': int}),
+		lookup.rotate: collections.OrderedDict({'degrees': float}),
+	}[operation]
+
+	return args
+
 def apply_operation(operation, args, partition):
 	function = {
 		lookup.add_noise: add_noise_to_image,

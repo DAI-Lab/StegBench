@@ -13,19 +13,6 @@ def replace(cmd:str, replacements):
 		cmd = cmd.replace(replacement_key, replacements[replacement_key])
 	return cmd
 
-def get_directories(to_detect_list):
-	directories = set()
-	for to_detect in to_detect_list:
-		if lookup.INPUT_IMAGE_PATH in to_detect:
-			directories.add(fs.get_directory(abspath(to_detect[lookup.INPUT_IMAGE_PATH])))
-		elif lookup.INPUT_IMAGE_DIRECTORY in to_detect:
-			directories.add(abspath(to_detect[lookup.INPUT_IMAGE_DIRECTORY]))
-
-	directories = list(directories)
-	directories = list(map(lambda directory: {lookup.INPUT_IMAGE_DIRECTORY: directory}, directories))
-
-	return directories
-
 def update_write_file(algorithm_info, cmd, to_detect_list):
 	param_lookup = defaultdict(None)
 
@@ -62,7 +49,7 @@ def preprocess_native(algorithm_info, to_detect_list):
 	if pre_cmd:
 		update_write_file(algorithm_info, pre_cmd, updated_detect_list)
 	if lookup.INPUT_IMAGE_DIRECTORY in cmd:
-		updated_detect_list = get_directories(to_detect_list) 
+		updated_detect_list = lookup.get_directories(to_detect_list) 
 	update_write_file(algorithm_info, cmd, updated_detect_list)
 
 	return [], updated_detect_list
@@ -130,23 +117,22 @@ def preprocess_docker(algorithm_info, to_detect_list):
 	volumes = {}
 
 	if lookup.INPUT_IMAGE_DIRECTORY in cmd:
-		updated_detect_list = get_directories(to_detect_list)
+		updated_detect_list = lookup.get_directories(to_detect_list)
 		for updated_detect in updated_detect_list:
 			docker_directory = '/' + fs.get_uuid()
 			volumes[updated_detect[lookup.INPUT_IMAGE_DIRECTORY]] = { 'bind': docker_directory, 'mode': 'rw'}
 			updated_detect[lookup.INPUT_IMAGE_DIRECTORY] = docker_directory
+	elif look.INPUT_IMAGE_PATH in cmd:
+		for to_detect in to_detect_list:
+			original_input_path = to_detect[lookup.INPUT_IMAGE_PATH]
+			original_input_path = abspath(original_input_path)
 
-	for to_detect in to_detect_list:
-		assert(lookup.INPUT_IMAGE_PATH in to_detect)
-		original_input_path = to_detect[lookup.INPUT_IMAGE_PATH]
-		original_input_path = abspath(original_input_path)
+			local_input_dir = fs.get_directory(original_input_path)
+			volumes[local_input_dir] = { 'bind': lookup.input_dir, 'mode': 'rw'}
 
-		local_input_dir = fs.get_directory(original_input_path)
-		volumes[local_input_dir] = { 'bind': lookup.input_dir, 'mode': 'rw'}
-
-		input_filename = fs.get_filename(original_input_path)
-		new_input_path = join(lookup.input_dir, input_filename)
-		to_detect[lookup.INPUT_IMAGE_PATH] = new_input_path
+			input_filename = fs.get_filename(original_input_path)
+			new_input_path = join(lookup.input_dir, input_filename)
+			to_detect[lookup.INPUT_IMAGE_PATH] = new_input_path
 
 	result_directory = abspath(lookup.get_algo_asset_dirs()[lookup.detector])
 	assert(fs.dir_exists(result_directory))

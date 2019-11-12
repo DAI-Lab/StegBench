@@ -31,13 +31,14 @@ class Embeddor():
 		
 		self.embeddor_set = embeddor_set
 
-	def embed_db(self, partition, source_db_uuid):
+	def embed_db(self, partition, source_db_uuid, payload):
 		all_pre_cmds = []
 		all_cmds = []
 		all_post_cmds = []
 		all_termination_cmds = []
 
 		#TODO VALIDATE THE PARTITION...
+		print('generating commands...')
 
 		for idx, embeddor in enumerate(self.embeddors):
 			embeddor_params = copy.deepcopy(partition[idx])
@@ -47,20 +48,22 @@ class Embeddor():
 			all_post_cmds += post_cmds 
 			all_termination_cmds += termination_cmds
 
-		print('running pre commands')
+		print('commands generated...')
+
+		print('setting up embeddors...')
 		runner.run_pool(all_pre_cmds)
 		print('completed.')
-		print('running commands')
+		print('embedding...')
 		runner.run_pool(all_cmds)
 		print('completed.')
-		print('running post commands.')
+		print('processing embeding results...')
 		runner.run_pool(all_post_cmds)
 		print('completed.')
-		print('running termination_cmds')
+		print('terminating processes...')
 		runner.run_pool(all_termination_cmds)
 		print('completed.')
 
-		db_uuid = processor.process_steganographic_directory(partition, self.embeddor_set, source_db_uuid)
+		db_uuid = processor.process_steganographic_directory(partition, self.embeddor_set, source_db_uuid, payload)
 
 		return db_uuid
 
@@ -113,11 +116,13 @@ class Embeddor():
 		partition = [[{
 						lookup.INPUT_IMAGE_PATH: input_partition[i][j][lookup.file_path], 
 						lookup.OUTPUT_IMAGE_PATH: output_partition[i][j],
+						lookup.PAYLOAD: embedding_ratio,
 						lookup.SECRET_TXT_PLAINTEXT: secret_message[i][j],
+						lookup.PASSWORD: param_generator.generate_password(),
 						}
 		 			for j in range(len(input_partition[i]))] for i in range(num_embeddors)]
 
-		db_uuid = self.embed_db(partition, source_db)
+		db_uuid = self.embed_db(partition, source_db, embedding_ratio)
 
 		return db_uuid
 
@@ -131,9 +136,8 @@ class Verifier():
 		#need to read parameter assets	#group all config files and batch read all the information properly... 
 		sorted_by_embeddor = defaultdict(list)
 		for image_info in db_images:
+			image_info[lookup.INPUT_IMAGE_PATH] = image_info[lookup.file_path]
 			sorted_by_embeddor[image_info[lookup.uuid_descriptor]].append(image_info)
-
-		sorted_by_embeddor = {embeddor: list(map(lambda img_info: {lookup.INPUT_IMAGE_PATH: img_info[lookup.file_path]}, sorted_by_embeddor[embeddor])) for embeddor in sorted_by_embeddor}
 
 		all_pre_cmds = []
 		all_cmds = []
@@ -161,12 +165,9 @@ class Verifier():
 		print('completed.')
 		print('running post commands.')
 		runner.run_pool(all_post_cmds)
-		print('completed.')
-		print('running termination_cmds')
-		
-		#need to do some verification thing here TODO
 		verification_results = algo_processor.verify_embedding(db, all_embeddors)
-
+		print('completed.')
+		print('terminating processes...')
 		runner.run_pool(all_termination_cmds)
 		print('completed.')
 		
@@ -192,19 +193,17 @@ class Detector():
 			all_post_cmds += post_cmds 
 			all_termination_cmds += termination_cmds
 
-		print('running pre commands')
+		print('setting up detectors...')
 		runner.run_pool(all_pre_cmds)
 		print('completed.')
-		print('running commands')
+		print('analyzing images...')
 		runner.run_pool(all_cmds)
 		print('completed.')
-		print('running post commands.')
+		print('processing image results...')
 		runner.run_pool(all_post_cmds)
-		print('completed.')
-
 		results = {algorithm_info[lookup.uuid_descriptor]: algo_processor.compile_results(algorithm_info, db_uuid) for algorithm_info in self.detectors}
-
-		print('running termination_cmds')
+		print('completed.')
+		print(' termination_cmds')
 		runner.run_pool(all_termination_cmds)
 		print('completed.')
 

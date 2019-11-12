@@ -20,6 +20,12 @@ def generate_native_cmd(algorithm_info, to_verify):
 	cmd = lookup.get_verify_cmd(algorithm_info)
 	new_cmd = replace(cmd, to_verify)
 
+	if lookup.PIPE_OUTPUT in algorithm_info:
+		result_file = lookup.generate_verify_file(algorithm_info, to_verify)
+		write_to_result_cmd = ' > ' + result_file
+
+		new_cmd += write_to_result_cmd
+
 	return {lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [new_cmd]}
 
 def postprocess_native(algorithm_info, verified_list):
@@ -29,10 +35,9 @@ def postprocess_native(algorithm_info, verified_list):
 def termination_native(algorithm_info, verified_list):
 	termination_cmds = []
 
-	if lookup.VERIFY_TXT_FILE in cmd:
-		for verified in verified_list:
-			removal_cmd = ' '.join([removal_prefix, verified[lookup.VERIFY_TXT_FILE]])
-			termination_cmds.append({ lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd] })
+	for verified in verified_list:
+		removal_cmd = ' '.join([removal_prefix, lookup.generate_verify_file(algorithm_info, verified)])
+		termination_cmds.append({ lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd] })
 
 	return termination_cmds
 
@@ -91,23 +96,21 @@ def terimination_docker(algorithm_info, verified_list):
 	for container_id in docker_containers:
 		termination_cmds.append({lookup.COMMAND_TYPE: lookup.END_DOCKER, lookup.COMMAND: [container_id]})
 
-	if lookup.VERIFY_TXT_FILE in cmd:
-		for verified in verified_list:
-			asset_file_name = fs.get_filename(verified[lookup.VERIFY_TXT_FILE])
-			asset_directory = lookup.get_algo_asset_dirs()[algorithm_info[lookup.ALGORITHM_TYPE]]
+	for verified in verified_list:
+		asset_file_name = fs.get_filename(lookup.generate_verify_file(algorithm_info, verified))
+		asset_directory = lookup.get_algo_asset_dirs()[algorithm_info[lookup.ALGORITHM_TYPE]]
 
-			old_asset_file_path = join(asset_directory, asset_file_name)
-			removal_cmd = ' '.join([removal_prefix, old_asset_file_path])
+		old_asset_file_path = join(asset_directory, asset_file_name)
+		removal_cmd = ' '.join([removal_prefix, old_asset_file_path])
 
-			termination_cmds.append({ lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd] })
-
+		termination_cmds.append({ lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd] })
 
 	return termination_cmds
 
 def generate_native(algorithm_info, to_verify_list):
 	pre_cmds, updated_verify_list = preprocess_native(algorithm_info, to_verify_list)
 	cmds = [generate_native_cmd(algorithm_info, to_verify) for to_verify in updated_verify_list]
-	post_cmds = postprocess_native_cm(algorithm_info, updated_verify_list)
+	post_cmds = postprocess_native(algorithm_info, updated_verify_list)
 	termination_cmds = termination_native(algorithm_info, updated_verify_list)
 	return pre_cmds, cmds, post_cmds, termination_cmds	
 

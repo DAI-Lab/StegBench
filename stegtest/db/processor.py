@@ -40,6 +40,7 @@ def process_steganographic_list(partition, embeddors):
 			input_file = file_set[lookup.INPUT_IMAGE_PATH]
 			output_file = file_set[lookup.OUTPUT_IMAGE_PATH]
 			secret_txt = file_set[lookup.SECRET_TXT_PLAINTEXT]
+			password = file_set[lookup.PASSWORD]
 			
 			info_image = process_image_file(abspath(output_file))
 
@@ -50,6 +51,7 @@ def process_steganographic_list(partition, embeddors):
 			info_image.append(embeddors[idx][lookup.uuid_descriptor])
 			info_image.append(len(secret_txt))
 			info_images.append(info_image)
+			info_image.append(password)
 
 	return info_images, compatible_types
 
@@ -113,7 +115,7 @@ def process_image_directory(path_to_directory, db_name, operation=None, args=Non
 
 	return db_uuid
 
-def process_steganographic_directory(partition, embeddor_set, source_db_uuid):
+def process_steganographic_directory(partition, embeddor_set, source_db_uuid, payload):
 	"""processes a steganographic directory"""
 	embedded_master_file = lookup.get_all_files()[lookup.embedded_db_file]
 	metadata_directory = lookup.get_db_dirs()[lookup.metadata]
@@ -135,7 +137,7 @@ def process_steganographic_directory(partition, embeddor_set, source_db_uuid):
 	num_images = len(info_images)
 	compatible_types = list(compatible_types)
 
-	steganographic_dataset_info = [(db_uuid, source_db_uuid, embeddor_set_uuid, num_images, compatible_types)]
+	steganographic_dataset_info = [(db_uuid, source_db_uuid, embeddor_set_uuid, payload, num_images, compatible_types)]
 	fs.write_to_csv_file(embedded_master_file, steganographic_dataset_info)
 
 	return db_uuid
