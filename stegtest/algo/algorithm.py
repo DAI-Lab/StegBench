@@ -18,7 +18,7 @@ def get_set_files(algorithm_type:str):
 
 	return sets
 
-def create_algorithm_set(algorithm_type:str, algorithm_uuid:str):
+def create_algorithm_set(algorithm_type:str, algorithms:[str]):
 	"""creates a new algorithm set"""
 	#create set file
 	set_uuid = fs.get_uuid()
@@ -27,24 +27,30 @@ def create_algorithm_set(algorithm_type:str, algorithm_uuid:str):
 
 	fs.make_file(individual_set_file_path)
 
-	#gets the data to write to the individual set file
 	file_header = lookup.individual_set_header
-	algorithm_info = get_algorithm_info(algorithm_type, algorithm_uuid)
-	data_to_write = [file_header, [algorithm_info[lookup.uuid_descriptor]]]
+	data_to_write = [file_header]
+	for algorithm_uuid in algorithms:
+		algorithm_info = get_algorithm_info(algorithm_type, algorithm_uuid)
+		data_to_write.append([algorithm_info[lookup.uuid_descriptor]])
+
 	fs.write_to_csv_file(individual_set_file_path, data_to_write)
 
 	return set_uuid
 
-def add_to_algorithm_set(algorithm_type: str, set_uuid:str, algorithm_uuid:str):
+def add_to_algorithm_set(algorithm_type: str, set_uuid:str, algorithms:[str]):
 	"""adds to the current algorithm set"""
 	algorithm_set = get_algorithm_set(algorithm_type, set_uuid)
-	algorithm_info = get_algorithm_info(algorithm_type, algorithm_uuid)
-	
 	compatible_types_set = set(algorithm_set[lookup.compatible_descriptor])
-	compatible_types_algorithm = set(algorithm_info[lookup.compatible_descriptor])
-	new_compatible_types = list(compatible_types_set.intersection(compatible_types_algorithm))
 
-	if(len(new_compatible_types) == 0):
+	algorithm_data = []
+	for algorithm_uuid in algorithms:
+		algorithm_info = get_algorithm_info(algorithm_type, algorithm_uuid)
+		compatible_types_algorithm = set(algorithm_info[lookup.compatible_descriptor])
+
+		compatible_types_set = compatible_types_set.intersection(compatible_types_algorithm)
+		algorithm_data.append([algorithm_info[lookup.uuid_descriptor]])
+
+	if(len(compatible_types_set) == 0):
 		raise ValueError('algorithm could not be added because it does not support compatible types')
 
 	all_set_files = get_set_files(algorithm_type)
@@ -56,7 +62,6 @@ def add_to_algorithm_set(algorithm_type: str, set_uuid:str, algorithm_uuid:str):
 	specific_set_info = specific_set_file[0]
 	set_file_path = specific_set_info[lookup.filepath_descriptor]
 
-	algorithm_data = [[algorithm_info[lookup.uuid_descriptor]]]
 	fs.write_to_csv_file(set_file_path, algorithm_data)
 
 	return set_uuid
@@ -129,12 +134,16 @@ def get_all_algorithms(algorithm_type:str):
 
 	return all_info
 
-def calculate_statistics(all_cover_results, all_stego_results):
+def calculate_statistics_threshold(all_results):
+	""""TODO calculate accuracy scores - using thresholding..."""
+	raise NotImplementedError
+
+def calculate_statistics_classifier(all_cover_results, all_stego_results):
 	"""calculates all the relevant analyzer statistics"""
 
-	""""TODO calculate accuracy scores"""
+	#TODO ONLY TAKE IN ONE LIST AND CORRECTLY MARK IT'S TRUE TYPE#
 	assert(len(all_cover_results) == len(all_stego_results))
-	all_results = []
+	all_results = {}
 
 	for detector in all_cover_results:
 		#TODO get rid of this sort of referencing
@@ -156,36 +165,34 @@ def calculate_statistics(all_cover_results, all_stego_results):
 
 		tpr = true_positive_total / total_stego
 		tnr = true_negative_total / total_cover
-		# ppv = true_positive_total / (true_positive_total + false_positive_total)
-		# npv = true_negative_total / (true_negative_total + false_negative_total)
-		# fnr = 1 - tpr
-		# fpr = 1 - tnr
-		# fdr = 1 - ppv
-		# for_score = 1 - npv
-		# ts = true_positive_total / (true_positive_total + false_negative_total + false_positive_total)
+		ppv = true_positive_total / (true_positive_total + false_positive_total)
+		npv = true_negative_total / (true_negative_total + false_negative_total)
+		fnr = 1 - tpr
+		fpr = 1 - tnr
+		fdr = 1 - ppv
+		for_score = 1 - npv
+		ts = true_positive_total / (true_positive_total + false_negative_total + false_positive_total)
 
 		accuracy = (true_positive_total + true_negative_total) / (total_results)
-		# f1_score = 2 * ((ppv*tpr)/(ppv + tpr))
-		# mcc = (true_positive_total*true_negative_total - false_positive_total*false_negative_total)
-		# denominator = (true_positive_total + false_positive_total)*(true_positive_total + false_negative_total)*(true_negative_total + false_positive_total)*(true_negative_total + false_negative_total)
-		# denominator = math.sqrt(denominator)
-		# mcc /= denominator
+		f1_score = 2 * ((ppv*tpr)/(ppv + tpr))
+		mcc = (true_positive_total*true_negative_total - false_positive_total*false_negative_total)
+		denominator = (true_positive_total + false_positive_total)*(true_positive_total + false_negative_total)*(true_negative_total + false_positive_total)*(true_negative_total + false_negative_total)
+		denominator = math.sqrt(denominator)
+		mcc /= denominator
 
 		results = collections.OrderedDict()
 		results[lookup.false_positive_rate] = fpr
 		results[lookup.false_negative_rate] = fnr
 		results[lookup.true_negative_rate] = tnr
-		# results[lookup.negative_predictive_value] = npv
-		# results[lookup.false_discovery_rate] = fdr
-		# results[lookup.true_positive_rate] = tpr
-		# results[lookup.positive_predictive_value] = ppv
+		results[lookup.negative_predictive_value] = npv
+		results[lookup.false_discovery_rate] = fdr
+		results[lookup.true_positive_rate] = tpr
+		results[lookup.positive_predictive_value] = ppv
 		results[lookup.accuracy] = accuracy
-		results[lookup.detector] = detector
-
-		all_results.append(results)
+		
+		all_results[detector] = results
 
 	return all_results
-
 
 
 

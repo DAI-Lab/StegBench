@@ -5,6 +5,8 @@ import os
 
 from os.path import abspath, join
 
+removal_prefix = 'rm'
+
 def replace(cmd:str, replacements):
 	for replacement_key in replacements:
 		cmd = cmd.replace(replacement_key, replacements[replacement_key])
@@ -77,10 +79,10 @@ def preprocess_docker(algorithm_info, to_embed_list):
 			new_asset_path = join(lookup.asset_dir, asset_filename)
 			to_embed[lookup.SECRET_TXT_FILE] = new_asset_path
 
-	#inputs
-	# if lookup.INPUT_IMAGE_DIRECTORY in cmd:
-	# 	raise NotImplementedError
-	# 	#need to update the commands 
+	if lookup.INPUT_IMAGE_DIRECTORY in cmd:
+		raise NotImplementedError
+	if lookup.OUTPUT_IMAGE_DIRECTORY in cmd:
+		raise NotImplementedError
 
 	for to_embed in to_embed_list:
 		assert(lookup.INPUT_IMAGE_PATH in to_embed)
@@ -95,9 +97,6 @@ def preprocess_docker(algorithm_info, to_embed_list):
 		new_input_path = join(lookup.input_dir, input_filename)
 		to_embed[lookup.INPUT_IMAGE_PATH] = new_input_path
 
-	#outputs
-	# if lookup.OUTPUT_IMAGE_DIRECTORY in cmd:
-	# 	raise NotImplementedError
 
 	for to_embed in to_embed_list:
 		assert(lookup.OUTPUT_IMAGE_PATH in to_embed)
@@ -153,7 +152,6 @@ def terimination_docker(algorithm_info, embedded_list):
 		termination_cmds.append({lookup.COMMAND_TYPE: lookup.END_DOCKER, lookup.COMMAND: [container_id]})
 
 	cmd = lookup.get_cmd(algorithm_info)
-	removal_prefix = 'rm'
 
 	if lookup.SECRET_TXT_FILE in cmd:
 		for embedded in embedded_list:
@@ -167,51 +165,25 @@ def terimination_docker(algorithm_info, embedded_list):
 
 	return termination_cmds
 
-#### CLASS ####
-def preprocess_class(algorithm_info, to_embed_list):
-	raise NotImplementedError
+def generate_native(algorithm_info, to_detect_list):
+	pre_cmds, updated_detect_list = preprocess_native(algorithm_info, to_detect_list)
+	cmds = [generate_native_cmd(algorithm_info, to_detect) for to_detect in updated_detect_list]
+	post_cmds = postprocess_native_cm(algorithm_info, updated_detect_list)
+	termination_cmds = termination_native(algorithm_info, updated_detect_list)
+	return pre_cmds, cmds, post_cmds, termination_cmds	
 
-def generate_class_cmd(algorithm_info, params):
-	raise NotImplementedError
+def generate_docker(algorithm_info, to_detect_list):
+	pre_cmds, updated_detect_list = preprocess_docker(algorithm_info, to_detect_list)
+	cmds = [generate_docker_cmd(algorithm_info, to_detect) for to_detect in updated_detect_list]
+	post_cmds = postprocess_docker(algorithm_info, updated_detect_list)
+	termination_cmds = terimination_docker(algorithm_info, updated_detect_list)
+	return pre_cmds, cmds, post_cmds, termination_cmds	
 
-def postprocess_class(algorithm_info, embedded_list):
-	raise NotImplementedError
-
-def termination_class(algorithm_info, embedded_list):
-	raise NotImplementedError
-
-def generate_commands(algorithm_info, to_embed_list):
+def generate_commands(algorithm_info, to_detect_list):
 	command_type = algorithm_info[lookup.COMMAND_TYPE]
-
-	preprocess_function = {
-		lookup.DOCKER: preprocess_docker,
-		lookup.NATIVE: preprocess_native,
-		lookup.CLASS: preprocess_class,
-	}[command_type]
-
-	pre_cmds, updated_embed_list = preprocess_function(algorithm_info, to_embed_list)
-
 	generate_function = {
-		lookup.DOCKER: generate_docker_cmd,
-		lookup.NATIVE: generate_native_cmd,
-		lookup.CLASS: generate_class_cmd
+		lookup.DOCKER: generate_docker,
+		lookup.NATIVE: generate_native,
 	}[command_type]
 
-	cmds = [generate_function(algorithm_info, to_embed) for to_embed in updated_embed_list]
-
-	postprocess_function = {
-		lookup.DOCKER: postprocess_docker,
-		lookup.NATIVE: postprocess_native,
-		lookup.CLASS: postprocess_class
-	}[command_type]
-
-	post_cmds = postprocess_function(algorithm_info, updated_embed_list)
-
-	termination_function = {
-		lookup.DOCKER: terimination_docker,
-		lookup.NATIVE: termination_native,
-		lookup.CLASS: termination_class
-	}[command_type]
-
-	termination_cmds = termination_function(algorithm_info, updated_embed_list)
-	return pre_cmds, cmds, post_cmds, termination_cmds
+	return generate_function(algorithm_info, to_detect_list)

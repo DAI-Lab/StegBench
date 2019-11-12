@@ -1,5 +1,6 @@
 import subprocess 
 import docker
+import tqdm
 
 import stegtest.utils.lookup as lookup
 import stegtest.utils.filesystem as fs
@@ -17,7 +18,6 @@ def get_container(container_id):
 		try:
 			container = client.containers.get(container_id)
 		except:
-			print('lock contention for docker container')
 			pass
 
 	return container
@@ -49,7 +49,6 @@ def run(cmd_info):
 	}[cmd_type]
 
 	run_info = cmd_info[lookup.COMMAND]
-	print(run_info)
 	run_function(*run_info)
 
 def run_pool(cmd_list, threads=None):
@@ -58,4 +57,4 @@ def run_pool(cmd_list, threads=None):
 	else:
 		pool = Pool()
 
-	pool.map(run, cmd_list)
+	list(tqdm.tqdm(pool.imap(run, cmd_list), total=len(cmd_list)))

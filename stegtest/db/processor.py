@@ -29,16 +29,17 @@ def process_image_list(image_list):
 
 	return info_images, compatible_types
 
-def process_steganographic_list(partition, embeddor_uuid):
+def process_steganographic_list(partition, embeddors):
 	"""processes a partition of steganographic images"""
 	info_images = []
 
 	compatible_types = set()
 
-	for embeddor_generated_set in partition:
+	for idx, embeddor_generated_set in enumerate(partition):
 		for file_set in embeddor_generated_set:
 			input_file = file_set[lookup.INPUT_IMAGE_PATH]
 			output_file = file_set[lookup.OUTPUT_IMAGE_PATH]
+			secret_txt = file_set[lookup.SECRET_TXT_PLAINTEXT]
 			
 			info_image = process_image_file(abspath(output_file))
 
@@ -46,7 +47,8 @@ def process_steganographic_list(partition, embeddor_uuid):
 			info_image = list(info_image.values())
 
 			info_image.append(input_file)
-			info_image.append(embeddor_uuid)
+			info_image.append(embeddors[idx][lookup.uuid_descriptor])
+			info_image.append(len(secret_txt))
 			info_images.append(info_image)
 
 	return info_images, compatible_types
@@ -98,9 +100,7 @@ def process_image_directory(path_to_directory, db_name, operation=None, args=Non
 		files = [join(absolute_path, f) for f in listdir(absolute_path) if img.is_image_file(join(absolute_path, f))]
 
 	info_images, compatible_types = process_image_list(files)
-
-	variables = lookup.get_image_info_variables()
-	rows = [variables] + info_images
+	rows = [lookup.cover_image_header] + info_images
 
 	fs.make_dir(target_directory)
 	fs.write_to_csv_file(join(target_directory, lookup.db_file), rows)
@@ -123,12 +123,11 @@ def process_steganographic_directory(partition, embeddor_set, source_db_uuid):
 
 	assert(fs.dir_exists(metadata_directory))
 
-	embeddor_names = [embeddor[lookup.name_descriptor] for embeddor in embeddor_set[lookup.embeddor]]
+	embeddors = embeddor_set[lookup.embeddor]
 	embeddor_set_uuid = embeddor_set[lookup.uuid_descriptor]
 
-	info_images, compatible_types = process_steganographic_list(partition, embeddor_names)
-	variables = lookup.get_steganographic_info_variables()
-	rows = [variables] + info_images
+	info_images, compatible_types = process_steganographic_list(partition, embeddors)
+	rows = [lookup.steganographic_image_header] + info_images
 
 	fs.make_dir(target_directory)
 	fs.write_to_csv_file(join(target_directory, lookup.db_file), rows)

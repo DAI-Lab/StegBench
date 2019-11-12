@@ -4,82 +4,76 @@ import stegtest.algo.runner as runner
 import os
 
 from os.path import abspath, join
+from collections import defaultdict
+
+removal_prefix = 'rm'
 
 def replace(cmd:str, replacements):
 	for replacement_key in replacements:
 		cmd = cmd.replace(replacement_key, replacements[replacement_key])
 	return cmd
 
-def generate_temp_file_name(algorithm_info, cmd:str, to_detect):
-	output_file_name = algorithm_info[lookup.uuid_descriptor]
+def get_directories(to_detect_list):
+	directories = set()
+	for to_detect in to_detect_list:
+		if lookup.INPUT_IMAGE_PATH in to_detect:
+			directories.add(fs.get_directory(abspath(to_detect[lookup.INPUT_IMAGE_PATH])))
+		elif lookup.INPUT_IMAGE_DIRECTORY in to_detect:
+			directories.add(abspath(to_detect[lookup.INPUT_IMAGE_DIRECTORY]))
 
-	output_directory = None
-	if algorithm_info[lookup.COMMAND_TYPE] == lookup.DOCKER:
-		output_directory = lookup.result_dir
-	else:
-		output_directory = lookup.get_algo_asset_dirs()[lookup.detector]
+	directories = list(directories)
+	directories = list(map(lambda directory: {lookup.INPUT_IMAGE_DIRECTORY: directory}, directories))
 
-	print(output_directory)
+	return directories
 
-	if lookup.INPUT_IMAGE_PATH in cmd:
-		assert(lookup.INPUT_IMAGE_PATH in to_detect)
-		output_file_name += '_' + fs.get_filename(to_detect[lookup.INPUT_IMAGE_PATH], extension=False)
+def update_write_file(algorithm_info, cmd, to_detect_list):
+	param_lookup = defaultdict(None)
 
+	update = None
+	if lookup.RESULT_CSV_FILE in cmd:
+		file_type = 'csv'
+		temp = False
+		update = lookup.RESULT_CSV_FILE
+	elif lookup.TEMP_CSV_FILE in cmd:
+		file_type = 'csv'
+		temp = True
+		update = lookup.TEMP_CSV_FILE
+	elif lookup.RESULT_TXT_FILE in cmd:
+		file_type = 'txt'
+		temp = False
+		update = lookup.RESULT_TXT_FILE
+	elif lookup.TEMP_TXT_FILE in cmd:
+		file_type = 'txt'
+		temp = True
+		update = look.RESULT_CSV_FILE
 
-	elif lookup.INPUT_IMAGE_DIRECTORY in cmd:
-		assert(lookup.INPUT_IMAGE_DIRECTORY in to_detect)
-		#TODO NEED TO FIX THIS PART
-		output_file_name += '_' + fs.get_filename(to_detect[lookup.INPUT_IMAGE_DIRECTORY])
-
-	output_file_name += '.txt'
-
-	return join(output_directory , output_file_name)
-
-def generate_result_file_name(algorithm_info, cmd:str, to_detect):
-	output_file_name = algorithm_info[lookup.uuid_descriptor]
-
-	# output_directory = None
-	# if algorithm_info[lookup.COMMAND_TYPE] == lookup.DOCKER:
-	# 	output_directory = lookup.result_dir
-	# else:
-	
-	output_directory = abspath(lookup.get_algo_asset_dirs()[lookup.detector])
-
-
-	if lookup.INPUT_IMAGE_PATH in cmd:
-		assert(lookup.INPUT_IMAGE_PATH in to_detect)
-		output_file_name += '_' + fs.get_filename(to_detect[lookup.INPUT_IMAGE_PATH], extension=False)
-
-
-	elif lookup.INPUT_IMAGE_DIRECTORY in cmd:
-		assert(lookup.INPUT_IMAGE_DIRECTORY in to_detect)
-		#TODO NEED TO FIX THIS PART
-		output_file_name += '_' + fs.get_filename(to_detect[lookup.INPUT_IMAGE_DIRECTORY])
-
-	output_file_name += '.txt'
-
-	return join(output_directory , output_file_name)
+	if update:
+		for to_detect in to_detect_list:
+			write_file = lookup.generate_result_file(algorithm_info, to_detect, file_type, temp)
+			to_detect[update] = write_file
 
 #### NATIVE ####
 def preprocess_native(algorithm_info, to_detect_list):
 	#probably need to transform from directory to list, vice versa.
+	pre_cmd = lookup.get_pre_cmd(algorithm_info)
 	cmd = lookup.get_cmd(algorithm_info)
+	updated_detect_list = to_detect_list
 
+	if pre_cmd:
+		update_write_file(algorithm_info, pre_cmd, updated_detect_list)
 	if lookup.INPUT_IMAGE_DIRECTORY in cmd:
-		raise NotImplementedError
+		updated_detect_list = get_directories(to_detect_list) 
+	update_write_file(algorithm_info, cmd, updated_detect_list)
 
-	if lookup.OUTPUT_IMAGE_DIRECTORY in cmd:
-		raise NotImplementedError
-
-	return [], to_detect_list
+	return [], updated_detect_list
 
 def generate_native_cmd(algorithm_info, to_detect):
 	#need to do regular substitutions
 	cmd = lookup.get_cmd(algorithm_info)
 	new_cmd = replace(cmd, to_detect)
 
-	if algorithm_info[lookup.PIPE_OUTPUT]:
-		result_file = generate_result_file_name(algorithm_info, cmd, to_detect)
+	if lookup.PIPE_OUTPUT in algorithm_info:
+		result_file = lookup.generate_result_file(algorithm_info, to_detect, 'txt')
 		write_to_result_cmd = ' > ' + result_file
 
 		new_cmd += write_to_result_cmd
@@ -93,25 +87,38 @@ def postprocess_native(algorithm_info, detected_list):
 	if post_cmd is None:
 		return post_cmds
 
-	for to_detect in detected_list:
-		generated_post_cmd = replace(post_cmd, detected_list)
-		post_cmds.append({lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: generated_post_cmd})
+	update_write_file(algorithm_info, post_cmd, detected_list)
 
-	#need to conglomerate results here
+	for to_detect in detected_list:
+		generated_post_cmd = replace(post_cmd, to_detect)
+		post_cmds.append({lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [generated_post_cmd]})
 
 	return post_cmds
 
 def termination_native(algorithm_info, detected_list):
 	termination_cmds = []
 
-	# if algorithm_info[lookup.PIPE_OUTPUT]:
-	# 	cmd = lookup.get_cmd(algorithm_info)
-	# 	removal_prefix = 'rm'
-	# 	for detected in detected_list:
-	# 		result_file = generate_result_file_name(algorithm_info, cmd, detected)
-	# 		removal_cmd = ' '.join([removal_prefix, result_file])
+	if lookup.PIPE_OUTPUT in algorithm_info:
+		cmd = lookup.get_cmd(algorithm_info)
+		for detected in detected_list:
+			result_file = lookup.generate_result_file(algorithm_info, detected, 'txt')
+			removal_cmd = ' '.join([removal_prefix, result_file])
 
-	# 		termination_cmds.append({lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd]})
+			termination_cmds.append({lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd]})
+
+	for detected in detected_list:
+		if lookup.TEMP_CSV_FILE in detected:
+			removal_cmd = ' '.join([removal_prefix, detected[lookup.TEMP_CSV_FILE]])
+			termination_cmds.append({lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd]})
+		if lookup.TEMP_TXT_FILE in detected:
+			removal_cmd = ' '.join([removal_prefix, detected[lookup.TEMP_TXT_FILE]])
+			termination_cmds.append({lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd]})
+		if lookup.RESULT_CSV_FILE in detected:
+			removal_cmd = ' '.join([removal_prefix, detected[lookup.RESULT_CSV_FILE]])
+			termination_cmds.append({lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd]})
+		if lookup.RESULT_TXT_FILE in detected:
+			removal_cmd = ' '.join([removal_prefix, detected[lookup.RESULT_TXT_FILE]])
+			termination_cmds.append({lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd]})
 
 	return termination_cmds
 
@@ -122,10 +129,12 @@ def preprocess_docker(algorithm_info, to_detect_list):
 	cmd = lookup.get_cmd(algorithm_info)
 	volumes = {}
 
-	#inputs
 	if lookup.INPUT_IMAGE_DIRECTORY in cmd:
-		raise NotImplementedError
-		#need to update the commands 
+		updated_detect_list = get_directories(to_detect_list)
+		for updated_detect in updated_detect_list:
+			docker_directory = '/' + fs.get_uuid()
+			volumes[updated_detect[lookup.INPUT_IMAGE_DIRECTORY]] = { 'bind': docker_directory, 'mode': 'rw'}
+			updated_detect[lookup.INPUT_IMAGE_DIRECTORY] = docker_directory
 
 	for to_detect in to_detect_list:
 		assert(lookup.INPUT_IMAGE_PATH in to_detect)
@@ -154,9 +163,9 @@ def generate_docker_cmd(algorithm_info, to_detect):
 	cmd = lookup.get_cmd(algorithm_info)
 	new_cmd = replace(cmd, to_detect)
 
-	if algorithm_info[lookup.PIPE_OUTPUT]:
+	if lookup.PIPE_OUTPUT in algorithm_info:
 		#need to return a native command for now -- HACKY FIX
-		result_file_path = generate_result_file_name(algorithm_info, cmd, to_detect)
+		result_file_path = lookup.generate_result_file(algorithm_info, cmd, to_detect, 'txt')
 		write_to_result_cmd = ' > ' + result_file_path
 		docker_cmd = ' '.join(['docker exec', str(to_detect[lookup.container_id]), new_cmd, write_to_result_cmd])
 		return {lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [docker_cmd]}
@@ -186,61 +195,31 @@ def postprocess_docker(algorithm_info, detected_list):
 
 def terimination_docker(algorithm_info, detected_list):
 	termination_cmds = []
-
 	docker_containers = list(set(list(map(lambda detector: detector[lookup.container_id], detected_list))))
 	for container_id in docker_containers:
 		termination_cmds.append({lookup.COMMAND_TYPE: lookup.END_DOCKER, lookup.COMMAND: [container_id]})
 
 	return termination_cmds
 
-#### CLASS ####
-def preprocess_class(algorithm_info, to_detect_list):
-	raise NotImplementedError
+def generate_native(algorithm_info, to_detect_list):
+	pre_cmds, updated_detect_list = preprocess_native(algorithm_info, to_detect_list)
+	cmds = [generate_native_cmd(algorithm_info, to_detect) for to_detect in updated_detect_list]
+	post_cmds = postprocess_native(algorithm_info, updated_detect_list)
+	termination_cmds = termination_native(algorithm_info, updated_detect_list)
+	return pre_cmds, cmds, post_cmds, termination_cmds	
 
-def generate_class_cmd(algorithm_info, to_detect):
-	raise NotImplementedError
+def generate_docker(algorithm_info, to_detect_list):
+	pre_cmds, updated_detect_list = preprocess_docker(algorithm_info, to_detect_list)
+	cmds = [generate_docker_cmd(algorithm_info, to_detect) for to_detect in updated_detect_list]
+	post_cmds = postprocess_docker(algorithm_info, updated_detect_list)
+	termination_cmds = terimination_docker(algorithm_info, updated_detect_list)
+	return pre_cmds, cmds, post_cmds, termination_cmds	
 
-def postprocess_class(algorithm_info, detected_list):
-	raise NotImplementedError
-
-def termination_class(algorithm_info, detected_list):
-	raise NotImplementedError
-
-# def process_results(algorithm_info, detected_list, result_file):
-# 	raise NotImplementedError
-
-def generate_commands(algorithm_info, to_detect_list, result_file=None):
+def generate_commands(algorithm_info, to_detect_list):
 	command_type = algorithm_info[lookup.COMMAND_TYPE]
-
-	preprocess_function = {
-		lookup.DOCKER: preprocess_docker,
-		lookup.NATIVE: preprocess_native,
-		lookup.CLASS: preprocess_class,
-	}[command_type]
-
-	pre_cmds, updated_detect_list = preprocess_function(algorithm_info, to_detect_list)
-
 	generate_function = {
-		lookup.DOCKER: generate_docker_cmd,
-		lookup.NATIVE: generate_native_cmd,
-		lookup.CLASS: generate_class_cmd
+		lookup.DOCKER: generate_docker,
+		lookup.NATIVE: generate_native,
 	}[command_type]
 
-	cmds = [generate_function(algorithm_info, to_detect) for to_detect in updated_detect_list]
-
-	postprocess_function = {
-		lookup.DOCKER: postprocess_docker,
-		lookup.NATIVE: postprocess_native,
-		lookup.CLASS: postprocess_class
-	}[command_type]
-
-	post_cmds = postprocess_function(algorithm_info, updated_detect_list)
-
-	termination_function = {
-		lookup.DOCKER: terimination_docker,
-		lookup.NATIVE: termination_native,
-		lookup.CLASS: termination_class
-	}[command_type]
-
-	termination_cmds = termination_function(algorithm_info, updated_detect_list)
-	return pre_cmds, cmds, post_cmds, termination_cmds
+	return generate_function(algorithm_info, to_detect_list)

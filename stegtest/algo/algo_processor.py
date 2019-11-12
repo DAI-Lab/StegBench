@@ -1,5 +1,6 @@
 from os import listdir
 from os.path import isfile, join, abspath
+from collections import defaultdict
 
 import ast
 import stegtest.utils.filesystem as fs
@@ -96,10 +97,23 @@ def compile_csv_directory(algorithm_info, source_db):
 	algorithm_uuid = algorithm_info[lookup.uuid_descriptor]
 	asset_dir = abspath(lookup.get_algo_asset_dirs()[lookup.detector])
 
-	result_csv_file = algorithm_uuid + '_' + source_db + '.csv'
+	directory = list(set([fs.get_directory(image[lookup.file_path]) for image in lookup.get_image_list(source_db)]))
+	assert(len(directory) == 1)
+	directory = directory[0]
+	result_csv_file = algorithm_uuid + '_' + fs.get_filename(directory) + '.csv'
 	result_csv_file = join(asset_dir, result_csv_file)
 
-	results = fs.read_csv_file(result_csv_file, return_as_dict=True)
+	data = fs.read_csv_file(result_csv_file)
+	results = []
+
+	for result in data:
+		file_name = result[0]
+		file_result = result[1]
+
+		if file_result == 'True':
+			results.append({lookup.file_path: file_name, lookup.result: True})
+		else:
+			results.append({lookup.file_path: file_name, lookup.result: False})
 
 	return results
 
@@ -151,12 +165,35 @@ def compile_results(algorithm_info, source_db):
 	cmd = lookup.get_cmd(algorithm_info)
 	if lookup.PIPE_OUTPUT in algorithm_info and lookup.INPUT_IMAGE_PATH in cmd:
 		return compile_txt_results(algorithm_info, source_db)
-	elif lookup.PIPE_OUTPUT in algorithm_info and lookup.INPUT_IMAGE_DIRECTORY in cmd:
-		pass
-	elif lookup.RESULT_CSV_FILE in cmd and lookup.INPUT_IMAGE_PATH in cmd:
-		return compile_csv_directory(algorithm_info, source_db)
-	elif lookup.RESULT_CSV_FILE in cmd and lookup.INPUT_IMAGE_DIRECTORY in cmd:
+	elif lookup.RESULT_CSV_FILE in algorithm_info and lookup.INPUT_IMAGE_PATH in cmd:
 		return compile_csv_results(algorithm_info, source_db)
+	elif lookup.INPUT_IMAGE_DIRECTORY in cmd:
+		return compile_csv_directory(algorithm_info, source_db)
 
 	raise NotImplementedError
+
+def verify_embedding(verify_db, embeddors):
+	embeddor_results = defaultdict(list)
+	image_files = lookup.get_image_list(verify_db)
+
+	for image_file in image_files:
+		image_file[lookup.INPUT_IMAGE_PATH] = image_file[lookup.file_path]
+		embeddor_uuid = image_file[lookup.uuid_descriptor]
+		verify_txt_file = lookup.generate_verify_file(embeddors[embeddor_uuid], image_file)
+
+		asset_file_name = fs.get_filename(verify_txt_file)
+		asset_directory = lookup.get_algo_asset_dirs()[lookup.embeddor]
+		verify_file_path = abspath(join(asset_directory, asset_file_name))
+
+		data = fs.read_txt_file(verify_file_path)
+
+		if (len(data[0])) == int(image_file[lookup.secret_txt_length]):
+			verification_result = True
+		else:
+			verification_result = False
+
+		embeddor_results[embeddor_uuid].append({lookup.INPUT_IMAGE_PATH: image_file[lookup.INPUT_IMAGE_PATH], lookup.result: verification_result})
+
+	return embeddor_results
+
 

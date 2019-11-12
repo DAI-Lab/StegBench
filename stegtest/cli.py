@@ -15,7 +15,7 @@ import stegtest.db.processor as pr
 import stegtest.algo.algorithm as algo
 import stegtest.algo.algo_processor as algo_processor
 
-from stegtest.orchestrator import Embeddor, Detector
+from stegtest.orchestrator import Embeddor, Detector, Verifier
 
 @click.pass_context
 def request_parameters(ctx, parameters):
@@ -36,7 +36,7 @@ def request_parameters(ctx, parameters):
         return parameter_values
 
     ctx.abort()
-
+  
 @click.group()
 @click.pass_context
 def pipeline(ctx):
@@ -88,38 +88,40 @@ def process(ctx, directory, name, operation):
     click.echo('The UUID of the dataset you have processed is: ' + db_uuid)
 
 @pipeline.command()
-@click.option('-a', '--algorithm', help='specify an embedding routine by uuid', type=str)
+@click.option('-e', '--embeddor', help='specify an embedding routine(s) by uuid', type=str)
 @click.option('-n', '--new', help='set new for a new embeddor set', is_flag=True, default=False)
 @click.option('-u', '--uuid', help='specifies an existing embeddor set')
 @click.pass_context
-def add_embeddor(ctx, algorithm, new, uuid):
+def add_embeddor(ctx, embeddor, new, uuid):
     """adds embeddor with options <algorithm> and <weight>"""
-    assert(algorithm and (new or uuid))
-    click.echo('Adding embeddor: [' + algorithm + ']')
+    assert(embeddor and (new or uuid))
+    embeddor = embeddor.split(',')
+    click.echo('Adding embeddors: ' + str(embeddor))
     if new:
-        uuid = algo.create_algorithm_set(lookup.embeddor, algorithm)
+        uuid = algo.create_algorithm_set(lookup.embeddor, embeddor)
         message = 'The new UUID of the set you have created is: '
     else:
-        uuid = algo.add_to_algorithm_set(lookup.embeddor, uuid, algorithm)
+        uuid = algo.add_to_algorithm_set(lookup.embeddor, uuid, embeddor)
         message = 'The UUID of the set you have added to is: '
 
     click.echo('Added embeddor successfully')
     click.echo(message + uuid)
 
 @pipeline.command()
-@click.option('-a', '--algorithm', type=str)
+@click.option('-d', '--detector', help='specify an detecting routine(s) by uuid', type=str)
 @click.option('-n', '--new', help='set new for a new detector set', is_flag=True, default=False, )
 @click.option('-u', '--uuid', help='specifies an existing embeddor set')
 @click.pass_context
-def add_detector(ctx, algorithm, new, uuid):
+def add_detector(ctx, detector, new, uuid):
     """adds detector with options <algorithm> and <weight>"""
-    assert(algorithm and (new or uuid))
-    click.echo('Adding detector: [' + algorithm + ']')
+    assert(detector and (new or uuid))
+    detector = detector.split(',')
+    click.echo('Adding detectors: ' + str(detector))
     if new:
-        uuid = algo.create_algorithm_set(lookup.detector, algorithm)
+        uuid = algo.create_algorithm_set(lookup.detector, detector)
         message = 'The new UUID of the set you have created is: '
     else:
-        uuid = algo.add_to_algorithm_set(lookup.detector, uuid, algorithm)
+        uuid = algo.add_to_algorithm_set(lookup.detector, uuid, detector)
         message = 'The UUID of the set you have added to is: '
 
     click.echo('Added detector successfully')
@@ -211,21 +213,20 @@ def info(ctx, all, db, embeddor, detector):
 
 @pipeline.command()
 @click.option('-e', '--embeddor', help='uuid of the embeddor set being used', type=str)
-@click.option('-d', '--db', help=' uuid of the db being used', type=str)
+@click.option('-db', '--db', help=' uuid of the db being used', type=str)
 @click.option('-r', '--ratio', help='embedding ratio to be used', type=float)
-@click.option('-v', '--verify', help='verify data upon embedding', is_flag=True, default=False)
 @click.pass_context
-def embed(ctx, embeddor, db, ratio, verify):
+def embed(ctx, embeddor, db, ratio):
     """Embeds a db using embeddors and db images"""
     assert(embeddor and db and ratio) 
     embeddor_set = algo.get_algorithm_set(lookup.embeddor, embeddor)
-    generator = Embeddor(embeddor_set, verify)
+    generator = Embeddor(embeddor_set)
     db_uuid = generator.embed_ratio(db, ratio)
     click.echo('The UUID of the dataset you have created is: ' + db_uuid)
 
 @pipeline.command()
 @click.option('-d', '--detector', help='uuid of the detector set being used')
-@click.option('-db', '--db', help='hash of the generated db set being used')
+@click.option('-db', '--db', help='uuid of the db being used')
 @click.pass_context
 def detect(ctx, detector, db):
     """analyzes a set detectors using a pre-processed database"""
@@ -233,7 +234,59 @@ def detect(ctx, detector, db):
     detector_set = algo.get_algorithm_set(lookup.detector, detector)
     analyzer = Detector(detector_set)
     results = analyzer.detect(db)
-    click.echo('The results are: ' + str(results))
+
+    breaker = ['-' for i in range(100)]
+    breaker = ''.join(breaker)
+    click.echo('Listing all results...')
+    click.echo(breaker)
+    for detector_uuid in results:
+        detector_info = algo.get_algorithm_info(lookup.detector, detector_uuid)
+        click.echo('\tName: ' + detector_info[lookup.name_descriptor])
+        click.echo('\tUUID: ' + detector_uuid)
+        detector_result = results[detector_uuid]
+        for metric in detector_result:
+            click.echo('\t\t' + metric + ': ' +str(detector_result[metric]))
+
+    click.echo(breaker)
+    click.echo('All results printed.')
+
+@pipeline.command()
+@click.option('-db', '--db', help='uuid of the db to veriy')
+@click.pass_context
+def verify(ctx, db):
+    """verifies a steganographic database"""
+    assert(db)
+    verifier = Verifier()
+    results = verifier.verify(db)
+    
+    verified_total = 0
+    error_total = 0
+
+    breaker = ['-' for i in range(100)]
+    breaker = ''.join(breaker)
+    click.echo('Listing all verification results...')
+    click.echo(breaker)
+    click.echo('Specific Embeddor Results')
+    for embeddor_uuid in results:
+        embeddor_result = results[embeddor_uuid]
+        embeddor_info = algo.get_algorithm_info(lookup.embeddor, embeddor_uuid)
+        click.echo('\tName: ' + embeddor_info[lookup.name_descriptor])
+        click.echo('\tUUID: ' + embeddor_uuid)
+        
+        verified = len(list(filter(lambda r: r[lookup.result], embeddor_result)))
+        errors = len(list(filter(lambda r: not r[lookup.result], embeddor_result)))
+
+        click.echo('\t\tCorrectly Embedded (%): ' + str(100*(float(verified)/float(verified + errors))))     
+        click.echo('\t\tIncorrect Embedding (%): ' + str(100*(float(errors)/float(verified + errors))))
+
+        verified_total += verified
+        error_total += errors  
+
+    click.echo(breaker)
+    click.echo('Total Results')
+    click.echo('\tCorrectly Embedded (%): ' + str(100*(float(verified_total)/float(verified_total + error_total))))
+    click.echo('\tIncorrect Embedding (%): ' + str(100*(float(error_total)/float(verified_total + error_total))))
+
 
 def main():
     pipeline(obj={})

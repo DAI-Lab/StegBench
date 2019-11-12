@@ -12,6 +12,7 @@ import stegtest.algo.algorithm as algo
 import stegtest.algo.algo_processor as algo_processor
 import stegtest.algo.embeddor_cmds as embeddor_cmds
 import stegtest.algo.detector_cmds as detector_cmds
+import stegtest.algo.verify_cmds as verify_cmds
 import stegtest.algo.runner as runner
 
 import stegtest.db.processor as processor
@@ -19,22 +20,24 @@ import stegtest.db.processor as processor
 from os.path import abspath, join
 from pathos.multiprocessing import ThreadPool as Pool
 from functools import partial
+from collections import defaultdict
 
 class Embeddor():
 	""""runs all the generation tasks"""
-	def __init__(self, embeddor_set, verify):
+	def __init__(self, embeddor_set):
 		self.embeddors = embeddor_set[lookup.embeddor]
 		self.max_embedding_ratio = embeddor_set[lookup.embedding_descriptor]
 		self.compatible_types = embeddor_set[lookup.compatible_descriptor]
 		
 		self.embeddor_set = embeddor_set
-		self.verify = verify
 
 	def embed_db(self, partition, source_db_uuid):
 		all_pre_cmds = []
 		all_cmds = []
 		all_post_cmds = []
 		all_termination_cmds = []
+
+		#TODO VALIDATE THE PARTITION...
 
 		for idx, embeddor in enumerate(self.embeddors):
 			embeddor_params = copy.deepcopy(partition[idx])
@@ -44,10 +47,18 @@ class Embeddor():
 			all_post_cmds += post_cmds 
 			all_termination_cmds += termination_cmds
 
+		print('running pre commands')
 		runner.run_pool(all_pre_cmds)
+		print('completed.')
+		print('running commands')
 		runner.run_pool(all_cmds)
+		print('completed.')
+		print('running post commands.')
 		runner.run_pool(all_post_cmds)
+		print('completed.')
+		print('running termination_cmds')
 		runner.run_pool(all_termination_cmds)
+		print('completed.')
 
 		db_uuid = processor.process_steganographic_directory(partition, self.embeddor_set, source_db_uuid)
 
@@ -110,6 +121,57 @@ class Embeddor():
 
 		return db_uuid
 
+class Verifier():
+	""""runs all the generation tasks"""
+	def verify(self, db:str):
+		db_info = lookup.get_steganographic_db_info(db)
+		db_images = lookup.get_image_list(db_info[lookup.uuid_descriptor])
+
+		#need to group properly....
+		#need to read parameter assets	#group all config files and batch read all the information properly... 
+		sorted_by_embeddor = defaultdict(list)
+		for image_info in db_images:
+			sorted_by_embeddor[image_info[lookup.uuid_descriptor]].append(image_info)
+
+		sorted_by_embeddor = {embeddor: list(map(lambda img_info: {lookup.INPUT_IMAGE_PATH: img_info[lookup.file_path]}, sorted_by_embeddor[embeddor])) for embeddor in sorted_by_embeddor}
+
+		all_pre_cmds = []
+		all_cmds = []
+		all_post_cmds = []
+		all_termination_cmds = []
+
+		all_embeddors = {}
+
+		for embeddor_uuid in sorted_by_embeddor:
+			embeddor = algo.get_algorithm_info(lookup.embeddor, embeddor_uuid)
+			all_embeddors[embeddor_uuid] = embeddor
+			verify_params = copy.deepcopy(sorted_by_embeddor[embeddor_uuid])
+			
+			pre_cmds, cmds, post_cmds, termination_cmds = verify_cmds.generate_commands(embeddor, verify_params)
+			all_pre_cmds += pre_cmds
+			all_cmds += cmds
+			all_post_cmds += post_cmds 
+			all_termination_cmds += termination_cmds
+
+		print('running pre commands')
+		runner.run_pool(all_pre_cmds)
+		print('completed.')
+		print('running commands')
+		runner.run_pool(all_cmds)
+		print('completed.')
+		print('running post commands.')
+		runner.run_pool(all_post_cmds)
+		print('completed.')
+		print('running termination_cmds')
+		
+		#need to do some verification thing here TODO
+		verification_results = algo_processor.verify_embedding(db, all_embeddors)
+
+		runner.run_pool(all_termination_cmds)
+		print('completed.')
+		
+		return verification_results
+
 class Detector():
 	""""runs all the analyzer tasks"""
 	def __init__(self, detector_set):
@@ -117,7 +179,7 @@ class Detector():
 		self.detectors = detector_set[lookup.detector]
 		self.compatible_types = detector_set[lookup.compatible_descriptor]
 
-	def detect_list(self, image_list:str):
+	def detect_list(self, image_list:str, db_uuid:str):
 		all_pre_cmds = []
 		all_cmds = []
 		all_post_cmds = []
@@ -130,10 +192,23 @@ class Detector():
 			all_post_cmds += post_cmds 
 			all_termination_cmds += termination_cmds
 
+		print('running pre commands')
 		runner.run_pool(all_pre_cmds)
+		print('completed.')
+		print('running commands')
 		runner.run_pool(all_cmds)
+		print('completed.')
+		print('running post commands.')
 		runner.run_pool(all_post_cmds)
+		print('completed.')
+
+		results = {algorithm_info[lookup.uuid_descriptor]: algo_processor.compile_results(algorithm_info, db_uuid) for algorithm_info in self.detectors}
+
+		print('running termination_cmds')
 		runner.run_pool(all_termination_cmds)
+		print('completed.')
+
+		return results
 
 	def detect(self, testdb:str):
 		print('preparing db for evaluation')
@@ -153,28 +228,37 @@ class Detector():
 		stego_image_dict = lookup.get_image_list(testdb)
 		source_image_list = list(map(lambda cover: {lookup.INPUT_IMAGE_PATH: cover[lookup.file_path]}, source_image_dict))
 		stego_image_list = list(map(lambda cover: {lookup.INPUT_IMAGE_PATH: cover[lookup.file_path]}, stego_image_dict))
-		self.detect_list(source_image_list)
-		self.detect_list(stego_image_list)
+		
+
+		cover_results = self.detect_list(source_image_list, sourcedb)
+		stego_results = self.detect_list(stego_image_list, testdb)
 
 
-		source_results = {algorithm_info[lookup.uuid_descriptor]: algo_processor.compile_results(algorithm_info, sourcedb) for algorithm_info in self.detectors}
-		cover_results = {algorithm_info[lookup.uuid_descriptor]: algo_processor.compile_results(algorithm_info, testdb) for algorithm_info in self.detectors}
-
-		statistics = algo.calculate_statistics(source_results, cover_results)
+		statistics = algo.calculate_statistics_classifier(cover_results, stego_results)
 		return statistics
 
 
 class Scheduler():
 	"""schedules the generator and analyzer task"""
-	def __init__(self, generator:Embeddor, analyzer:Detector):
+	def __init__(self, generator:Embeddor, verifier:Verifier, analyzer:Detector):
 		self.generator = generator
+		self.verifier = verifier
 		self.analyzer = analyzer
 
-	def initialize():
-		lookup.initialize_filesystem()
+	def initialize(self, config_directories=None, config_files=None):
+		lookup.initialize_filesystem(os.getcwd())
+		if config_directories:
+			[algo_processor.process_config_directory(directory) for directory in config_directories]
+		if config_files:
+			[algo_processor.process_config_file(file) for file in config_files]
 
 	def run_pipeline(self, source_db):
 		generated_db = self.generator.embed(source_db)
-		path_to_output = self.analyzer.detect(generated_db)
+		verify = self.verifier.verify(verify)
 
-		return path_to_output
+		if not verify:
+			raise ValueError('The db was not properly embedded')
+
+		results = self.analyzer.detect(generated_db)
+
+		return {lookup.uuid_descriptor: generated_db, lookup.result: results}

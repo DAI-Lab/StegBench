@@ -51,6 +51,7 @@ source_image = 'Source Image'
 #STEGANOGRAPHIC METADATA
 source_db = 'Source Database'
 source_embeddor_set = 'Source Embeddor Set'
+secret_txt_length = 'Secret Text Length'
 
 #HEADER VARIABLES
 name_descriptor = 'Name'
@@ -64,11 +65,12 @@ db_descriptor = 'DB Name'
 db_image_count = 'Number of Images'
 
 #FILE HEADERS
+cover_image_header = [file_path, image_type, image_width, image_height, image_channels, embedding_max]
+steganographic_image_header = [file_path, image_type, image_width, image_height, image_channels, embedding_max, source_image, uuid_descriptor, secret_txt_length]
 
 master_algo_header = [uuid_descriptor, name_descriptor, filepath_descriptor] #points to a config file
 individual_set_header = [uuid_descriptor] #points to a master algo
 master_set_header = [uuid_descriptor, filepath_descriptor] #points to an individual set
-
 
 db_header = [uuid_descriptor, db_descriptor, db_image_count, compatible_descriptor]
 steganographic_header = [uuid_descriptor, source_db, source_embeddor_set, db_image_count, compatible_descriptor]
@@ -82,14 +84,14 @@ compatibile_types_decorator = 'compatibile_types'
 description = 'description'
 
 #BINARY CLASSIFIER STATISTICS
-false_positive_rate = 'fpr'
-false_negative_rate = 'fnr'
-true_negative_rate = 'tnr'
-negative_predictive_value = 'npv'
-false_discovery_rate = 'fdr'
-true_positive_rate = 'tpr'
-positive_predictive_value = 'ppv'
-accuracy = 'acc'
+false_positive_rate = 'false positive rate'
+false_negative_rate = 'false negative rate'
+true_negative_rate = 'true negative rate'
+negative_predictive_value = 'negative predictive value'
+false_discovery_rate = 'false discovery rate'
+true_positive_rate = 'true positive rate'
+positive_predictive_value = 'positive predictive value'
+accuracy = 'accuracy'
 roc_auc = 'roc_auc'
 result = 'result'
 
@@ -129,18 +131,21 @@ asset_dir = '/data-asset'
 result_dir = '/data-result'
 
 #COMMAND
+PRE_COMMAND = 'pre_run'
 COMMAND = 'run'
 POST_COMMAND = 'post_run'
+VERIFY_COMMAND = 'verify'
 PIPE_OUTPUT = 'pipe_output'
 
 #COMMAND SPECIFIC - COVER
-INPUT_IMAGE_DIRECTORY = 'INPUT_DIRECTORY'
+INPUT_IMAGE_DIRECTORY = 'INPUT_IMAGE_DIRECTORY'
 INPUT_IMAGE_NAME = 'INPUT_IMAGE_NAME'
 INPUT_IMAGE_PATH = 'INPUT_IMAGE_PATH'
 
 #COMMAND SPECIFIC - SECRET MESSAGE
 SECRET_TXT_PLAINTEXT = 'SECRET_TXT_PLAINTEXT'
 SECRET_TXT_FILE = 'SECRET_TXT_FILE'
+VERIFY_TXT_FILE = 'VERIFY_TXT_FILE'
 
 
 #COMMAND-SPECIFIC - SUPPORTED INPUT PARAMETERS
@@ -149,15 +154,16 @@ BPP = 'BPP'
 bpnzAC = 'BPNZAC'
 
 #COMMAND-SPECIFIC - OUTPUT
-OUTPUT_IMAGE_DIRECTORY = 'OUTPUT_DIRECTORY'
+OUTPUT_IMAGE_DIRECTORY = 'OUTPUT_IMAGE_DIRECTORY'
 OUTPUT_IMAGE_NAME = 'OUTPUT_IMAGE_NAME'
 OUTPUT_IMAGE_PATH = 'OUTPUT_IMAGE_PATH'
 
 
 #COMMAND-SPECIFIC - OUTPUT
-RESULT_TXT_FILE = 'RESULT_TXT_FILE'
 RESULT_CSV_FILE = 'RESULT_CSV_FILE'
+RESULT_TXT_FILE = 'RESULT_TXT_FILE'
 TEMP_CSV_FILE = 'TEMP_CSV_FILE'
+TEMP_TXT_FILE = 'TEMP_TXT_FILE'
 
 #FILTER SPECIFIC
 regex_filter_yes = 'regex_filter_yes'
@@ -311,16 +317,60 @@ def get_image_list(db_descriptor):
 	image_info = fs.read_csv_file(db_master_file, return_as_dict=True)
 	return image_info
 
+def get_pre_cmd(algorithm_info):
+	if PRE_COMMAND in algorithm_info:
+		return algorithm_info[PRE_COMMAND]
+	return None
+
 def get_cmd(algorithm_info):
 	return algorithm_info[COMMAND]
 
 def get_post_cmd(algorithm_info):
 	if POST_COMMAND in algorithm_info:
 		return algorithm_info[POST_COMMAND]
-
 	return None
 
+def get_verify_cmd(algorithm_info):
+	return algorithm_info[VERIFY_COMMAND]
+
 ####TO MOVE THESE -- SINCE THESE ARE NOT LOOKUP BUT GENERATION####
+
+def generate_verify_file(algorithm_info, to_verify):
+	command_type = algorithm_info[COMMAND_TYPE]
+	if command_type == DOCKER:
+		file_dir = asset_dir
+	else:
+		file_dir = abspath(get_algo_asset_dirs()[embeddor])
+
+	file_name = algorithm_info[uuid_descriptor] + '_' +fs.get_filename(to_verify[INPUT_IMAGE_PATH], extension=False) + '.txt'
+	file_path = join(file_dir, file_name)
+
+	return file_path
+
+
+def generate_result_file(algorithm_info, to_detect, file_type, temp=False):
+	output_file_name = algorithm_info[uuid_descriptor]
+	cmd = get_cmd(algorithm_info)
+	
+	if algorithm_info[COMMAND_TYPE] == DOCKER:
+		output_directory = result_dir
+	else:
+		output_directory = abspath(get_algo_asset_dirs()[detector])
+
+	if INPUT_IMAGE_PATH in cmd:
+		assert(INPUT_IMAGE_PATH in to_detect)
+		output_file_name += '_' + fs.get_filename(to_detect[INPUT_IMAGE_PATH], extension=False)
+
+
+	elif INPUT_IMAGE_DIRECTORY in cmd:
+		assert(INPUT_IMAGE_DIRECTORY in to_detect)
+		output_file_name += '_' + fs.get_filename(to_detect[INPUT_IMAGE_DIRECTORY])
+
+	if temp:
+		output_file_name += '-temp'
+
+	output_file_name += '.' + file_type
+	return join(output_directory , output_file_name)
 
 def generate_output_list(output_directory:str, input_list:dict):
 	target_directory = output_directory
