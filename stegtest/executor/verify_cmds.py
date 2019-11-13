@@ -1,11 +1,10 @@
 import stegtest.utils.lookup as lookup
 import stegtest.utils.filesystem as fs
-import stegtest.algo.runner as runner
+import stegtest.utils.generator as generator
+import stegtest.executor.runner as runner
 import os
 
 from os.path import abspath, join
-
-removal_prefix = 'rm'
 
 def replace(cmd:str, replacements):
 	for replacement_key in replacements:
@@ -21,7 +20,7 @@ def generate_native_cmd(algorithm_info, to_verify):
 	new_cmd = replace(cmd, to_verify)
 
 	if lookup.PIPE_OUTPUT in algorithm_info:
-		result_file = lookup.generate_verify_file(algorithm_info, to_verify)
+		result_file = generator.generate_verify_file(algorithm_info, to_verify)
 		write_to_result_cmd = ' > ' + result_file
 
 		new_cmd += write_to_result_cmd
@@ -36,7 +35,7 @@ def termination_native(algorithm_info, verified_list):
 	termination_cmds = []
 
 	for verified in verified_list:
-		removal_cmd = ' '.join([removal_prefix, lookup.generate_verify_file(algorithm_info, verified)])
+		removal_cmd = ' '.join([lookup.removal_prefix, generator.generate_verify_file(algorithm_info, verified)])
 		termination_cmds.append({ lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd] })
 
 	return termination_cmds
@@ -52,7 +51,7 @@ def preprocess_docker(algorithm_info, to_verify_list):
 		asset_directory = abspath(lookup.get_algo_asset_dirs()[lookup.embeddor])
 		volumes[asset_directory] = { 'bind': lookup.asset_dir, 'mode': 'rw'}
 		for to_verify in to_verify_list:
-			to_verify[lookup.VERIFY_TXT_FILE] = lookup.generate_verify_file(algorithm_info, to_verify)
+			to_verify[lookup.VERIFY_TXT_FILE] = generator.generate_verify_file(algorithm_info, to_verify)
 
 	for to_verify in to_verify_list:
 		assert(lookup.INPUT_IMAGE_PATH in to_verify)
@@ -97,11 +96,11 @@ def terimination_docker(algorithm_info, verified_list):
 		termination_cmds.append({lookup.COMMAND_TYPE: lookup.END_DOCKER, lookup.COMMAND: [container_id]})
 
 	for verified in verified_list:
-		asset_file_name = fs.get_filename(lookup.generate_verify_file(algorithm_info, verified))
+		asset_file_name = fs.get_filename(generator.generate_verify_file(algorithm_info, verified))
 		asset_directory = lookup.get_algo_asset_dirs()[algorithm_info[lookup.ALGORITHM_TYPE]]
 
 		old_asset_file_path = join(asset_directory, asset_file_name)
-		removal_cmd = ' '.join([removal_prefix, old_asset_file_path])
+		removal_cmd = ' '.join([lookup.removal_prefix, old_asset_file_path])
 
 		termination_cmds.append({ lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd] })
 

@@ -6,14 +6,15 @@ import copy
 
 import stegtest.utils.filesystem as fs
 import stegtest.utils.lookup as lookup
-import stegtest.utils.param_generator as param_generator
+import stegtest.utils.generator as generator
 
-import stegtest.algo.algorithm as algo
+import stegtest.algo.algo_info as algo
 import stegtest.algo.algo_processor as algo_processor
-import stegtest.algo.embeddor_cmds as embeddor_cmds
-import stegtest.algo.detector_cmds as detector_cmds
-import stegtest.algo.verify_cmds as verify_cmds
-import stegtest.algo.runner as runner
+
+import stegtest.executor.embeddor_cmds as embeddor_cmds
+import stegtest.executor.detector_cmds as detector_cmds
+import stegtest.executor.verify_cmds as verify_cmds
+import stegtest.executor.runner as runner
 
 import stegtest.db.processor as processor
 
@@ -108,17 +109,16 @@ class Embeddor():
 		for idx in range(remainder):
 			input_partition[idx].append(image_dict[idx + num_embeddors*images_per_embeddor].copy())
 
-		ratio_embeddor = partial(param_generator.secret_message_from_embedding, embedding_ratio) 
+		ratio_embeddor = partial(generator.secret_message_from_embedding, embedding_ratio) 
 		secret_message = [list(map(ratio_embeddor, input_list)) for input_list in input_partition]
-		output_partition = [lookup.generate_output_list(output_directory, input_list) for input_list in input_partition]
+		output_partition = [generator.generate_output_list(embeddor, output_directory, input_partition[idx]) for idx, embeddor in enumerate(self.embeddors)]
 
-		#using embedding ratio, calculate the secret message
 		partition = [[{
 						lookup.INPUT_IMAGE_PATH: input_partition[i][j][lookup.file_path], 
 						lookup.OUTPUT_IMAGE_PATH: output_partition[i][j],
 						lookup.PAYLOAD: embedding_ratio,
 						lookup.SECRET_TXT_PLAINTEXT: secret_message[i][j],
-						lookup.PASSWORD: param_generator.generate_password(),
+						lookup.PASSWORD: generator.generate_password(),
 						}
 		 			for j in range(len(input_partition[i]))] for i in range(num_embeddors)]
 

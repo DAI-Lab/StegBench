@@ -15,7 +15,6 @@ stegtest_tld = 'stegtest_asssets'
 embeddor = 'embeddor'
 detector = 'detector'
 db = 'db'
-config = 'config'
 
 embeddor_dir = join(stegtest_tld, embeddor)
 detector_dir = join(stegtest_tld, detector)
@@ -64,6 +63,7 @@ COMMAND = 'run'
 POST_COMMAND = 'post_run'
 VERIFY_COMMAND = 'verify'
 PIPE_OUTPUT = 'pipe_output'
+OUTPUT_FILE = 'output_file'
 
 #COMMAND SPECIFIC - COVER
 INPUT_IMAGE_DIRECTORY = 'INPUT_IMAGE_DIRECTORY'
@@ -83,7 +83,6 @@ PAYLOAD = 'PAYLOAD'
 OUTPUT_IMAGE_DIRECTORY = 'OUTPUT_IMAGE_DIRECTORY'
 OUTPUT_IMAGE_NAME = 'OUTPUT_IMAGE_NAME'
 OUTPUT_IMAGE_PATH = 'OUTPUT_IMAGE_PATH'
-
 
 #COMMAND-SPECIFIC - OUTPUT
 RESULT_CSV_FILE = 'RESULT_CSV_FILE'
@@ -165,6 +164,10 @@ add_noise = 'noise'
 crop = 'crop'
 resize = 'resize'
 rotate = 'rotate'
+
+removal_prefix = 'rm'
+removal_directory_prefix = 'rm -rf'
+docker_exec_prefix = 'docker exec'
 
 def get_top_level_dirs():
 	return {embeddor: embeddor_dir, db: db_dir, detector:detector_dir}
@@ -328,72 +331,6 @@ def get_post_cmd(algorithm_info):
 
 def get_verify_cmd(algorithm_info):
 	return algorithm_info[VERIFY_COMMAND]
-
-####TO MOVE THESE -- SINCE THESE ARE NOT LOOKUP BUT GENERATION####
-
-def get_directories(params):
-	directories = set()
-	for param in params:
-		if INPUT_IMAGE_PATH in param:
-			directories.add(fs.get_directory(abspath(param[INPUT_IMAGE_PATH])))
-		elif INPUT_IMAGE_DIRECTORY in param:
-			directories.add(abspath(param[INPUT_IMAGE_DIRECTORY]))
-
-	directories = list(directories)
-	directories = list(map(lambda directory: {INPUT_IMAGE_DIRECTORY: directory}, directories))
-
-	return directories
-
-def generate_verify_file(algorithm_info, to_verify):
-	command_type = algorithm_info[COMMAND_TYPE]
-	if command_type == DOCKER:
-		file_dir = asset_dir
-	else:
-		file_dir = abspath(get_algo_asset_dirs()[embeddor])
-
-	file_name = algorithm_info[uuid_descriptor] + '_' +fs.get_filename(to_verify[INPUT_IMAGE_PATH], extension=False) + '.txt'
-	file_path = join(file_dir, file_name)
-
-	return file_path
-
-
-def generate_result_file(algorithm_info, to_detect, file_type, temp=False):
-	output_file_name = algorithm_info[uuid_descriptor]
-	cmd = get_cmd(algorithm_info)
-	
-	if algorithm_info[COMMAND_TYPE] == DOCKER:
-		output_directory = result_dir
-	else:
-		output_directory = abspath(get_algo_asset_dirs()[detector])
-
-	if INPUT_IMAGE_PATH in cmd:
-		assert(INPUT_IMAGE_PATH in to_detect)
-		output_file_name += '_' + fs.get_filename(to_detect[INPUT_IMAGE_PATH], extension=False)
-
-
-	elif INPUT_IMAGE_DIRECTORY in cmd:
-		assert(INPUT_IMAGE_DIRECTORY in to_detect)
-		output_file_name += '_' + fs.get_filename(to_detect[INPUT_IMAGE_DIRECTORY])
-
-	if temp:
-		output_file_name += '-temp'
-
-	output_file_name += '.' + file_type
-	return join(output_directory , output_file_name)
-
-def generate_output_list(output_directory:str, input_list:dict):
-	target_directory = output_directory
-
-	output_list = []
-	for file in input_list:
-		file_name = file[file_path]
-		file_type = file[image_type]
-
-		output_file = fs.create_name_from_uuid(fs.get_uuid(), file_type)
-		output_file_path = join(target_directory, output_file)
-		output_list.append(output_file_path)
-
-	return output_list
 
 def initialize_filesystem(directory): #TODO need to remove the None part
 	"""Clears and adds needed directories for stegdetect to work"""

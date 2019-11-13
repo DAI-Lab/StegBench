@@ -134,14 +134,21 @@ def read_json_file(path_to_file):
 
     return datastore
 
+def copy_file(file, dest):
+    shutil.copy(file, dest)
+
 def remove_file(file):
     if not file_exists(file):
         raise Error('file does not exist')
 
     os.remove(file)
 
+def remove_directory(directory):
+    if not dir_exists(directory):
+        raise Error('directory does not exist')
+    shutil.rmtree(directory)
+
 def clean_filesystem(directories):
     """removes directories defined in bindings"""
     for directory in directories:
-        if dir_exists(directory):
-            shutil.rmtree(directory)
+        remove_directory(directory)

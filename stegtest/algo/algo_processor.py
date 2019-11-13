@@ -5,6 +5,7 @@ from collections import defaultdict
 import ast
 import stegtest.utils.filesystem as fs
 import stegtest.utils.lookup as lookup
+import stegtest.utils.generator as generator
 
 import configparser
 import re
@@ -149,6 +150,8 @@ def compile_txt_results(algorithm_info, source_db):
 		file_result = fs.read_txt_file(file)
 		file_result = ' '.join(file_result)
 
+		print(file_result)
+
 		stego = re.search(yes_filter, file_result)
 		cover = re.search(no_filter, file_result)
 		assert (stego or cover and not (stego and cover))
@@ -161,7 +164,6 @@ def compile_txt_results(algorithm_info, source_db):
 	return results
 
 def compile_results(algorithm_info, source_db):
-	#TODO NEED TO FIX THIS SO IT PROPERLY ROUTES TO THE CORRECT PROCESSOR
 	cmd = lookup.get_cmd(algorithm_info)
 	if lookup.PIPE_OUTPUT in algorithm_info and lookup.INPUT_IMAGE_PATH in cmd:
 		return compile_txt_results(algorithm_info, source_db)
@@ -179,7 +181,7 @@ def verify_embedding(verify_db, embeddors):
 	for image_file in image_files:
 		image_file[lookup.INPUT_IMAGE_PATH] = image_file[lookup.file_path]
 		embeddor_uuid = image_file[lookup.uuid_descriptor]
-		verify_txt_file = lookup.generate_verify_file(embeddors[embeddor_uuid], image_file)
+		verify_txt_file = generator.generate_verify_file(embeddors[embeddor_uuid], image_file)
 
 		asset_file_name = fs.get_filename(verify_txt_file)
 		asset_directory = lookup.get_algo_asset_dirs()[lookup.embeddor]

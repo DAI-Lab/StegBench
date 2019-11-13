@@ -13,7 +13,7 @@ import stegtest.db.downloader as dl
 import stegtest.db.images as img
 import stegtest.db.processor as pr
 
-import stegtest.algo.algorithm as algo
+import stegtest.algo.algo_info as algo
 import stegtest.algo.algo_processor as algo_processor
 
 from stegtest.orchestrator import Embeddor, Detector, Verifier
