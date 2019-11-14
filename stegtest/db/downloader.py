@@ -10,17 +10,21 @@ from os.path import join
 
 BOSS_URL = 'http://dde.binghamton.edu/download/ImageDB/BOSSbase_1.01.zip'
 BOWS2_URL = 'http://bows2.ec-lille.fr/BOWS2OrigEp3.tgz'
-COCO_URL = 'http://images.cocodataset.org/zips/test2017.zip'
-DIV2K_URL = 'http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_valid_HR.zip'
+COCO_TEST_URL = 'http://images.cocodataset.org/zips/test2017.zip'
+COCO_TRAIN_URL = 'http://images.cocodataset.org/zips/train2017.zip'
+DIV2K_VALID_URL = 'http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_valid_HR.zip'
+DIV2K_TRAIN_URL = 'http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_train_HR.zip'
+BURST_URL = 'http://dde.binghamton.edu/download/ImageDB/BURST_sorted.zip'
 
 def get_download_routines():
 	return { 
 		'BOSS': download_from_BOSS, 
 		'BOWS2': download_from_BOWS2, 
-		'BURST': download_from_BURST, 
-		'COCO': download_from_COCO, 
+		'COCO_Test': download_from_COCO_TEST, 
+		'COCO_Train': download_from_COCO_TRAIN, 
 		'DRESDEN': download_from_DRESDEN, 
-		'DIV2K': download_from_DIV2K,
+		'DIV2K_VALID': download_from_DIV2K_VALID,
+		'DIV2K_TRAIN': download_from_DIV2K_TRAIN,
 		'RAISE': download_from_RAISE, 
 		'ImageNet': download_from_ImageNet
 	}
@@ -77,16 +81,26 @@ def download_from_BOWS2(directory):
 
 	return path_to_unzip_directory
 
-def download_from_BURST(directory):
-	raise NotImplementedError
-
-def download_from_COCO(directory):
+def download_from_COCO_TEST(directory):
 	zip_file_name = 'test2017.zip'
 	unzip_directory = 'test2017'
 	path_to_zip_file = join(directory, zip_file_name)
 	path_to_unzip_directory = join(directory, unzip_directory)
 	
-	retrieve_file(COCO_URL, path_to_zip_file)
+	retrieve_file(COCO_TEST_URL, path_to_zip_file)
+	unzip_file(path_to_zip_file, directory)
+
+	assert(fs.dir_exists(path_to_unzip_directory))
+
+	return path_to_unzip_directory
+
+def download_from_COCO_TRAIN(directory):
+	zip_file_name = 'train2017.zip'
+	unzip_directory = 'train2017'
+	path_to_zip_file = join(directory, zip_file_name)
+	path_to_unzip_directory = join(directory, unzip_directory)
+	
+	retrieve_file(COCO_TRAIN_URL, path_to_zip_file)
 	unzip_file(path_to_zip_file, directory)
 
 	assert(fs.dir_exists(path_to_unzip_directory))
@@ -94,16 +108,31 @@ def download_from_COCO(directory):
 	return path_to_unzip_directory
 
 def download_from_DRESDEN(directory):
+	#does not exist at the moment and would need to read a txt file to get the files 
 	raise NotImplementedError
 
-def download_from_DIV2K(directory):
+def download_from_DIV2K_VALID(directory):
 	zip_file_name = 'DIV2K_valid_HR.zip'
 	unzip_directory = 'DIV2K_valid_HR'
 
 	path_to_zip_file = join(directory, zip_file_name)
 	path_to_unzip_directory = join(directory, unzip_directory)
 	
-	retrieve_file(DIV2K_URL, path_to_zip_file)
+	retrieve_file(DIV2K_VALID_URL, path_to_zip_file)
+	unzip_file(path_to_zip_file, directory)
+
+	assert(fs.dir_exists(path_to_unzip_directory))
+
+	return path_to_unzip_directory
+
+def download_from_DIV2K_TRAIN(directory):
+	zip_file_name = 'DIV2K_train_HR.zip'
+	unzip_directory = 'DIV2K_train_HR'
+
+	path_to_zip_file = join(directory, zip_file_name)
+	path_to_unzip_directory = join(directory, unzip_directory)
+	
+	retrieve_file(DIV2K_TRAIN_URL, path_to_zip_file)
 	unzip_file(path_to_zip_file, directory)
 
 	assert(fs.dir_exists(path_to_unzip_directory))
@@ -111,7 +140,9 @@ def download_from_DIV2K(directory):
 	return path_to_unzip_directory
 
 def download_from_RAISE(directory):
+	#does not exist and would need to read a csv file to get the files
 	raise NotImplementedError
 
 def download_from_ImageNet(directory):
+	#need to use some sort of utility to get this running
 	raise NotImplementedError

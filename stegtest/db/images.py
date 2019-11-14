@@ -35,8 +35,26 @@ def convert_channels_to_int(channel:str):
 		'HSV': 3,
 	}[channel]
 
+def convert_to_png(path_to_input, path_to_output):
+	img = Image.open(path_to_input)
+	path_to_output = fs.change_extension(path_to_output, 'png')
+	img.save(path_to_output, format='PNG')
+	img.close()
+
+	return path_to_output
+
+def convert_to_jpeg(path_to_input, path_to_output, quality_level):
+	assert(quality_level >= 1 and quality_level <= 95)
+	img = Image.open(path_to_input)
+	path_to_output = fs.change_extension(path_to_output, 'jpg')
+	img.save(path_to_output, format='JPEG', quality=quality_level)
+	img.close()
+
+	return path_to_output
+
 def add_noise_to_image(path_to_input, path_to_output, noise_level):
 	"""adds noise to an image at specified noise level"""
+	#use skimage.util.random_noise
 	raise NotImplementedError
 
 def crop_image(path_to_input, path_to_output, width, height):
@@ -53,6 +71,8 @@ def crop_image(path_to_input, path_to_output, width, height):
 	img.close()
 	cropped_img.close()
 
+	return path_to_output
+
 def resize_image(path_to_input, path_to_output, width, height):
 	"""resizes an image to the specified dimensions"""
 	img = Image.open(path_to_input)
@@ -62,6 +82,8 @@ def resize_image(path_to_input, path_to_output, width, height):
 
 	img.close()
 	cropped_img.close()
+
+	return path_to_output
 
 def rotate_image(path_to_input, path_to_output, degrees):
 	"""rotates image by specified degrees"""
@@ -73,10 +95,14 @@ def rotate_image(path_to_input, path_to_output, degrees):
 	img.close()
 	cropped_img.close()
 
+	return path_to_output
+
 def get_operation_args(operation):
 	args = {
 		lookup.add_noise: collections.OrderedDict({'noise_level': float}),
 		lookup.crop: collections.OrderedDict({'width': int, 'height': int}),
+		lookup.convert_to_jpeg: collections.OrderedDict({'quality_level': int}),
+		lookup.convert_to_png: collections.OrderedDict(),
 		lookup.resize: collections.OrderedDict({'width': int, 'height': int}),
 		lookup.rotate: collections.OrderedDict({'degrees': float}),
 	}[operation]
@@ -87,11 +113,14 @@ def apply_operation(operation, args, partition):
 	function = {
 		lookup.add_noise: add_noise_to_image,
 		lookup.crop: crop_image,
+		lookup.convert_to_png: convert_to_png,
+		lookup.convert_to_jpeg: convert_to_jpeg,
 		lookup.resize: resize_image,
 		lookup.rotate: rotate_image,
 	}[operation]
 
-	function(partition[lookup.input_file_header], partition[lookup.output_file_header], *args)
+	path_to_output = function(partition[lookup.input_file_header], partition[lookup.output_file_header], *args)
+	return path_to_output
 
 def get_image_type(path_to_file):
 	#return imghdr.what(path_to_file)

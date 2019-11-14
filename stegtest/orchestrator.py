@@ -203,7 +203,7 @@ class Detector():
 		runner.run_pool(all_post_cmds)
 		results = {algorithm_info[lookup.uuid_descriptor]: algo_processor.compile_results(algorithm_info, db_uuid) for algorithm_info in self.detectors}
 		print('completed.')
-		print(' termination_cmds')
+		print('terminating processes...')
 		runner.run_pool(all_termination_cmds)
 		print('completed.')
 

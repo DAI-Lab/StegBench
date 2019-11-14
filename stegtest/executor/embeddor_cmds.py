@@ -186,11 +186,11 @@ def postprocess_docker(algorithm_info, embedded_list):
 
 			post_cmds.append({ lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [removal_cmd] })
 
-		# if lookup.INPUT_IMAGE_DIRECTORY in cmd: #needs some fixing but good enough for now <- only gets rid of contents of directory
-		# 	docker_input_dir = embedded[lookup.INPUT_IMAGE_DIRECTORY]
-		# 	removal_cmd = ' '.join([lookup.removal_directory_prefix, embedded[lookup.INPUT_IMAGE_DIRECTORY]])
-		# 	params = [embedded[lookup.container_id], removal_cmd]
-		# 	post_cmds.append({ lookup.COMMAND_TYPE: lookup.DOCKER, lookup.COMMAND: params })
+		if lookup.INPUT_IMAGE_DIRECTORY in cmd:
+			docker_input_dir = embedded[lookup.INPUT_IMAGE_DIRECTORY]
+			removal_cmd = ' '.join([lookup.removal_directory_prefix, embedded[lookup.INPUT_IMAGE_DIRECTORY]])
+			params = [embedded[lookup.container_id], removal_cmd]
+			post_cmds.append({ lookup.COMMAND_TYPE: lookup.DOCKER, lookup.COMMAND: params })
 
 	return post_cmds
 

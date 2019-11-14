@@ -144,6 +144,9 @@ compatibile_types_decorator = 'compatibile_types'
 description = 'description'
 
 #BINARY CLASSIFIER STATISTICS
+result = 'result'
+
+result_metric = 'metrics'
 false_positive_rate = 'false positive rate'
 false_negative_rate = 'false negative rate'
 true_negative_rate = 'true negative rate'
@@ -153,7 +156,12 @@ true_positive_rate = 'true positive rate'
 positive_predictive_value = 'positive predictive value'
 accuracy = 'accuracy'
 roc_auc = 'roc_auc'
-result = 'result'
+
+result_raw = 'raw'
+true_positive_raw = 'True Positive'
+true_negative_raw = 'True Negative'
+total_stego_raw = 'Total Stego'
+total_cover_raw = 'Total Cover'
 
 #file identifiers
 input_file_header = 'input'
@@ -164,6 +172,8 @@ add_noise = 'noise'
 crop = 'crop'
 resize = 'resize'
 rotate = 'rotate'
+convert_to_png = 'conv_to_png'
+convert_to_jpeg = 'conv_to_jpeg'
 
 removal_prefix = 'rm'
 removal_directory_prefix = 'rm -rf'
@@ -221,15 +231,7 @@ def get_parameter_type(type):
     }[type]
 
 def get_image_operations():
-	return [add_noise, crop, resize, rotate]
-
-def get_default_image_operation_values():
-	return {
-		add_noise: 1.0,
-		crop: (512, 512),
-		resize: (512, 512),
-		rotate: (180),
-	}
+	return [add_noise, crop, resize, rotate, convert_to_jpeg, convert_to_png]
 
 def lossy_encoding_types():
 	return ['jpeg', 'jpg']

@@ -141,6 +141,8 @@ def calculate_statistics_threshold(all_results):
 def calculate_statistics_classifier(all_cover_results, all_stego_results):
 	"""calculates all the relevant analyzer statistics"""
 
+
+
 	#TODO ONLY TAKE IN ONE LIST AND CORRECTLY MARK IT'S TRUE TYPE#
 	assert(len(all_cover_results) == len(all_stego_results))
 	all_results = {}
@@ -180,17 +182,23 @@ def calculate_statistics_classifier(all_cover_results, all_stego_results):
 		denominator = math.sqrt(denominator)
 		mcc /= denominator
 
-		results = collections.OrderedDict()
-		results[lookup.false_positive_rate] = fpr
-		results[lookup.false_negative_rate] = fnr
-		results[lookup.true_negative_rate] = tnr
-		results[lookup.negative_predictive_value] = npv
-		results[lookup.false_discovery_rate] = fdr
-		results[lookup.true_positive_rate] = tpr
-		results[lookup.positive_predictive_value] = ppv
-		results[lookup.accuracy] = accuracy
+		metrics = collections.OrderedDict()
+		metrics[lookup.false_positive_rate] = fpr
+		metrics[lookup.false_negative_rate] = fnr
+		metrics[lookup.true_negative_rate] = tnr
+		metrics[lookup.negative_predictive_value] = npv
+		metrics[lookup.false_discovery_rate] = fdr
+		metrics[lookup.true_positive_rate] = tpr
+		metrics[lookup.positive_predictive_value] = ppv
+		metrics[lookup.accuracy] = accuracy
+
+		raw_results = collections.OrderedDict()
+		raw_results[lookup.true_positive_raw] = true_positive_total
+		raw_results[lookup.true_negative_raw] = true_negative_total
+		raw_results[lookup.total_stego_raw] = total_stego
+		raw_results[lookup.total_cover_raw] = total_cover
 		
-		all_results[detector] = results
+		all_results[detector] = {lookup.result_metric: metrics, lookup.result_raw: raw_results}
 
 	return all_results
 

@@ -22,6 +22,10 @@ def get_filename(file_path, extension=True):
         filename, _ = path.splitext(path.basename(file_path))
         return filename
 
+def change_extension(file_path, new_extension):
+    filename, _ = path.splitext(file_path)
+    return filename + '.' + new_extension
+
 def get_extension(file_path):
     filename, file_extension = path.splitext(file_path)
     return file_extension

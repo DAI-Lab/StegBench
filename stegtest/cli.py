@@ -4,6 +4,7 @@
 import sys
 import subprocess
 import os
+import collections
 import click
 
 import stegtest.utils.lookup as lookup
@@ -28,8 +29,10 @@ def request_parameters(ctx, parameters):
         value = click.prompt(prompt_string + parameter_name, type=parameter_type)
         parameter_values[parameter_name] = value
 
-    click.echo('\nYou have set the following parameters: ' + str(parameter_values))
+    if len(parameter_values) == 0:
+        return parameter_values
 
+    click.echo('\nYou have set the following parameters: ' + str(parameter_values))
     if click.confirm('Do you want to continue?'):
         click.echo('continuing!')
         return parameter_values
@@ -63,71 +66,71 @@ def initialize(ctx):
 @pipeline.command()
 @click.option('-r', '--routine', help='specify a pre-loaded download routine', type=click.Choice(dl.get_download_routines().keys()))
 @click.option('-n', '--name', help='specify the name for the database')
-@click.option('-o', '--operation', help='applies specified operation to all images', type=click.Choice(lookup.get_image_operations()))
+@click.option('-o', '--operation', help='applies specified operation(s) to all images', type=click.Choice(lookup.get_image_operations()), multiple=True)
 @click.pass_context
 def download(ctx, routine, name, operation):
     """downloads a specified database"""
-    assert(routine)
-    operation_parameters = None
+    assert(routine and name)
+    operation_dict = collections.OrderedDict({})
     if operation:
-        operation_parameters = request_parameters(img.get_operation_args(operation))
-        operation_parameters = list(operation_parameters.values())
+        for op in operation:
+            operation_parameters = request_parameters(img.get_operation_args(op))
+            operation_dict[op] = list(operation_parameters.values())
+
 
     download_directory = dl.download_routine(routine)
-    db_uuid = pr.process_image_directory(download_directory, name, operation, operation_parameters)
+    db_uuid = pr.process_image_directory(download_directory, name, operation_dict)
     click.echo('The UUID of the dataset you have processed is: ' + db_uuid)
 
 @pipeline.command()
 @click.option('-d', '--directory', help='specify an already downloaded database')
 @click.option('-n', '--name', help='specify the name for the database')
-@click.option('-o', '--operation', help='applies specified operation to all images', type=click.Choice(lookup.get_image_operations()))
+@click.option('-o', '--operation', help='applies specified operation to all images', type=click.Choice(lookup.get_image_operations()), multiple=True)
 @click.pass_context
 def process(ctx, directory, name, operation):
-    """processes a specified database. select small for faster analysis speeds (512x512 images)"""
+    """processes a specified database"""
     assert(directory and name)
+    operation_dict = collections.OrderedDict({})
     if operation:
-        operation_parameters = request_parameters(img.get_operation_args(operation))
-        db_uuid = pr.process_image_directory(directory, name, operation, list(operation_parameters.values()))
-    else:
-        db_uuid = pr.process_image_directory(directory, name)
+        for op in operation:
+            operation_parameters = request_parameters(img.get_operation_args(op))
+            operation_dict[op] = list(operation_parameters.values())
+
+    db_uuid = pr.process_image_directory(directory, name, operation_dict)
     click.echo('The UUID of the dataset you have processed is: ' + db_uuid)
 
 @pipeline.command()
-@click.option('-e', '--embeddor', help='specify an embedding routine(s) by uuid', type=str)
-@click.option('-n', '--new', help='set new for a new embeddor set', is_flag=True, default=False)
+@click.option('-e', '--embeddor', help='specify an embedding routine(s) by uuid', type=str, multiple=True)
 @click.option('-u', '--uuid', help='specifies an existing embeddor set')
 @click.pass_context
-def add_embeddor(ctx, embeddor, new, uuid):
-    """adds embeddor with options <algorithm> and <weight>"""
-    assert(embeddor and (new or uuid))
-    embeddor = embeddor.split(',')
+def add_embeddor(ctx, embeddor, uuid):
+    """adds to or creates a new embeddor set"""
+    assert(embeddor)
     click.echo('Adding embeddors: ' + str(embeddor))
-    if new:
-        uuid = algo.create_algorithm_set(lookup.embeddor, embeddor)
-        message = 'The new UUID of the set you have created is: '
-    else:
+    if uuid:
         uuid = algo.add_to_algorithm_set(lookup.embeddor, uuid, embeddor)
         message = 'The UUID of the set you have added to is: '
+    else:
+        uuid = algo.create_algorithm_set(lookup.embeddor, embeddor)
+        message = 'The new UUID of the set you have created is: '
 
     click.echo('Added embeddor successfully')
     click.echo(message + uuid)
 
 @pipeline.command()
-@click.option('-d', '--detector', help='specify an detecting routine(s) by uuid', type=str)
-@click.option('-n', '--new', help='set new for a new detector set', is_flag=True, default=False, )
+@click.option('-d', '--detector', help='specify an detecting routine(s) by uuid', type=str, multiple=True)
 @click.option('-u', '--uuid', help='specifies an existing embeddor set')
 @click.pass_context
-def add_detector(ctx, detector, new, uuid):
-    """adds detector with options <algorithm> and <weight>"""
-    assert(detector and (new or uuid))
-    detector = detector.split(',')
+def add_detector(ctx, detector, uuid):
+    """aadds to or creates a new detector set"""
+    assert(detector)
     click.echo('Adding detectors: ' + str(detector))
-    if new:
-        uuid = algo.create_algorithm_set(lookup.detector, detector)
-        message = 'The new UUID of the set you have created is: '
-    else:
+    if uuid:
         uuid = algo.add_to_algorithm_set(lookup.detector, uuid, detector)
         message = 'The UUID of the set you have added to is: '
+    else:
+        uuid = algo.create_algorithm_set(lookup.detector, detector)
+        message = 'The new UUID of the set you have created is: '
 
     click.echo('Added detector successfully')
     click.echo(message + uuid)
@@ -274,8 +277,22 @@ def detect(ctx, detector, db):
         click.echo('\tName: ' + detector_info[lookup.name_descriptor])
         click.echo('\tUUID: ' + detector_uuid)
         detector_result = results[detector_uuid]
-        for metric in detector_result:
-            click.echo('\t\t' + metric + ': ' +str(detector_result[metric]))
+
+        raw_results = detector_result[lookup.result_raw]
+        true_positive = raw_results[lookup.true_positive_raw]
+        true_negative = raw_results[lookup.true_negative_raw]
+        total_stego = raw_results[lookup.total_stego_raw]
+        total_cover = raw_results[lookup.total_cover_raw]
+
+        click.echo('\tRaw Results:') #TODO change this when thresholding gets introduced
+        click.echo('\t\t(' + str(true_positive)  + '/' + str(total_stego) + ') stego images identified correctly')
+        click.echo('\t\t(' + str(true_negative)  + '/' + str(total_cover) + ') cover images identified correctly')
+        click.echo('\t\t(' + str(true_positive + true_negative)  + '/' + str(total_stego + total_cover) + ') total images identified correctly')
+        click.echo('\tMetrics:')
+
+        metric_results = detector_result[lookup.result_metric]
+        for metric in metric_results:
+            click.echo('\t\t' + metric + ': ' +str(metric_results[metric]))
 
     click.echo(breaker)
     click.echo('All results printed.')

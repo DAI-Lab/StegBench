@@ -41,7 +41,7 @@ def process_steganographic_list(partition, embeddors):
 			output_file = file_set[lookup.OUTPUT_IMAGE_PATH]
 			secret_txt = file_set[lookup.SECRET_TXT_PLAINTEXT]
 			password = file_set[lookup.PASSWORD]
-			
+
 			info_image = process_image_file(abspath(output_file))
 
 			compatible_types.add(info_image[lookup.image_type])
@@ -55,7 +55,7 @@ def process_steganographic_list(partition, embeddors):
 
 	return info_images, compatible_types
 
-def modify_images(input_directory, operation, args):
+def modify_images(input_directory, operation_dict):
 	input_directory = abspath(input_directory)
 	file_names = [f for f in listdir(input_directory) if img.is_image_file(join(input_directory, f))]
 
@@ -65,21 +65,24 @@ def modify_images(input_directory, operation, args):
 	output_directory = join(dataset_directory, output_directory_name)
 	output_directory = abspath(output_directory)
 	fs.make_dir(output_directory)
+	partition = [{lookup.input_file_header: join(input_directory, f), lookup.output_file_header: join(output_directory, f)} for f in file_names]
 
-	input_files = [join(input_directory, f) for f in file_names]
-	output_files = [join(output_directory, f) for f in file_names]
+	output_files = None
+	for operation in operation_dict:
+		print('applying operation: [' + str(operation) + '] with args -- ' + str(list(img.get_operation_args(operation).keys())) + ' : (' + str(operation_dict[operation]) + ')')
+		operation_function = partial(img.apply_operation, operation, operation_dict[operation]) 
+		pool = Pool()
+		output_files = pool.map(operation_function, partition)
+		pool.close()
+		pool.join()
 
-	partition = [{lookup.input_file_header: input_files[idx], lookup.output_file_header: output_files[idx]} for idx in range(len(file_names))]
-	operation_function = partial(img.apply_operation, operation, args) 
+		partition = [{lookup.input_file_header: output_file, lookup.output_file_header: output_file} for output_file in output_files]
 
-	pool = Pool()
-	operation_results = pool.map(operation_function, partition)
-	pool.close()
-	pool.join()
+		print('completed operation.')
 
 	return output_files
 
-def process_image_directory(path_to_directory, db_name, operation=None, args=None):
+def process_image_directory(path_to_directory, db_name, operation_dict):
 	"""processes an image directory"""
 	source_master_file = lookup.get_all_files()[lookup.source_db_file]
 	metadata_directory = lookup.get_db_dirs()[lookup.metadata]
@@ -94,10 +97,8 @@ def process_image_directory(path_to_directory, db_name, operation=None, args=Non
 
 	files = [join(absolute_path, f) for f in listdir(absolute_path) if img.is_image_file(join(absolute_path, f))]
 
-	if operation:
-		if args is None:
-			args = lookup.get_default_image_operation_values()[operation]
-		files = modify_images(absolute_path, operation, args)
+	if operation_dict:
+		files = modify_images(absolute_path, operation_dict)
 	else:
 		files = [join(absolute_path, f) for f in listdir(absolute_path) if img.is_image_file(join(absolute_path, f))]
 
