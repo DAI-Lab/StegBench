@@ -36,20 +36,15 @@ def run_docker(container_id, cmd, wdir=None):
 	else:
 		container.exec_run(cmd)
 
-def run_class(cmd):
-	raise NotImplementedError
-
 def run(cmd_info):
 	cmd_type = cmd_info[lookup.COMMAND_TYPE]
 	run_function = {
 		lookup.DOCKER: run_docker,
 		lookup.NATIVE: run_native,
-		lookup.CLASS: run_class,
 		lookup.END_DOCKER: stop_docker,
 	}[cmd_type]
 
 	run_info = cmd_info[lookup.COMMAND]
-	print(run_info)
 	run_function(*run_info)
 
 def run_pool(cmd_list, threads=None):

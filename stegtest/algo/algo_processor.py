@@ -149,9 +149,7 @@ def compile_txt_results(algorithm_info, source_db):
 	for idx, file in enumerate(result_files):
 		file_result = fs.read_txt_file(file)
 		file_result = ' '.join(file_result)
-
-		print(file_result)
-
+		
 		stego = re.search(yes_filter, file_result)
 		cover = re.search(no_filter, file_result)
 		assert (stego or cover and not (stego and cover))
