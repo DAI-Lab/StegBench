@@ -37,9 +37,14 @@ detectors_file = 'detectors.csv'
 
 #METADATA
 ALGORITHM_TYPE = 'algorithm_type'
+DETECTOR_TYPE = 'detector_type'
 COMMAND_TYPE = 'command_type'
 COMPATIBLE_TYPES  = 'compatible_types'
 MAX_EMBEDDING_RATIO = 'max_embedding_ratio'
+
+#DETECTOR TYPE OPTIONS
+binary_detector = 'binary'
+probability_detector = 'probability'
 
 #COMMAND_TYPE OPTIONS
 DOCKER = 'docker'
@@ -95,12 +100,17 @@ regex_filter_yes = 'regex_filter_yes'
 regex_filter_no = 'regex_filter_no'
 
 #IMAGE INFORMATION
+label = 'label'
 file_path = 'file'
 image_type = 'type'
 image_width = 'width'
 image_height = 'height'
 image_channels = 'channels'
 embedding_max = 'embedding_max'
+
+#LABEL TYPES
+stego = 'stego'
+cover = 'cover'
 
 #STEGANOGRAPHIC INFORMATION FILE INFORMATION
 steganographic_function = 'Generating Algorithm'
@@ -125,7 +135,7 @@ db_descriptor = 'DB Name'
 db_image_count = 'Number of Images'
 
 #FILE HEADERS
-cover_image_header = [file_path, image_type, image_width, image_height, image_channels, embedding_max]
+cover_image_header = [file_path, image_type, image_width, image_height, image_channels, embedding_max, label]
 steganographic_image_header = cover_image_header + [source_image, uuid_descriptor, secret_txt_length, PASSWORD]
 
 master_algo_header = [uuid_descriptor, name_descriptor, filepath_descriptor] #points to a config file
@@ -155,7 +165,8 @@ false_discovery_rate = 'false discovery rate'
 true_positive_rate = 'true positive rate'
 positive_predictive_value = 'positive predictive value'
 accuracy = 'accuracy'
-roc_auc = 'roc_auc'
+roc_auc = 'area under ROC curve'
+ap_score = 'average precision score'
 
 result_raw = 'raw'
 true_positive_raw = 'True Positive'

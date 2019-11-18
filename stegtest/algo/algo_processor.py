@@ -98,7 +98,9 @@ def compile_csv_directory(algorithm_info, source_db):
 	algorithm_uuid = algorithm_info[lookup.uuid_descriptor]
 	asset_dir = abspath(lookup.get_algo_asset_dirs()[lookup.detector])
 
-	directory = list(set([fs.get_directory(image[lookup.file_path]) for image in lookup.get_image_list(source_db)]))
+	image_list = lookup.get_image_list(source_db)
+
+	directory = list(set([fs.get_directory(image[lookup.file_path]) for image in image_list]))
 	assert(len(directory) == 1)
 	directory = directory[0]
 	result_csv_file = algorithm_uuid + '_' + fs.get_filename(directory) + '.csv'
@@ -107,14 +109,30 @@ def compile_csv_directory(algorithm_info, source_db):
 	data = fs.read_csv_file(result_csv_file)
 	results = []
 
+	def get_image_info(file_name):
+		transform = lambda img: img[lookup.file_path]
+		if lookup.OUTPUT_FILE in algorithm_info:
+			if algorithm_info[lookup.OUTPUT_FILE] == lookup.INPUT_IMAGE_NAME:
+				transform = lambda img: fs.get_filename(img[lookup.file_path])
+
+		filtered_list = list(filter(lambda img: transform(img) == file_name, image_list))
+		assert(len(filtered_list) == 1)
+		return filtered_list[0]
+
 	for result in data:
-		file_name = result[0]
+		result_info = get_image_info(result[0])
 		file_result = result[1]
 
-		if file_result == 'True':
-			results.append({lookup.file_path: file_name, lookup.result: True})
+		if algorithm_info[lookup.DETECTOR_TYPE] == lookup.binary_detector:
+			if file_result == 'True':
+				result = lookup.stego
+			else:
+				result = lookup.cover
 		else:
-			results.append({lookup.file_path: file_name, lookup.result: False})
+			result = float(file_result)
+		
+		result_info.update({lookup.result: result})
+		results.append(result_info)
 
 	return results
 
@@ -136,37 +154,48 @@ def compile_txt_results(algorithm_info, source_db):
 	asset_dir = abspath(lookup.get_algo_asset_dirs()[lookup.detector])
 	
 	image_files = lookup.get_image_list(source_db)
-	image_filepath = [abspath(file[lookup.file_path]) for file in image_files]
 
-	result_files = [algorithm_uuid + '_' + fs.get_filename(file[lookup.file_path], extension=False) + '.txt' for file in image_files]
-	result_files = [join(asset_dir, result_file) for result_file in result_files]
-
-	yes_filter = algorithm_info[lookup.regex_filter_yes]
-	no_filter = algorithm_info[lookup.regex_filter_no]
+	result_file_func = lambda file: join(asset_dir, algorithm_uuid + '_' + fs.get_filename(file[lookup.file_path], extension=False) + '.txt')
+	result_files = [{lookup.file_path: result_file_func(file), lookup.label: file[lookup.label]} for file in image_files]
 
 	results = []
 
-	for idx, file in enumerate(result_files):
-		file_result = fs.read_txt_file(file)
-		file_result = ' '.join(file_result)
-		
-		stego = re.search(yes_filter, file_result)
-		cover = re.search(no_filter, file_result)
-		assert (stego or cover and not (stego and cover))
+	for idx, result_file_info in enumerate(result_files):
+		file_result = fs.read_txt_file(result_file_info[lookup.file_path])
+		file_result = ''.join(file_result)
 
-		if stego:
-			results.append({lookup.file_path: image_filepath[idx], lookup.result: True})
+		result = None
+		if algorithm_info[lookup.DETECTOR_TYPE] == lookup.binary_detector:
+			yes_filter = algorithm_info[lookup.regex_filter_yes]
+			no_filter = algorithm_info[lookup.regex_filter_no]
+
+			stego = re.search(yes_filter, file_result)
+			cover = re.search(no_filter, file_result)
+			assert (stego or cover and not (stego and cover))
+
+			if stego: 
+				result = lookup.stego
+			else:
+				result = lookup.cover
 		else:
-			results.append({lookup.file_path: image_filepath[idx], lookup.result: False})
+			result = float(file_result)
+
+		result_file_info.update({lookup.result: result})
+		results.append(result_file_info)
 
 	return results
 
 def compile_results(algorithm_info, source_db):
 	cmd = lookup.get_cmd(algorithm_info)
-	if lookup.PIPE_OUTPUT in algorithm_info and lookup.INPUT_IMAGE_PATH in cmd:
-		return compile_txt_results(algorithm_info, source_db)
-	elif lookup.RESULT_CSV_FILE in algorithm_info and lookup.INPUT_IMAGE_PATH in cmd:
-		return compile_csv_results(algorithm_info, source_db)
+	post_cmd = lookup.get_post_cmd(algorithm_info)
+	if not post_cmd:
+		post_cmd = ''
+
+	if lookup.INPUT_IMAGE_PATH in cmd:
+		if lookup.PIPE_OUTPUT in algorithm_info or lookup.RESULT_TXT_FILE in cmd or lookup.RESULT_TXT_FILE in post_cmd:
+			return compile_txt_results(algorithm_info, source_db)
+		elif lookup.RESULT_CSV_FILE in cmd or lookup.RESULT_CSV_FILE in post_cmd:
+			return compile_csv_results(algorithm_info, source_db)
 	elif lookup.INPUT_IMAGE_DIRECTORY in cmd:
 		return compile_csv_directory(algorithm_info, source_db)
 

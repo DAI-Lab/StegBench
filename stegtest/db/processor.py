@@ -15,7 +15,7 @@ def process_image_file(path_to_image):
 	info = img.get_image_info(path_to_image)
 	return info
 
-def process_image_list(image_list):
+def process_cover_list(image_list):
 	"""processes a list of image files"""
 	info_images = []
 
@@ -25,7 +25,9 @@ def process_image_list(image_list):
 		info_image = process_image_file(file)
 		compatible_types.add(info_image[lookup.image_type]) 
 
-		info_images.append(list(info_image.values()))
+		info_image = list(info_image.values())
+		info_image.append(lookup.cover)
+		info_images.append(info_image)
 
 	return info_images, compatible_types
 
@@ -47,11 +49,13 @@ def process_steganographic_list(partition, embeddors):
 			compatible_types.add(info_image[lookup.image_type])
 			info_image = list(info_image.values())
 
+			info_image.append(lookup.stego)
 			info_image.append(input_file)
 			info_image.append(embeddors[idx][lookup.uuid_descriptor])
 			info_image.append(len(secret_txt))
-			info_images.append(info_image)
 			info_image.append(password)
+
+			info_images.append(info_image)
 
 	return info_images, compatible_types
 
@@ -102,7 +106,7 @@ def process_image_directory(path_to_directory, db_name, operation_dict):
 	else:
 		files = [join(absolute_path, f) for f in listdir(absolute_path) if img.is_image_file(join(absolute_path, f))]
 
-	info_images, compatible_types = process_image_list(files)
+	info_images, compatible_types = process_cover_list(files)
 	rows = [lookup.cover_image_header] + info_images
 
 	fs.make_dir(target_directory)

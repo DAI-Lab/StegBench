@@ -45,16 +45,15 @@ def pipeline(ctx):
     pass
 
 @pipeline.command()
-@click.option('-c', '--config', help='path to config file', type=str)
-@click.option('-d', '--directory', help='path to a directory of config files', type=str)
+@click.option('-c', '--config', help='path to config file', type=str, multiple=True)
+@click.option('-d', '--directory', help='path to a directory of config files', type=str, multiple=True)
 @click.pass_context
 def add_config(ctx, config, directory):
     """adds stegtest configuration"""
-    assert(config or directory)
-    if config:
-        algo_processor.process_config_file(config)
-    if directory:
-        algo_processor.process_config_directory(directory)
+    for c in config:
+            algo_processor.process_config_file(c)
+    for d in directory:
+            algo_processor.process_config_directory(d)
 
 @pipeline.command()
 @click.pass_context
@@ -151,6 +150,9 @@ def info(ctx, all, db, embeddor, detector):
 
     if all or db:
         click.echo(breaker)
+        click.echo('All database information')
+        click.echo(breaker)
+        click.echo(breaker)
 
         db_info = lookup.get_all_dbs()
         source_db = list(filter(lambda d: len(d.keys()) == len(lookup.db_header), db_info))
@@ -175,6 +177,9 @@ def info(ctx, all, db, embeddor, detector):
 
     if all or embeddor:
         click.echo(breaker)
+        click.echo('All embeddor information')
+        click.echo(breaker)
+        click.echo(breaker)
         embeddor_info = algo.get_all_algorithms(lookup.embeddor)
         click.echo('Embeddors available: (' + str(len(embeddor_info)) + ')')
         for embeddor in embeddor_info:
@@ -198,9 +203,23 @@ def info(ctx, all, db, embeddor, detector):
 
     if all or detector:
         click.echo(breaker)
+        click.echo('All detector information')
+        click.echo(breaker)
+        click.echo(breaker)
         detector_info = algo.get_all_algorithms(lookup.detector)
-        click.echo('Detectors available: (' + str(len(detector_info)) + ')')
-        for detector in detector_info:
+        binary_detectors = list(filter(lambda d: d[lookup.DETECTOR_TYPE] == lookup.binary_detector, detector_info))
+        probability_detectors = list(filter(lambda d: d[lookup.DETECTOR_TYPE] == lookup.probability_detector, detector_info))
+        
+        click.echo('Binary Detectors available: (' + str(len(binary_detectors)) + ')')
+        for detector in binary_detectors:
+            click.echo('\t' + str(detector[lookup.name_descriptor]))
+            click.echo('\t\t' + 'UUID: ' + str(detector[lookup.uuid_descriptor]))
+            click.echo('\t\t' + 'Compatible Types: ' + str(detector[lookup.compatible_descriptor]))
+            click.echo('\t\t' + 'Command Type: ' + str(detector[lookup.COMMAND_TYPE]))
+        click.echo(breaker)
+
+        click.echo('Probability Detectors available: (' + str(len(probability_detectors)) + ')')
+        for detector in probability_detectors:
             click.echo('\t' + str(detector[lookup.name_descriptor]))
             click.echo('\t\t' + 'UUID: ' + str(detector[lookup.uuid_descriptor]))
             click.echo('\t\t' + 'Compatible Types: ' + str(detector[lookup.compatible_descriptor]))
@@ -235,7 +254,7 @@ def embed(ctx, embeddor, db, ratio):
 
 @pipeline.command()
 @click.option('-d', '--detector', help='uuid of the detector set being used')
-@click.option('-db', '--db', help='uuid of the db being used')
+@click.option('-db', '--db', help='uuid of the db or db set being used')
 @click.pass_context
 def detect(ctx, detector, db):
     """analyzes a set detectors using a pre-processed database"""
@@ -247,6 +266,7 @@ def detect(ctx, detector, db):
     db_info = lookup.get_steganographic_db_info(db)
 
     breaker = ['-' for i in range(100)]
+    small_breaker = ['-' for i in range(75)]
     breaker = ''.join(breaker)
     click.echo('Experiment information')
     click.echo(breaker)
@@ -275,24 +295,29 @@ def detect(ctx, detector, db):
     for detector_uuid in results:
         detector_info = algo.get_algorithm_info(lookup.detector, detector_uuid)
         click.echo('\tName: ' + detector_info[lookup.name_descriptor])
+        click.echo('\tDetector Type: ' + detector_info[lookup.DETECTOR_TYPE])
         click.echo('\tUUID: ' + detector_uuid)
         detector_result = results[detector_uuid]
 
-        raw_results = detector_result[lookup.result_raw]
-        true_positive = raw_results[lookup.true_positive_raw]
-        true_negative = raw_results[lookup.true_negative_raw]
-        total_stego = raw_results[lookup.total_stego_raw]
-        total_cover = raw_results[lookup.total_cover_raw]
+        if detector_info[lookup.DETECTOR_TYPE] == lookup.binary_detector:
+            raw_results = detector_result[lookup.result_raw]
+            true_positive = raw_results[lookup.true_positive_raw]
+            true_negative = raw_results[lookup.true_negative_raw]
+            total_stego = raw_results[lookup.total_stego_raw]
+            total_cover = raw_results[lookup.total_cover_raw]
 
-        click.echo('\tRaw Results:') #TODO change this when thresholding gets introduced
-        click.echo('\t\t(' + str(true_positive)  + '/' + str(total_stego) + ') stego images identified correctly')
-        click.echo('\t\t(' + str(true_negative)  + '/' + str(total_cover) + ') cover images identified correctly')
-        click.echo('\t\t(' + str(true_positive + true_negative)  + '/' + str(total_stego + total_cover) + ') total images identified correctly')
+            click.echo('\tRaw Results:') #TODO change this when thresholding gets introduced
+            click.echo('\t\t(' + str(true_positive)  + '/' + str(total_stego) + ') stego images identified correctly')
+            click.echo('\t\t(' + str(true_negative)  + '/' + str(total_cover) + ') cover images identified correctly')
+            click.echo('\t\t(' + str(true_positive + true_negative)  + '/' + str(total_stego + total_cover) + ') total images identified correctly')
+        
         click.echo('\tMetrics:')
 
         metric_results = detector_result[lookup.result_metric]
         for metric in metric_results:
             click.echo('\t\t' + metric + ': ' +str(metric_results[metric]))
+
+        click.echo(small_breaker)
 
     click.echo(breaker)
     click.echo('All results printed.')
@@ -333,6 +358,13 @@ def verify(ctx, db):
     click.echo('Total Results')
     click.echo('\tCorrectly Embedded (%): ' + str(100*(float(verified_total)/float(verified_total + error_total))))
     click.echo('\tIncorrect Embedding (%): ' + str(100*(float(error_total)/float(verified_total + error_total))))
+
+@pipeline.command()
+@click.option('-p', '--path', help='path to experiment file')
+@click.pass_context
+def run_experiment(ctx, path):
+    """runs pipelines specified in experiment configuration file"""
+    raise NotImplementedError
 
 
 def main():

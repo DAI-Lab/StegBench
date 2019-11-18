@@ -64,7 +64,7 @@ def write_to_text_file(path_to_file, rows, override=False):
 
     with open(path_to_file, mode) as text_file:
         for row in rows:
-            text_file.write(row)
+            text_file.write(str(row))
     text_file.close()
 
 def write_to_csv_file(path_to_file, rows, override=False):

@@ -232,8 +232,7 @@ class Detector():
 		cover_results = self.detect_list(source_image_list, sourcedb)
 		stego_results = self.detect_list(stego_image_list, testdb)
 
-
-		statistics = algo.calculate_statistics_classifier(cover_results, stego_results)
+		statistics = algo.calculate_statistics(cover_results, stego_results)
 		return statistics
 
 
