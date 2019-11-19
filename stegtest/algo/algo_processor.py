@@ -7,6 +7,9 @@ import stegtest.utils.filesystem as fs
 import stegtest.utils.lookup as lookup
 import stegtest.utils.generator as generator
 
+import stegtest.db.downloader as downloader
+import stegtest.db.processor as db_processor
+
 import configparser
 import re
 
@@ -24,9 +27,6 @@ def validate_docker(config):
 def validate_native(config):
 	assert(config[lookup.COMMAND])
 
-def validate_class(config):
-	raise NotImplementedError
-
 def validate_config(config):
 	compatible_types = config[lookup.compatible_descriptor]
 	allowed_types = lookup.all_supported_types()
@@ -36,7 +36,6 @@ def validate_config(config):
 	validate_function = {
 		lookup.DOCKER: validate_docker,
 		lookup.NATIVE: validate_native,
-		lookup.CLASS: validate_class
 	}[config[lookup.COMMAND_TYPE]]
 
 	validate_function(config)
@@ -90,9 +89,25 @@ def process_config_directory(config_directory):
 
 	print('processing of directory complete')
 
-def build_configs(configs):
-	for config in configs:
-		build_config_file(config[INSTALL][0])
+def process_experiment_file(experiment_file_path):
+	config_dict = fs.read_config_file(experiment_file_path)
+	assert(lookup.metadata in config_dict, lookup.embeddor in config_dict and lookup.detector in config_dict)
+
+	def process_metadata():
+		return config_dict[lookup.metadata]
+
+	def process_embeddor():
+		embeddor_info = config_dict[lookup.embeddor]
+		print(embeddor_info)
+		embeddor_uuid = embeddor_info[lookup.uuid_descriptor]
+		return embeddor_uuid
+
+	def process_detector():
+		detector_info = config_dict[lookup.detector]
+		detector_uuid = detector_info[lookup.uuid_descriptor]
+		return detector_uuid
+
+	return process_metadata(), process_embeddor(), process_detector()
 
 def compile_csv_directory(algorithm_info, source_db):
 	algorithm_uuid = algorithm_info[lookup.uuid_descriptor]

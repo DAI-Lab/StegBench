@@ -17,7 +17,7 @@ import stegtest.db.processor as pr
 import stegtest.algo.algo_info as algo
 import stegtest.algo.algo_processor as algo_processor
 
-from stegtest.orchestrator import Embeddor, Detector, Verifier
+from stegtest.orchestrator import Embeddor, Detector, Verifier, Scheduler
 
 @click.pass_context
 def request_parameters(ctx, parameters):
@@ -136,11 +136,11 @@ def add_detector(ctx, detector, uuid):
 
 @pipeline.command()
 @click.option('-a', '--all', help='shows all available information', is_flag=True, default=False)
-@click.option('-db', '--db', help='database info', is_flag=True, default=False)
+@click.option('-db', '--database', help='database info', is_flag=True, default=False)
 @click.option('-e', '--embeddor', help='embeddor info', is_flag=True, default=False)
 @click.option('-d', '--detector', help='detector info', is_flag=True, default=False)
 @click.pass_context
-def info(ctx, all, db, embeddor, detector):
+def info(ctx, all, database, embeddor, detector):
     """provides system info"""
     #TODO print the master.txt files in each of the subdirectories in a easy to read way
     breaker = ['-' for i in range(100)]
@@ -148,7 +148,7 @@ def info(ctx, all, db, embeddor, detector):
     click.echo('Listing all requested information....')
     click.echo(breaker)
 
-    if all or db:
+    if all or database:
         click.echo(breaker)
         click.echo('All database information')
         click.echo(breaker)
@@ -241,52 +241,61 @@ def info(ctx, all, db, embeddor, detector):
 
 @pipeline.command()
 @click.option('-e', '--embeddor', help='uuid of the embeddor set being used', type=str)
-@click.option('-db', '--db', help=' uuid of the db being used', type=str)
+@click.option('-db', '--database', help=' uuid of the db being used', type=str)
 @click.option('-r', '--ratio', help='embedding ratio to be used', type=float)
 @click.pass_context
-def embed(ctx, embeddor, db, ratio):
+def embed(ctx, embeddor, database, ratio):
     """Embeds a db using embeddors and db images"""
-    assert(embeddor and db and ratio) 
+    assert(embeddor and database and ratio) 
     embeddor_set = algo.get_algorithm_set(lookup.embeddor, embeddor)
     generator = Embeddor(embeddor_set)
-    db_uuid = generator.embed_ratio(db, ratio)
+    db_uuid = generator.embed_ratio(database, ratio)
     click.echo('The UUID of the dataset you have created is: ' + db_uuid)
 
 @pipeline.command()
 @click.option('-d', '--detector', help='uuid of the detector set being used')
-@click.option('-db', '--db', help='uuid of the db or db set being used')
+@click.option('-db', '--database', help='uuid of the db or db set being used', multiple=True)
 @click.pass_context
-def detect(ctx, detector, db):
+def detect(ctx, detector, database):
     """analyzes a set detectors using a pre-processed database"""
-    assert(detector and db)
+    assert(detector and database)
     detector_set = algo.get_algorithm_set(lookup.detector, detector)
     analyzer = Detector(detector_set)
-    results = analyzer.detect(db)
-
-    db_info = lookup.get_steganographic_db_info(db)
+    results = analyzer.detect(database)
 
     breaker = ['-' for i in range(100)]
-    small_breaker = ['-' for i in range(75)]
     breaker = ''.join(breaker)
+    small_breaker = ['-' for i in range(75)]
+    small_breaker = ''.join(breaker)
+
     click.echo('Experiment information')
     click.echo(breaker)
     click.echo(breaker)
-    click.echo('Database Information')
-    click.echo('\t' + 'UUID: ' + str(db_info[lookup.uuid_descriptor]))
-    click.echo('\t\t' + 'Source DB: ' + str(db_info[lookup.source_db]))
-    click.echo('\t\t' + 'Source Embeddor Set: ' + str(db_info[lookup.source_embeddor_set]))
-    click.echo('\t\t' + 'Image Types: ' + str(db_info[lookup.compatible_descriptor]))
-    click.echo('\t\t' + 'Payload: ' + str(db_info[lookup.embedding_ratio]))
-    click.echo(breaker)
+    for db in database:
+        db_info = lookup.get_db_info(db)
 
-    click.echo('Embeddor Set Information')
-    embeddor_set = algo.get_algorithm_set(lookup.embeddor, str(db_info[lookup.source_embeddor_set]))
-    click.echo('\tUUID: ' + embeddor_set[lookup.uuid_descriptor])
-    click.echo('\t\t' + 'Compatible Types: ' + str(embeddor_set[lookup.compatible_descriptor]))
-    click.echo('\t\t' + 'Embeddors: ' + str(len(embeddor_set[lookup.embeddor])))
-    for embeddor in embeddor_set[lookup.embeddor]:
-        click.echo('\t\t\t' + '(' + embeddor[lookup.name_descriptor] + ', ' + embeddor[lookup.uuid_descriptor] + ')')
-    click.echo(breaker)
+        if db_info[lookup.stego]:
+            click.echo('Database Information')
+            click.echo('\t' + 'UUID: ' + str(db_info[lookup.uuid_descriptor]))
+            click.echo('\t\t' + 'Source DB: ' + str(db_info[lookup.source_db]))
+            click.echo('\t\t' + 'Source Embeddor Set: ' + str(db_info[lookup.source_embeddor_set]))
+            click.echo('\t\t' + 'Image Types: ' + str(db_info[lookup.compatible_descriptor]))
+            click.echo('\t\t' + 'Payload: ' + str(db_info[lookup.embedding_ratio]))
+            click.echo(breaker)
+
+            click.echo('Embeddor Set Information')
+            embeddor_set = algo.get_algorithm_set(lookup.embeddor, str(db_info[lookup.source_embeddor_set]))
+            click.echo('\tUUID: ' + embeddor_set[lookup.uuid_descriptor])
+            click.echo('\t\t' + 'Compatible Types: ' + str(embeddor_set[lookup.compatible_descriptor]))
+            click.echo('\t\t' + 'Embeddors: ' + str(len(embeddor_set[lookup.embeddor])))
+            for embeddor in embeddor_set[lookup.embeddor]:
+                click.echo('\t\t\t' + '(' + embeddor[lookup.name_descriptor] + ', ' + embeddor[lookup.uuid_descriptor] + ')')
+            click.echo(breaker)
+        else:
+            click.echo('Database Information')
+            click.echo('\t' + 'UUID: ' + str(db_info[lookup.uuid_descriptor]))
+            click.echo('\t\t' + 'Image Types: ' + str(db_info[lookup.compatible_descriptor]))
+            click.echo(breaker)
 
     click.echo(breaker)
     click.echo('Listing all results...')
@@ -323,13 +332,13 @@ def detect(ctx, detector, db):
     click.echo('All results printed.')
 
 @pipeline.command()
-@click.option('-db', '--db', help='uuid of the db to veriy')
+@click.option('-db', '--database', help='uuid of the db to verify')
 @click.pass_context
-def verify(ctx, db):
+def verify(ctx, database):
     """verifies a steganographic database"""
-    assert(db)
+    assert(database)
     verifier = Verifier()
-    results = verifier.verify(db)
+    results = verifier.verify(database)
     
     verified_total = 0
     error_total = 0
@@ -361,11 +370,15 @@ def verify(ctx, db):
 
 @pipeline.command()
 @click.option('-p', '--path', help='path to experiment file')
+@click.option('-db', '--database', help='uuid of the source db(s) to run experiment on', multiple=True)
 @click.pass_context
-def run_experiment(ctx, path):
+def run_experiment(ctx, path, database):
     """runs pipelines specified in experiment configuration file"""
-    raise NotImplementedError
-
+    assert(path)
+    metadata, embeddor_set_uuid, detector_set_uuid = algo_processor.process_experiment_file(path)
+    scheduler = Scheduler(metadata, embeddor_set_uuid, detector_set_uuid)
+    results = scheduler.run(database)
+    print(results)
 
 def main():
     pipeline(obj={})

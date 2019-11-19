@@ -10,10 +10,17 @@ class Runner(object):
     """docstring for Runner"""
     def detect(self, input_file, output_file): 
         I3d = imageio.imread(input_file)
-        width, height, channels = I3d.shape
+        if len(I3d.shape) == 3:
+            width, height, channels = I3d.shape
+        else:
+            width, height = I3d.shape
+            channels = 1
         beta = 0.0
         for channel in range(channels):
-            I = I3d[:,:,channel]
+            if channels == 1:
+                I = I3d[:,:]
+            else:
+                I = I3d[:,:,channel]
 
             x=0; y=0; k=0
             for j in range(height):

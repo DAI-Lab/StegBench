@@ -25,12 +25,14 @@ from collections import defaultdict
 
 class Embeddor():
 	""""runs all the generation tasks"""
-	def __init__(self, embeddor_set):
+	def __init__(self, embeddor_set, cores=None):
 		self.embeddors = embeddor_set[lookup.embeddor]
 		self.max_embedding_ratio = embeddor_set[lookup.embedding_descriptor]
 		self.compatible_types = embeddor_set[lookup.compatible_descriptor]
 		
 		self.embeddor_set = embeddor_set
+
+		self.cores = cores
 
 	def embed_db(self, partition, source_db_uuid, payload):
 		all_pre_cmds = []
@@ -52,16 +54,16 @@ class Embeddor():
 		print('commands generated...')
 
 		print('setting up embeddors...')
-		runner.run_pool(all_pre_cmds)
+		runner.run_pool(all_pre_cmds, self.cores)
 		print('completed.')
 		print('embedding...')
-		runner.run_pool(all_cmds)
+		runner.run_pool(all_cmds, self.cores)
 		print('completed.')
 		print('processing embeding results...')
-		runner.run_pool(all_post_cmds)
+		runner.run_pool(all_post_cmds, self.cores)
 		print('completed.')
 		print('terminating processes...')
-		runner.run_pool(all_termination_cmds)
+		runner.run_pool(all_termination_cmds, self.cores)
 		print('completed.')
 
 		db_uuid = processor.process_steganographic_directory(partition, self.embeddor_set, source_db_uuid, payload)
@@ -128,6 +130,9 @@ class Embeddor():
 
 class Verifier():
 	""""runs all the generation tasks"""
+	def __init__(self, cores=None):
+		self.cores = cores
+
 	def verify(self, db:str):
 		db_info = lookup.get_steganographic_db_info(db)
 		db_images = lookup.get_image_list(db_info[lookup.uuid_descriptor])
@@ -158,27 +163,28 @@ class Verifier():
 			all_termination_cmds += termination_cmds
 
 		print('running pre commands')
-		runner.run_pool(all_pre_cmds)
+		runner.run_pool(all_pre_cmds, self.cores)
 		print('completed.')
 		print('running commands')
-		runner.run_pool(all_cmds)
+		runner.run_pool(all_cmds, self.cores)
 		print('completed.')
 		print('running post commands.')
-		runner.run_pool(all_post_cmds)
+		runner.run_pool(all_post_cmds, self.cores)
 		verification_results = algo_processor.verify_embedding(db, all_embeddors)
 		print('completed.')
 		print('terminating processes...')
-		runner.run_pool(all_termination_cmds)
+		runner.run_pool(all_termination_cmds, self.cores)
 		print('completed.')
 		
 		return verification_results
 
 class Detector():
 	""""runs all the analyzer tasks"""
-	def __init__(self, detector_set):
+	def __init__(self, detector_set, cores=None):
 		self.detector_set = detector_set
 		self.detectors = detector_set[lookup.detector]
 		self.compatible_types = detector_set[lookup.compatible_descriptor]
+		self.cores = cores
 
 	def detect_list(self, image_list:str, db_uuid:str):
 		all_pre_cmds = []
@@ -194,69 +200,90 @@ class Detector():
 			all_termination_cmds += termination_cmds
 
 		print('setting up detectors...')
-		runner.run_pool(all_pre_cmds)
+		runner.run_pool(all_pre_cmds, self.cores)
 		print('completed.')
 		print('analyzing images...')
-		runner.run_pool(all_cmds)
+		runner.run_pool(all_cmds, self.cores)
 		print('completed.')
 		print('processing image results...')
-		runner.run_pool(all_post_cmds)
+		runner.run_pool(all_post_cmds, self.cores)
 		results = {algorithm_info[lookup.uuid_descriptor]: algo_processor.compile_results(algorithm_info, db_uuid) for algorithm_info in self.detectors}
 		print('completed.')
 		print('terminating processes...')
-		runner.run_pool(all_termination_cmds)
+		runner.run_pool(all_termination_cmds, self.cores)
 		print('completed.')
 
 		return results
 
-	def detect(self, testdb:str):
-		print('preparing db for evaluation')
-		stego_db_info = lookup.get_steganographic_db_info(testdb)
-		sourcedb = stego_db_info[lookup.source_db]
-		source_db_info = lookup.get_source_db_info(sourcedb)
+	def detect(self, test_dbs:list):
+		print('collecting results from following databases: ' + str(test_dbs))
+		results = []
+		for db in test_dbs:
+			db_info = lookup.get_db_info(db)
+			db_compatible = set(db_info[lookup.compatible_descriptor])
+			db_detect_compatible = db_compatible.intersection(self.compatible_types)
+			
+			if len(db_detect_compatible) != len(db_compatible):
+				raise ValueError('The detector set and dataset are not compatible')
 
-		source_compatible_states = set(source_db_info[lookup.compatible_descriptor])
-		embedded_compatible_states = set(stego_db_info[lookup.compatible_descriptor])
+			db_image_dict = lookup.get_image_list(db)
+			db_image_list = list(map(lambda img: {lookup.INPUT_IMAGE_PATH: img[lookup.file_path]}, db_image_dict))
+			db_results = self.detect_list(db_image_list, db)
 
-		db_embed_compatible = embedded_compatible_states.intersection(source_compatible_states).intersection(self.compatible_types)
-		
-		if len(db_embed_compatible) != len(embedded_compatible_states):
-			raise ValueError('The embeddor set and dataset are not compatible')
+			results.append(db_results)
 
-		source_image_dict = lookup.get_image_list(sourcedb)
-		stego_image_dict = lookup.get_image_list(testdb)
-		source_image_list = list(map(lambda cover: {lookup.INPUT_IMAGE_PATH: cover[lookup.file_path]}, source_image_dict))
-		stego_image_list = list(map(lambda cover: {lookup.INPUT_IMAGE_PATH: cover[lookup.file_path]}, stego_image_dict))
-		
-
-		cover_results = self.detect_list(source_image_list, sourcedb)
-		stego_results = self.detect_list(stego_image_list, testdb)
-
-		statistics = algo.calculate_statistics(cover_results, stego_results)
+		statistics = algo.calculate_statistics(*results)
 		return statistics
-
 
 class Scheduler():
 	"""schedules the generator and analyzer task"""
-	def __init__(self, generator:Embeddor, verifier:Verifier, analyzer:Detector):
-		self.generator = generator
-		self.verifier = verifier
-		self.analyzer = analyzer
+	def __init__(self, metadata, embeddor_set_uuid:str, detector_set_uuid:str):
+			embeddor_set = algo.get_algorithm_set(lookup.embeddor, embeddor_set_uuid)
+			detector_set = algo.get_algorithm_set(lookup.detector, detector_set_uuid)
+			self.metadata = metadata
 
-	def initialize(self, config_directories=None, config_files=None):
-		lookup.initialize_filesystem(os.getcwd())
-		if config_directories:
-			[algo_processor.process_config_directory(directory) for directory in config_directories]
-		if config_files:
-			[algo_processor.process_config_file(file) for file in config_files]
+			cores = None
+			if lookup.cores in self.metadata:
+				cores = int(self.metadata[lookup.cores])
 
-	def run_pipeline(self, source_db):
-		generated_db = self.generator.embed(source_db)
-		verify = self.verifier.verify(verify)
+			self.embeddor = Embeddor(embeddor_set, cores)
+			self.verifier = Verifier(cores)
+			self.detector = Detector(detector_set, cores)
 
-		if not verify:
-			raise ValueError('The db was not properly embedded')
+	def format_results(self, results):
+		write_results = []
+		for detector_uuid in results:
+			result = results[detector_uuid]
 
-		results = self.analyzer.detect(generated_db)
+			metrics = result[lookup.result_metric]
+			metrics[lookup.uuid_descriptor] = detector_uuid
+			write_results.append(metrics.keys())
+			write_results.append(metrics.values())
 
-		return {lookup.uuid_descriptor: generated_db, lookup.result: results}
+			if lookup.result_raw in result:
+				raw = result[lookup.result_raw]
+				raw[lookup.uuid_descriptor] = detector_uuid
+				write_results.append(raw.keys())
+				write_results.append(raw.values())
+
+		return write_results
+
+	def run(self, source_dbs:list):
+		detect_dbs = list(source_dbs)
+		for db in source_dbs:
+			print('embedding source db: (' + db + ')')
+			generated_db = self.embeddor.embed_ratio(db, float(self.metadata[lookup.payload]))
+			verify = self.verifier.verify(generated_db)
+			if verify:
+				print('generated db is verfied steganographic: (' + generated_db + ')')
+			else:
+				raise ValueError('The db was not properly embedded')
+
+			detect_dbs.append(generated_db)
+
+		results = self.detector.detect(detect_dbs)
+
+		if lookup.result_file in self.metadata:
+			fs.write_to_csv_file(self.metadata[lookup.result_file], self.format_results(results), override=True)
+
+		return results

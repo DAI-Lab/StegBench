@@ -84,6 +84,11 @@ VERIFY_TXT_FILE = 'VERIFY_TXT_FILE'
 PASSWORD = 'PASSWORD'
 PAYLOAD = 'PAYLOAD'
 
+#METDATA OPTIONS
+payload = 'payload' #TODO FIX
+cores = 'cores'
+result_file = 'result_file'
+
 #COMMAND-SPECIFIC - OUTPUT
 OUTPUT_IMAGE_DIRECTORY = 'OUTPUT_IMAGE_DIRECTORY'
 OUTPUT_IMAGE_NAME = 'OUTPUT_IMAGE_NAME'
@@ -122,11 +127,10 @@ source_db = 'Source Database'
 source_embeddor_set = 'Source Embeddor Set'
 embedding_ratio = 'Embedding Ratio'
 
-
 #HEADER VARIABLES
-name_descriptor = 'Name'
-path_descriptor = 'Path'
-uuid_descriptor = 'UUID'
+name_descriptor = 'name'
+path_descriptor = 'path'
+uuid_descriptor = 'uuid'
 compatible_descriptor = 'compatible_types'
 embedding_descriptor = 'max_embedding_ratio'
 
@@ -166,6 +170,7 @@ true_positive_rate = 'true positive rate'
 positive_predictive_value = 'positive predictive value'
 accuracy = 'accuracy'
 roc_auc = 'area under ROC curve'
+roc_curve = 'roc curve'
 ap_score = 'average precision score'
 
 result_raw = 'raw'
@@ -296,6 +301,7 @@ def get_steganographic_db_info(db_identifier):
 	assert(len(found_data) == len(steganographic_header))
 
 	found_data[compatible_descriptor] = ast.literal_eval(found_data[compatible_descriptor])
+	found_data[stego] = True
 
 	return found_data
 
@@ -309,8 +315,18 @@ def get_source_db_info(db_identifier):
 	assert(len(found_data) == len(db_header))
 
 	found_data[compatible_descriptor] = ast.literal_eval(found_data[compatible_descriptor])
+	found_data[stego] = False
 
 	return found_data
+
+def get_db_info(db_identifier):
+	db_info = None
+	try: 
+		db_info = get_source_db_info(db_identifier)
+	except:
+		db_info = get_steganographic_db_info(db_identifier)
+
+	return db_info
 
 def get_image_info_variables():
 	return [file_path, image_type, image_width, image_height, image_channels, embedding_max]

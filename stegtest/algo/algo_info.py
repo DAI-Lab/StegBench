@@ -4,6 +4,8 @@ import numpy as np
 
 from collections import defaultdict
 from sklearn.metrics import roc_auc_score, average_precision_score
+import scikitplot as skplt
+import matplotlib.pyplot as plt
 
 import stegtest.algo.algo_processor as algo_processor
 import stegtest.utils.lookup as lookup
@@ -138,17 +140,25 @@ def get_all_algorithms(algorithm_type:str):
 	return all_info
 
 def calculate_statistics_threshold(detector_results):
-	""""TODO calculate accuracy scores - using thresholding..."""
+	"""calculates all the relevant analyzer statistics"""
 	labels = np.array(list(map(lambda d: 1 if d[lookup.label] == lookup.stego else 0, detector_results)))
-	predictions = np.array(list(map(lambda d: d[lookup.result], detector_results)))
+	prediction_single_classes = np.array(list(map(lambda d: float(d[lookup.result]), detector_results)))
+	prediction_both_classes = np.array(list(map(lambda d: (float(d[lookup.result]), 1.0 - float(d[lookup.result])), detector_results)))
 
-	auc_score = roc_auc_score(labels, predictions)
-	ap_score = average_precision_score(labels, predictions)
+	auc_score = roc_auc_score(labels, prediction_single_classes)
+	ap_score = average_precision_score(labels, prediction_single_classes)
 	
-	#select best threshold
+	skplt.metrics.plot_roc(labels, prediction_both_classes)
+
+	detector_result_dir = lookup.get_algo_asset_dirs()[lookup.detector]
+	roc_curve_name = fs.get_uuid() + '-roc.png'
+	roc_curve_path = abspath(join(detector_result_dir, roc_curve_name))
+	plt.savefig(roc_curve_path, bbox_inches='tight')
+
 	metrics = collections.OrderedDict()
 	metrics[lookup.roc_auc] = auc_score
 	metrics[lookup.ap_score] = ap_score
+	metrics[lookup.roc_curve] = roc_curve_path
 
 	return {lookup.result_metric: metrics}
 
