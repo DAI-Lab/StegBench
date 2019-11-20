@@ -143,13 +143,16 @@ def copy_file(file, dest):
 
 def remove_file(file):
     if not file_exists(file):
-        raise Error('file does not exist')
+        print('file does not exist')
+        return
 
     os.remove(file)
 
 def remove_directory(directory):
     if not dir_exists(directory):
-        raise Error('directory does not exist')
+        print('directory does not exist')
+        return
+
     shutil.rmtree(directory)
 
 def clean_filesystem(directories):

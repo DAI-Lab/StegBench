@@ -11,7 +11,16 @@ with open('README.md') as readme_file:
 with open('HISTORY.md') as history_file:
     history = history_file.read()
 
-install_requires = ['Click>=6.0',
+install_requires = [
+    'Click>=6.0',
+    'numpy',
+    'jpeg2dct',
+    'Pillow',
+    'sklearn',
+    'matplotlib=>=1.4.0'
+    'scikit-plot',
+    'docker',
+    'pathos',
 ]
 
 setup_requires = [
