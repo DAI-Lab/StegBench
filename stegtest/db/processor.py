@@ -166,7 +166,7 @@ def process_image_directory(path_to_directory, db_name, operation_dict, stego=Fa
 
 	return db_uuid
 
-def process_steganographic_directory(partition, embeddor_set, source_db_uuid, payload):
+def process_steganographic_directory(partition, db_name, embeddor_set, source_db_uuid, payload):
 	"""processes a steganographic directory"""
 	embedded_master_file = lookup.get_all_files()[lookup.embedded_db_file]
 	metadata_directory = lookup.get_db_dirs()[lookup.metadata]
@@ -188,7 +188,7 @@ def process_steganographic_directory(partition, embeddor_set, source_db_uuid, pa
 	num_images = len(info_images)
 	compatible_types = list(compatible_types)
 
-	steganographic_dataset_info = [(db_uuid, directory, source_db_uuid, embeddor_set_uuid, payload, num_images, compatible_types)]
+	steganographic_dataset_info = [(db_uuid, abspath(directory), db_name, num_images, compatible_types, source_db_uuid, embeddor_set_uuid, payload, )]
 	fs.write_to_csv_file(embedded_master_file, steganographic_dataset_info)
 
 	return db_uuid

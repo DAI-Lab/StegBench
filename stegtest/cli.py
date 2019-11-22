@@ -191,12 +191,13 @@ def info(ctx, all, database, embeddor, detector):
 
         click.echo('Steganographic Databases processed: (' + str(len(steganographic_db)) + ')')
         for db in steganographic_db: 
-            click.echo('\t' + 'UUID: ' + str(db[lookup.uuid_descriptor]))
+            click.echo('\t' + str(db[lookup.db_descriptor]))
+            click.echo('\t\t' + 'UUID: ' + str(db[lookup.uuid_descriptor]))
             click.echo('\t\t' + 'Directory path: ' + str(db[lookup.path_descriptor]))
-            click.echo('\t\t' + 'Source DB: ' + str(db[lookup.source_db]))
-            click.echo('\t\t' + 'Source Embeddor Set: ' + str(db[lookup.source_embeddor_set]))
             click.echo('\t\t' + 'Image Count: ' + str(db[lookup.db_image_count]))
             click.echo('\t\t' + 'Image Types: ' + str(db[lookup.compatible_descriptor]))
+            click.echo('\t\t' + 'Source DB: ' + str(db[lookup.source_db]))
+            click.echo('\t\t' + 'Source Embeddor Set: ' + str(db[lookup.source_embeddor_set]))
             click.echo('\t\t' + 'Payload: ' + str(db[lookup.embedding_ratio]))
         click.echo(breaker)
 
@@ -268,13 +269,14 @@ def info(ctx, all, database, embeddor, detector):
 @click.option('-e', '--embeddor', help='uuid of the embeddor set being used', type=str)
 @click.option('-db', '--database', help=' uuid of the db being used', type=str)
 @click.option('-r', '--ratio', help='embedding ratio to be used', type=float)
+@click.option('-n', '--name', help='name of the generated database', type=str)
 @click.pass_context
-def embed(ctx, embeddor, database, ratio):
+def embed(ctx, embeddor, database, ratio, name):
     """Embeds a db using embeddors and db images"""
-    assert(embeddor and database and ratio) 
+    assert(embeddor and database and ratio and name) 
     embeddor_set = algo.get_algorithm_set(lookup.embeddor, embeddor)
     generator = Embeddor(embeddor_set)
-    db_uuid = generator.embed_ratio(database, ratio)
+    db_uuid = generator.embed_ratio(name, database, ratio)
     click.echo('The UUID of the dataset you have created is: ' + db_uuid)
 
 @pipeline.command()

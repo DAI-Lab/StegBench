@@ -34,7 +34,7 @@ class Embeddor():
 
 		self.cores = cores
 
-	def embed_db(self, partition, source_db_uuid, payload):
+	def embed_db(self, db_name, partition, source_db_uuid, payload):
 		all_pre_cmds = []
 		all_cmds = []
 		all_post_cmds = []
@@ -66,11 +66,11 @@ class Embeddor():
 		runner.run_pool(all_termination_cmds, self.cores)
 		print('completed.')
 
-		db_uuid = processor.process_steganographic_directory(partition, self.embeddor_set, source_db_uuid, payload)
+		db_uuid = processor.process_steganographic_directory(partition, db_name, self.embeddor_set, source_db_uuid, payload)
 
 		return db_uuid
 
-	def embed_ratio(self, source_db:str, embedding_ratio:float):
+	def embed_ratio(self, db_name:str, source_db:str, embedding_ratio:float):
 		"""generates a test DB. if divided, embeddors are randomly distributed each of the db images. otherwise each image undergoes an operation by each embeddor"""
 		db_information = lookup.get_source_db_info(source_db)
 		db_compatible_states = set(db_information[lookup.compatible_descriptor])
@@ -124,7 +124,7 @@ class Embeddor():
 						}
 		 			for j in range(len(input_partition[i]))] for i in range(num_embeddors)]
 
-		db_uuid = self.embed_db(partition, source_db, embedding_ratio)
+		db_uuid = self.embed_db(db_name, partition, source_db, embedding_ratio)
 
 		return db_uuid
 

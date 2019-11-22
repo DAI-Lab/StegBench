@@ -147,7 +147,7 @@ individual_set_header = [uuid_descriptor] #points to a master algo
 master_set_header = [uuid_descriptor, filepath_descriptor] #points to an individual set
 
 db_header = [uuid_descriptor, path_descriptor, db_descriptor, db_image_count, compatible_descriptor]
-steganographic_header = [uuid_descriptor, path_descriptor, source_db, source_embeddor_set, embedding_ratio, db_image_count, compatible_descriptor]
+steganographic_header = db_header + [source_db, source_embeddor_set, embedding_ratio]
 
 #ALGORITHM TYPES
 algorithm_name = 'name'
