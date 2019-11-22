@@ -15,9 +15,11 @@ COCO_TRAIN_URL = 'http://images.cocodataset.org/zips/train2017.zip'
 DIV2K_VALID_URL = 'http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_valid_HR.zip'
 DIV2K_TRAIN_URL = 'http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_train_HR.zip'
 BURST_URL = 'http://dde.binghamton.edu/download/ImageDB/BURST_sorted.zip'
+ALASKA_URL = 'http://alaska.utt.fr/alaska1ALASKA_training_set_jpg1_cover.zip'
 
 def get_download_routines():
 	return { 
+		'ALASKA': download_from_ALASKA,
 		'BOSS': download_from_BOSS, 
 		'BOWS2': download_from_BOWS2, 
 		'COCO_Test': download_from_COCO_TEST, 
@@ -54,6 +56,19 @@ def unzip_file(path_to_zip_file, target_directory):
 		zip_ref.extractall(target_directory)
 
 	fs.remove_file(path_to_zip_file)
+
+def download_from_ALASKA(directory):
+	zip_file_name = 'ALASKA_training_set_jpg1_cover.zip'
+	unzip_directory = 'alaska1ALASKA_training_set_jpg1_cover.zip'
+	path_to_zip_file = join(directory, zip_file_name)
+	path_to_unzip_directory = join(directory, unzip_directory)
+	
+	retrieve_file(ALASKA_URL, path_to_zip_file)
+	unzip_file(path_to_zip_file, directory)
+
+	assert(fs.dir_exists(path_to_unzip_directory))
+
+	return path_to_unzip_directory
 
 def download_from_BOSS(directory):
 	zip_file_name = 'BOSS.zip'

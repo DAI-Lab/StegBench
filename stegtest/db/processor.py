@@ -2,12 +2,53 @@ import stegtest.utils.filesystem as fs
 import stegtest.utils.lookup as lookup
 import stegtest.db.images as img
 import collections
+import random
 
 from os import listdir
 from os.path import isfile, join, abspath
 
 from multiprocessing import Pool
 from functools import partial
+
+
+def train_test_val_split(path_to_directory, train_split, test_split, val_split):
+	assert((train_split + test_split + val_split <= 1.0))
+	input_directory = abspath(path_to_directory)
+	file_names = [join(input_directory, f) for f in listdir(input_directory) if img.is_image_file(join(input_directory, f))]
+
+	random.shuffle(file_names)
+
+	train_size = int(len(file_names)*train_split)
+	test_size = int(len(file_names)*test_split)
+	val_size = int(len(file_names)*val_split)
+
+	train_files, test_files, val_files = file_names[0:train_size], file_names[train_size:(train_size + test_size)], file_names[(train_size + test_size):(train_size + test_size + val_size)]
+
+	db_directory = abspath(lookup.get_db_dirs()[lookup.dataset])
+	train_directory = join(db_directory, fs.get_uuid())
+	test_directory = join(db_directory, fs.get_uuid())
+	val_directory = join(db_directory, fs.get_uuid())
+
+	fs.make_dir(train_directory)
+	fs.make_dir(test_directory)
+	fs.make_dir(val_directory)
+
+	directory_pairs = [(train_directory, train_files), (test_directory, test_files), (val_directory, val_files)]
+
+	for directory_pair in directory_pairs:
+		copy_directory, copy_files = directory_pair
+		for file in copy_files:
+			fs.copy_file(file, copy_directory)
+
+	return train_directory, test_directory, val_directory
+
+def get_metadata_operation_args(operation):
+	args = {
+		lookup.stego: collections.OrderedDict({}),
+		lookup.train_test_val_split: collections.OrderedDict({lookup.train: float, lookup.test: float, lookup.validation: float})
+	}[operation]
+
+	return args
 
 def process_image_file(path_to_image):
 	"""processes an image file"""
@@ -31,11 +72,13 @@ def process_cover_list(image_list):
 
 	return info_images, compatible_types
 
+
 def process_steganographic_list(partition, embeddors):
 	"""processes a partition of steganographic images"""
 	info_images = []
 
 	compatible_types = set()
+	directories = set()
 
 	for idx, embeddor_generated_set in enumerate(partition):
 		for file_set in embeddor_generated_set:
@@ -43,6 +86,8 @@ def process_steganographic_list(partition, embeddors):
 			output_file = file_set[lookup.OUTPUT_IMAGE_PATH]
 			secret_txt = file_set[lookup.SECRET_TXT_PLAINTEXT]
 			password = file_set[lookup.PASSWORD]
+
+			directories.add(fs.get_directory(abspath(output_file)))
 
 			info_image = process_image_file(abspath(output_file))
 
@@ -57,7 +102,8 @@ def process_steganographic_list(partition, embeddors):
 
 			info_images.append(info_image)
 
-	return info_images, compatible_types
+	assert(len(directories) == 1) #code does not handle multiple output directories for now
+	return info_images, compatible_types, list(directories)[0]
 
 def modify_images(input_directory, operation_dict):
 	input_directory = abspath(input_directory)
@@ -86,7 +132,7 @@ def modify_images(input_directory, operation_dict):
 
 	return output_files
 
-def process_image_directory(path_to_directory, db_name, operation_dict):
+def process_image_directory(path_to_directory, db_name, operation_dict, stego=False):
 	"""processes an image directory"""
 	source_master_file = lookup.get_all_files()[lookup.source_db_file]
 	metadata_directory = lookup.get_db_dirs()[lookup.metadata]
@@ -115,7 +161,7 @@ def process_image_directory(path_to_directory, db_name, operation_dict):
 	num_images = len(files)
 	compatible_types = list(compatible_types)
 
-	dataset_info = [(db_uuid, db_name, num_images, compatible_types)]
+	dataset_info = [(db_uuid, abspath(path_to_directory), db_name, num_images, compatible_types)]
 	fs.write_to_csv_file(source_master_file, dataset_info)
 
 	return db_uuid
@@ -133,7 +179,7 @@ def process_steganographic_directory(partition, embeddor_set, source_db_uuid, pa
 	embeddors = embeddor_set[lookup.embeddor]
 	embeddor_set_uuid = embeddor_set[lookup.uuid_descriptor]
 
-	info_images, compatible_types = process_steganographic_list(partition, embeddors)
+	info_images, compatible_types, directory, = process_steganographic_list(partition, embeddors)
 	rows = [lookup.steganographic_image_header] + info_images
 
 	fs.make_dir(target_directory)
@@ -142,7 +188,23 @@ def process_steganographic_directory(partition, embeddor_set, source_db_uuid, pa
 	num_images = len(info_images)
 	compatible_types = list(compatible_types)
 
-	steganographic_dataset_info = [(db_uuid, source_db_uuid, embeddor_set_uuid, payload, num_images, compatible_types)]
+	steganographic_dataset_info = [(db_uuid, directory, source_db_uuid, embeddor_set_uuid, payload, num_images, compatible_types)]
 	fs.write_to_csv_file(embedded_master_file, steganographic_dataset_info)
 
 	return db_uuid
+
+def process_directory(metadata, path_to_directory, db_name, operation_dict):
+	stego = False
+	if lookup.stego in metadata:
+		stego = True
+
+	if lookup.train_test_val_split in metadata:
+		train_dir, test_dir, val_dir = train_test_val_split(path_to_directory, *metadata[lookup.train_test_val_split])
+		train_uuid = process_image_directory(train_dir, db_name + '-train', operation_dict, stego)
+		test_uuid = process_image_directory(test_dir, db_name + '-test', operation_dict, stego)
+		val_uuid = process_image_directory(val_dir, db_name + '-val', operation_dict, stego)
+		
+		return [train_uuid, test_uuid, val_uuid]
+	else:
+		return process_image_directory(path_to_directory, db_name, operation_dict, stego)
+

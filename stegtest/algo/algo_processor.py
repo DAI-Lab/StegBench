@@ -91,7 +91,7 @@ def process_config_directory(config_directory):
 
 def process_experiment_file(experiment_file_path):
 	config_dict = fs.read_config_file(experiment_file_path)
-	assert(lookup.metadata in config_dict, lookup.embeddor in config_dict and lookup.detector in config_dict)
+	assert(lookup.metadata in config_dict and lookup.embeddor in config_dict and lookup.detector in config_dict)
 
 	def process_metadata():
 		return config_dict[lookup.metadata]

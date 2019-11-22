@@ -3,7 +3,6 @@ from cmath import sqrt
 import stegtest.utils.filesystem as fs
 import sys
 
-
 ##Code from https://github.com/daniellerch/aletheia/tree/master/aletheialib
 
 class Runner(object):

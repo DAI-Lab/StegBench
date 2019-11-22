@@ -3,11 +3,11 @@ import collections
 import stegtest.utils.lookup as lookup
 import stegtest.utils.filesystem as fs
 from jpeg2dct.numpy import load
+from skimage.util import random_noise, img_as_ubyte, img_as_float
 import numpy as np
 
 from PIL import Image, ExifTags
 Image.MAX_IMAGE_PIXELS = None
-
 
 def convert_channels_to_int(channel:str):
 	"""
@@ -52,12 +52,17 @@ def convert_to_jpeg(path_to_input, path_to_output, quality_level):
 
 	return path_to_output
 
-def add_noise_to_image(path_to_input, path_to_output, noise_level):
-	"""adds noise to an image at specified noise level"""
-	#use skimage.util.random_noise
-	raise NotImplementedError
+def add_noise_to_image(path_to_input, path_to_output, mean, var):
+	"""adds noise to an image with additditive gaussian noise"""
+	pix = np.array(Image.open(path_to_input))
+	pix = img_as_ubyte(random_noise(img_as_float(pix), mode='gaussian', seed=None, clip=True, mean=mean, var=var))
+	pix = np.array(pix)
+	img = Image.fromarray(pix)
+	img.save(path_to_output)
+	img.close()
+	return path_to_output
 
-def crop_image(path_to_input, path_to_output, width, height):
+def center_crop(path_to_input, path_to_output, width, height):
 	"""crops an image to specified dimensions"""
 	img = Image.open(path_to_input)
 	current_width, current_height = img.size
@@ -85,6 +90,13 @@ def resize_image(path_to_input, path_to_output, width, height):
 
 	return path_to_output
 
+def rgb2gray(path_to_input, path_to_output):
+	# Here we use the good old standard ITU-R Recommendation BT.601 (rec601) for computing luminance: 
+	img = Image.open(path_to_input).convert('L')
+	img.save(path_to_output)
+	img.close()
+	return path_to_output
+
 def rotate_image(path_to_input, path_to_output, degrees):
 	"""rotates image by specified degrees"""
 	img = Image.open(path_to_input)
@@ -99,12 +111,13 @@ def rotate_image(path_to_input, path_to_output, degrees):
 
 def get_operation_args(operation):
 	args = {
-		lookup.add_noise: collections.OrderedDict({'noise_level': float}),
-		lookup.crop: collections.OrderedDict({'width': int, 'height': int}),
+		lookup.add_noise: collections.OrderedDict({'mean': float, 'var': float}),
+		lookup.center_crop: collections.OrderedDict({'width': int, 'height': int}),
 		lookup.convert_to_jpeg: collections.OrderedDict({'quality_level': int}),
 		lookup.convert_to_png: collections.OrderedDict(),
 		lookup.resize: collections.OrderedDict({'width': int, 'height': int}),
 		lookup.rotate: collections.OrderedDict({'degrees': float}),
+		lookup.rgb2gray: collections.OrderedDict(),
 	}[operation]
 
 	return args
@@ -112,10 +125,11 @@ def get_operation_args(operation):
 def apply_operation(operation, args, partition):
 	function = {
 		lookup.add_noise: add_noise_to_image,
-		lookup.crop: crop_image,
+		lookup.center_crop: center_crop,
 		lookup.convert_to_png: convert_to_png,
 		lookup.convert_to_jpeg: convert_to_jpeg,
 		lookup.resize: resize_image,
+		lookup.rgb2gray: rgb2gray,
 		lookup.rotate: rotate_image,
 	}[operation]
 
@@ -123,7 +137,6 @@ def apply_operation(operation, args, partition):
 	return path_to_output
 
 def get_image_type(path_to_file):
-	#return imghdr.what(path_to_file)
 	ext = fs.get_extension(path_to_file)[1:]
 	return ext
 
@@ -146,24 +159,9 @@ def get_image_info(path_to_file):
 	info_dict[lookup.image_channels] = channels
 
 	if img_type in lookup.lossy_encoding_types():
-		#TODO verify this, add information for quantization at different quality levels, 
 		coefficients = load(path_to_file)
 		info_dict[lookup.embedding_max] = np.count_nonzero(coefficients[0])
 	else:
 		info_dict[lookup.embedding_max] = width*height*convert_channels_to_int(channels)
 
 	return info_dict
-
-def get_exif_info(path_to_file, requested=None):
-	##TODO if we need exif info -- broken method##
-	img = Image.open(path_to_file)
-	if requested is not None:
-		exif = { ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS and k in requested}
-	else:
-		exif = { ExifTags.TAGS[k]: v for k, v in img._getexif().items() if k in ExifTags.TAGS and k in requested}
-
-	return exif
-
-# print(get_image_type('../../../data/test_images/_ORIGINAL.png'))
-# print(get_image_size('../../../data/test_images/lena512.pgm'))
-

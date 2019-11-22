@@ -66,37 +66,59 @@ def initialize(ctx):
 @click.option('-r', '--routine', help='specify a pre-loaded download routine', type=click.Choice(dl.get_download_routines().keys()))
 @click.option('-n', '--name', help='specify the name for the database')
 @click.option('-o', '--operation', help='applies specified operation(s) to all images', type=click.Choice(lookup.get_image_operations()), multiple=True)
+@click.option('-m', '--metadata', help='applies metadata or operation to directory', type=click.Choice(lookup.get_directory_operations()), multiple=True)
 @click.pass_context
-def download(ctx, routine, name, operation):
+def download(ctx, routine, name, operation, metadata):
     """downloads a specified database"""
     assert(routine and name)
     operation_dict = collections.OrderedDict({})
+    metadata_dict = collections.OrderedDict({})
     if operation:
         for op in operation:
             operation_parameters = request_parameters(img.get_operation_args(op))
             operation_dict[op] = list(operation_parameters.values())
 
+    if metadata:
+        for dir_op in metadata:
+            operation_parameters = {}
+            if pr.get_metadata_operation_args(dir_op) is not None:
+                operation_parameters = request_parameters(pr.get_metadata_operation_args(dir_op))
+                
+            metadata_dict[dir_op] = list(operation_parameters.values())
 
     download_directory = dl.download_routine(routine)
-    db_uuid = pr.process_image_directory(download_directory, name, operation_dict)
-    click.echo('The UUID of the dataset you have processed is: ' + db_uuid)
+    db_uuid = pr.process_directory(metadata_dict, download_directory, name, operation_dict)
+    click.echo('The UUID of the dataset(s) you have processed is: ' + str(db_uuid))
 
 @pipeline.command()
 @click.option('-d', '--directory', help='specify an already downloaded database')
 @click.option('-n', '--name', help='specify the name for the database')
-@click.option('-o', '--operation', help='applies specified operation to all images', type=click.Choice(lookup.get_image_operations()), multiple=True)
+@click.option('-o', '--operation', help='applies specified operation to each image', type=click.Choice(lookup.get_image_operations()), multiple=True)
+@click.option('-m', '--metadata', help='applies metadata or operation to directory', type=click.Choice(lookup.get_directory_operations()), multiple=True)
 @click.pass_context
-def process(ctx, directory, name, operation):
+def process(ctx, directory, name, operation, metadata):
     """processes a specified database"""
     assert(directory and name)
     operation_dict = collections.OrderedDict({})
+    metadata_dict = collections.OrderedDict({})
     if operation:
         for op in operation:
-            operation_parameters = request_parameters(img.get_operation_args(op))
+            operation_parameters = {}
+            if img.get_operation_args(op) is not None:
+                operation_parameters = request_parameters(img.get_operation_args(op))
+
             operation_dict[op] = list(operation_parameters.values())
 
-    db_uuid = pr.process_image_directory(directory, name, operation_dict)
-    click.echo('The UUID of the dataset you have processed is: ' + db_uuid)
+    if metadata:
+        for dir_op in metadata:
+            operation_parameters = {}
+            if pr.get_metadata_operation_args(dir_op) is not None:
+                operation_parameters = request_parameters(pr.get_metadata_operation_args(dir_op))
+                
+            metadata_dict[dir_op] = list(operation_parameters.values())
+
+    db_uuid = pr.process_directory(metadata_dict, directory, name, operation_dict)
+    click.echo('The UUID of the dataset(s) you have processed is: ' + str(db_uuid))
 
 @pipeline.command()
 @click.option('-e', '--embeddor', help='specify an embedding routine(s) by uuid', type=str, multiple=True)
@@ -162,6 +184,7 @@ def info(ctx, all, database, embeddor, detector):
         for db in source_db: 
             click.echo('\t' + str(db[lookup.db_descriptor]))
             click.echo('\t\t' + 'UUID: ' + str(db[lookup.uuid_descriptor]))
+            click.echo('\t\t' + 'Directory path: ' + str(db[lookup.path_descriptor]))
             click.echo('\t\t' + 'Image Count: ' + str(db[lookup.db_image_count]))
             click.echo('\t\t' + 'Image Types: ' + str(db[lookup.compatible_descriptor]))
         click.echo(breaker)
@@ -169,8 +192,10 @@ def info(ctx, all, database, embeddor, detector):
         click.echo('Steganographic Databases processed: (' + str(len(steganographic_db)) + ')')
         for db in steganographic_db: 
             click.echo('\t' + 'UUID: ' + str(db[lookup.uuid_descriptor]))
+            click.echo('\t\t' + 'Directory path: ' + str(db[lookup.path_descriptor]))
             click.echo('\t\t' + 'Source DB: ' + str(db[lookup.source_db]))
             click.echo('\t\t' + 'Source Embeddor Set: ' + str(db[lookup.source_embeddor_set]))
+            click.echo('\t\t' + 'Image Count: ' + str(db[lookup.db_image_count]))
             click.echo('\t\t' + 'Image Types: ' + str(db[lookup.compatible_descriptor]))
             click.echo('\t\t' + 'Payload: ' + str(db[lookup.embedding_ratio]))
         click.echo(breaker)

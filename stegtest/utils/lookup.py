@@ -146,8 +146,8 @@ master_algo_header = [uuid_descriptor, name_descriptor, filepath_descriptor] #po
 individual_set_header = [uuid_descriptor] #points to a master algo
 master_set_header = [uuid_descriptor, filepath_descriptor] #points to an individual set
 
-db_header = [uuid_descriptor, db_descriptor, db_image_count, compatible_descriptor]
-steganographic_header = [uuid_descriptor, source_db, source_embeddor_set, embedding_ratio, db_image_count, compatible_descriptor]
+db_header = [uuid_descriptor, path_descriptor, db_descriptor, db_image_count, compatible_descriptor]
+steganographic_header = [uuid_descriptor, path_descriptor, source_db, source_embeddor_set, embedding_ratio, db_image_count, compatible_descriptor]
 
 #ALGORITHM TYPES
 algorithm_name = 'name'
@@ -186,10 +186,17 @@ output_file_header = 'output'
 #IMAGE OPERATIONS
 add_noise = 'noise'
 crop = 'crop'
+center_crop = 'center_crop'
 resize = 'resize'
+rgb2gray = 'rgb2gray'
 rotate = 'rotate'
 convert_to_png = 'conv_to_png'
 convert_to_jpeg = 'conv_to_jpeg'
+
+train = 'train'
+test = 'test'
+validation = 'validation'
+train_test_val_split = 'ttv_split'
 
 removal_prefix = 'rm'
 removal_directory_prefix = 'rm -rf'
@@ -247,7 +254,10 @@ def get_parameter_type(type):
     }[type]
 
 def get_image_operations():
-	return [add_noise, crop, resize, rotate, convert_to_jpeg, convert_to_png]
+	return [add_noise, resize, rotate, convert_to_jpeg, convert_to_png, center_crop, rgb2gray]
+
+def get_directory_operations():
+	return [stego, train_test_val_split]
 
 def lossy_encoding_types():
 	return ['jpeg', 'jpg']

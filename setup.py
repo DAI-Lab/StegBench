@@ -21,6 +21,7 @@ install_requires = [
     'scikit-plot',
     'docker',
     'pathos',
+    'scikit-image',
 ]
 
 setup_requires = [

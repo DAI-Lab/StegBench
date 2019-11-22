@@ -141,9 +141,14 @@ def get_all_algorithms(algorithm_type:str):
 
 def calculate_statistics_threshold(detector_results):
 	"""calculates all the relevant analyzer statistics"""
+	metrics = collections.OrderedDict()
 	labels = np.array(list(map(lambda d: 1 if d[lookup.label] == lookup.stego else 0, detector_results)))
 	prediction_single_classes = np.array(list(map(lambda d: float(d[lookup.result]), detector_results)))
 	prediction_both_classes = np.array(list(map(lambda d: (float(d[lookup.result]), 1.0 - float(d[lookup.result])), detector_results)))
+
+	if len(set(labels)) == 1:
+		print('roc values require at least 2 labels in the test dataset')
+		return {lookup.result_metric: metrics}
 
 	auc_score = roc_auc_score(labels, prediction_single_classes)
 	ap_score = average_precision_score(labels, prediction_single_classes)
@@ -155,7 +160,6 @@ def calculate_statistics_threshold(detector_results):
 	roc_curve_path = abspath(join(detector_result_dir, roc_curve_name))
 	plt.savefig(roc_curve_path, bbox_inches='tight')
 
-	metrics = collections.OrderedDict()
 	metrics[lookup.roc_auc] = auc_score
 	metrics[lookup.ap_score] = ap_score
 	metrics[lookup.roc_curve] = roc_curve_path
@@ -164,6 +168,9 @@ def calculate_statistics_threshold(detector_results):
 
 def calculate_statistics_classifier(detector_results):
 	"""calculates all the relevant analyzer statistics"""
+	metrics = collections.OrderedDict()
+	raw_results = collections.OrderedDict()
+
 	result_true_cover = list(filter(lambda d: d[lookup.label] == lookup.cover, detector_results))
 	result_true_stego = list(filter(lambda d: d[lookup.label] == lookup.stego, detector_results))
 
@@ -173,16 +180,28 @@ def calculate_statistics_classifier(detector_results):
 	total_cover = len(result_true_cover)
 	total_stego = len(result_true_stego)
 	total_results = total_stego + total_cover
-	
+
+	assert(total_results > 0)
+
 	true_negative_total = len(result_correct_cover)
 	true_positive_total = len(result_correct_stego)
-
 	false_positive_total = total_cover - true_negative_total
 	false_negative_total = total_stego - true_positive_total
 
+	raw_results[lookup.true_positive_raw] = true_positive_total
+	raw_results[lookup.true_negative_raw] = true_negative_total
+	raw_results[lookup.total_stego_raw] = total_stego
+	raw_results[lookup.total_cover_raw] = total_cover
+
+	if total_cover == 0:
+		metrics[lookup.accuracy] = true_positive_total / total_results
+		return {lookup.result_metric: metrics, lookup.result_raw: raw_results}
+	elif total_stego == 0:
+		metrics[lookup.accuracy] = true_negative_total / total_results
+		return {lookup.result_metric: metrics, lookup.result_raw: raw_results}
+
 	fpr = false_positive_total / total_results
 	fnr = false_negative_total / total_results
-
 	tpr = true_positive_total / total_stego
 	tnr = true_negative_total / total_cover
 	ppv = true_positive_total / (true_positive_total + false_positive_total)
@@ -200,7 +219,6 @@ def calculate_statistics_classifier(detector_results):
 	denominator = math.sqrt(denominator)
 	mcc /= denominator
 
-	metrics = collections.OrderedDict()
 	metrics[lookup.false_positive_rate] = fpr
 	metrics[lookup.false_negative_rate] = fnr
 	metrics[lookup.true_negative_rate] = tnr
@@ -210,12 +228,6 @@ def calculate_statistics_classifier(detector_results):
 	metrics[lookup.positive_predictive_value] = ppv
 	metrics[lookup.accuracy] = accuracy
 
-	raw_results = collections.OrderedDict()
-	raw_results[lookup.true_positive_raw] = true_positive_total
-	raw_results[lookup.true_negative_raw] = true_negative_total
-	raw_results[lookup.total_stego_raw] = total_stego
-	raw_results[lookup.total_cover_raw] = total_cover
-	
 	return {lookup.result_metric: metrics, lookup.result_raw: raw_results}
 
 def calculate_statistics(*results):
