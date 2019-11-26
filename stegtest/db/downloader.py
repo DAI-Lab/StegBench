@@ -24,10 +24,8 @@ def get_download_routines():
 		'BOWS2': download_from_BOWS2, 
 		'COCO_Test': download_from_COCO_TEST, 
 		'COCO_Train': download_from_COCO_TRAIN, 
-		'DRESDEN': download_from_DRESDEN, 
 		'DIV2K_VALID': download_from_DIV2K_VALID,
 		'DIV2K_TRAIN': download_from_DIV2K_TRAIN,
-		'RAISE': download_from_RAISE, 
 		'ImageNet': download_from_ImageNet
 	}
 
@@ -59,7 +57,7 @@ def unzip_file(path_to_zip_file, target_directory):
 
 def download_from_ALASKA(directory):
 	zip_file_name = 'ALASKA_training_set_jpg1_cover.zip'
-	unzip_directory = 'alaska1ALASKA_training_set_jpg1_cover.zip'
+	unzip_directory = 'alaska1ALASKA_training_set_jpg1_cover'
 	path_to_zip_file = join(directory, zip_file_name)
 	path_to_unzip_directory = join(directory, unzip_directory)
 	
@@ -122,10 +120,6 @@ def download_from_COCO_TRAIN(directory):
 
 	return path_to_unzip_directory
 
-def download_from_DRESDEN(directory):
-	#does not exist at the moment and would need to read a txt file to get the files 
-	raise NotImplementedError
-
 def download_from_DIV2K_VALID(directory):
 	zip_file_name = 'DIV2K_valid_HR.zip'
 	unzip_directory = 'DIV2K_valid_HR'
@@ -153,10 +147,6 @@ def download_from_DIV2K_TRAIN(directory):
 	assert(fs.dir_exists(path_to_unzip_directory))
 
 	return path_to_unzip_directory
-
-def download_from_RAISE(directory):
-	#does not exist and would need to read a csv file to get the files
-	raise NotImplementedError
 
 def download_from_ImageNet(directory):
 	#need to use some sort of utility to get this running

@@ -85,7 +85,7 @@ PASSWORD = 'PASSWORD'
 PAYLOAD = 'PAYLOAD'
 
 #METDATA OPTIONS
-payload = 'payload' #TODO FIX
+payload = 'payload'
 cores = 'cores'
 result_file = 'result_file'
 
@@ -112,6 +112,9 @@ image_width = 'width'
 image_height = 'height'
 image_channels = 'channels'
 embedding_max = 'embedding_max'
+embedding_bpp = 'embedding_bpp'
+embedding_nzbAC = 'embedding_nzbAC'
+embedding_nzbAC3 = 'embedding_nzbAC3'
 
 #LABEL TYPES
 stego = 'stego'

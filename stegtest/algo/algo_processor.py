@@ -94,17 +94,20 @@ def process_experiment_file(experiment_file_path):
 	assert(lookup.metadata in config_dict and lookup.embeddor in config_dict and lookup.detector in config_dict)
 
 	def process_metadata():
-		return config_dict[lookup.metadata]
+		metadata = config_dict[lookup.metadata]
+		assert(lookup.payload in metadata)
+		return metadata
 
 	def process_embeddor():
 		embeddor_info = config_dict[lookup.embeddor]
-		print(embeddor_info)
-		embeddor_uuid = embeddor_info[lookup.uuid_descriptor]
+		assert(lookup.uuid_descriptor in embeddor_info)
+		embeddor_uuid = ast.literal_eval(embeddor_info[lookup.uuid_descriptor])
 		return embeddor_uuid
 
 	def process_detector():
 		detector_info = config_dict[lookup.detector]
-		detector_uuid = detector_info[lookup.uuid_descriptor]
+		assert(lookup.uuid_descriptor in detector_info)
+		detector_uuid = ast.literal_eval(detector_info[lookup.uuid_descriptor])
 		return detector_uuid
 
 	return process_metadata(), process_embeddor(), process_detector()

@@ -22,6 +22,7 @@ from os.path import abspath, join
 from pathos.multiprocessing import ThreadPool as Pool
 from functools import partial
 from collections import defaultdict
+from typing import Union
 
 class Embeddor():
 	""""runs all the generation tasks"""
@@ -237,7 +238,9 @@ class Detector():
 
 class Scheduler():
 	"""schedules the generator and analyzer task"""
-	def __init__(self, metadata, embeddor_set_uuid:str, detector_set_uuid:str):
+	def __init__(self, metadata, embeddors:list, detectors:list):
+			embeddor_set_uuid = algo.create_algorithm_set(lookup.embeddor, embeddors)
+			detector_set_uuid = algo.create_algorithm_set(lookup.detector, detectors)
 			embeddor_set = algo.get_algorithm_set(lookup.embeddor, embeddor_set_uuid)
 			detector_set = algo.get_algorithm_set(lookup.detector, detector_set_uuid)
 			self.metadata = metadata

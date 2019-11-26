@@ -143,9 +143,21 @@ def get_image_type(path_to_file):
 def is_image_file(path_to_file):
 	return get_image_type(path_to_file) in lookup.all_supported_types()
 
+def process_coefficient(coefficients):
+	y_nz = np.count_nonzero(coefficients[0])
+	y_nz_dc = np.count_nonzero(coefficients[0][:,:,0])
+
+	ac_dct_y = y_nz - y_nz_dc
+	ac_dct_all = 0
+
+	for coefficient in coefficients:
+		ac_dct_all += np.count_nonzero(coefficient) - np.count_nonzero(coefficient[:,:,0])
+
+	return ac_dct_y, ac_dct_all
+
 def get_image_info(path_to_file):
 	"""Returns image info as a dictionary with elements, type, width, height, channels"""
-	#assert(file_exists()) TODO
+	assert(fs.file_exists(path_to_file))
 	img_type = get_image_type(path_to_file)
 	im = Image.open(path_to_file)
 	width, height = im.size
@@ -159,8 +171,10 @@ def get_image_info(path_to_file):
 	info_dict[lookup.image_channels] = channels
 
 	if img_type in lookup.lossy_encoding_types():
-		coefficients = load(path_to_file)
-		info_dict[lookup.embedding_max] = np.count_nonzero(coefficients[0])
+		coefficients = np.array(load(path_to_file))
+
+		ac_dct_y, ac_dct_all = process_coefficient(coefficients)
+		info_dict[lookup.embedding_max] = ac_dct_y
 	else:
 		info_dict[lookup.embedding_max] = width*height*convert_channels_to_int(channels)
 

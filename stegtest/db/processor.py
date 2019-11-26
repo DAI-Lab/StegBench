@@ -105,16 +105,10 @@ def process_steganographic_list(partition, embeddors):
 	assert(len(directories) == 1) #code does not handle multiple output directories for now
 	return info_images, compatible_types, list(directories)[0]
 
-def modify_images(input_directory, operation_dict):
+def modify_images(input_directory, output_directory, operation_dict):
 	input_directory = abspath(input_directory)
 	file_names = [f for f in listdir(input_directory) if img.is_image_file(join(input_directory, f))]
 
-	dataset_directory = lookup.get_db_dirs()[lookup.dataset]
-
-	output_directory_name = fs.get_uuid()
-	output_directory = join(dataset_directory, output_directory_name)
-	output_directory = abspath(output_directory)
-	fs.make_dir(output_directory)
 	partition = [{lookup.input_file_header: join(input_directory, f), lookup.output_file_header: join(output_directory, f)} for f in file_names]
 
 	output_files = None
@@ -136,6 +130,7 @@ def process_image_directory(path_to_directory, db_name, operation_dict, stego=Fa
 	"""processes an image directory"""
 	source_master_file = lookup.get_all_files()[lookup.source_db_file]
 	metadata_directory = lookup.get_db_dirs()[lookup.metadata]
+	output_directory = path_to_directory
 
 	db_uuid = fs.get_uuid()
 	target_directory = join(metadata_directory, db_uuid)
@@ -148,7 +143,12 @@ def process_image_directory(path_to_directory, db_name, operation_dict, stego=Fa
 	files = [join(absolute_path, f) for f in listdir(absolute_path) if img.is_image_file(join(absolute_path, f))]
 
 	if operation_dict:
-		files = modify_images(absolute_path, operation_dict)
+		dataset_directory = lookup.get_db_dirs()[lookup.dataset]
+		output_directory = abspath(join(dataset_directory, fs.get_uuid()))
+		fs.make_dir(output_directory)
+
+		files = modify_images(absolute_path, output_directory, operation_dict)
+
 	else:
 		files = [join(absolute_path, f) for f in listdir(absolute_path) if img.is_image_file(join(absolute_path, f))]
 
@@ -161,7 +161,7 @@ def process_image_directory(path_to_directory, db_name, operation_dict, stego=Fa
 	num_images = len(files)
 	compatible_types = list(compatible_types)
 
-	dataset_info = [(db_uuid, abspath(path_to_directory), db_name, num_images, compatible_types)]
+	dataset_info = [(db_uuid, abspath(output_directory), db_name, num_images, compatible_types)]
 	fs.write_to_csv_file(source_master_file, dataset_info)
 
 	return db_uuid
