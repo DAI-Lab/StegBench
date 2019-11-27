@@ -17,7 +17,7 @@ install_requires = [
     'jpeg2dct',
     'Pillow',
     'sklearn',
-    'matplotlib=>=1.4.0'
+    'matplotlib>=1.4.0'
     'scikit-plot',
     'docker',
     'pathos',
