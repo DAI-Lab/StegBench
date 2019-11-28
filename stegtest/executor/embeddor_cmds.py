@@ -58,15 +58,22 @@ def generate_native_cmd(algorithm_info, to_embed):
 	cmd = lookup.get_cmd(algorithm_info)
 	new_cmd = replace(cmd, to_embed)
 
+	if lookup.WORKING_DIR in algorithm_info:
+		wdir = algorithm_info[lookup.WORKING_DIR]
+		new_cmd = ['(', 'cd', wdir, '&&', new_cmd, ')']
+		new_cmd = ' '.join(new_cmd)
+
 	return {lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [new_cmd]}
 
 def postprocess_native(algorithm_info, embedded_list):
-	cmd = lookup.get_post_cmd(algorithm_info)
+	cmd = lookup.get_cmd(algorithm_info)
+	post_cmd = lookup.get_post_cmd(algorithm_info)
 	post_cmds = []
 
-	if cmd:
-		new_cmd = replace(cmd, to_embed)
-		post_cmds.append({lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: new_cmd})
+	if post_cmd:
+		for to_embed in embedded_list:
+			new_cmd = replace(post_cmd, to_embed)
+			post_cmds.append({lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: new_cmd})
 
 	for embedded in embedded_list:
 		if lookup.SECRET_TXT_FILE in embedded:

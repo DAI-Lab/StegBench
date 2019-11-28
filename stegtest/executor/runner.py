@@ -45,6 +45,7 @@ def run(cmd_info):
 	}[cmd_type]
 
 	run_info = cmd_info[lookup.COMMAND]
+	print(run_info)
 	run_function(*run_info)
 
 def run_pool(cmd_list, threads=None):
