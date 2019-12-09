@@ -73,7 +73,7 @@ def postprocess_native(algorithm_info, embedded_list):
 	if post_cmd:
 		for to_embed in embedded_list:
 			new_cmd = replace(post_cmd, to_embed)
-			post_cmds.append({lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: new_cmd})
+			post_cmds.append({lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [new_cmd]})
 
 	for embedded in embedded_list:
 		if lookup.SECRET_TXT_FILE in embedded:
