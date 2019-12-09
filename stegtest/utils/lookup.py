@@ -200,6 +200,8 @@ train = 'train'
 test = 'test'
 validation = 'validation'
 train_test_val_split = 'ttv_split'
+limit = 'limit'
+amount_of_images = 'amount_of_images'
 
 removal_prefix = 'rm'
 removal_directory_prefix = 'rm -rf'
@@ -260,7 +262,7 @@ def get_image_operations():
 	return [add_noise, resize, rotate, convert_to_jpeg, convert_to_png, center_crop, rgb2gray]
 
 def get_directory_operations():
-	return [stego, train_test_val_split]
+	return [stego, train_test_val_split, limit]
 
 def lossy_encoding_types():
 	return ['jpeg', 'jpg']

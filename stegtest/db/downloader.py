@@ -10,6 +10,7 @@ from os.path import join
 
 BOSS_URL = 'http://dde.binghamton.edu/download/ImageDB/BOSSbase_1.01.zip'
 BOWS2_URL = 'http://bows2.ec-lille.fr/BOWS2OrigEp3.tgz'
+COCO_VAL_URL = 'http://images.cocodataset.org/zips/val2017.zip'
 COCO_TEST_URL = 'http://images.cocodataset.org/zips/test2017.zip'
 COCO_TRAIN_URL = 'http://images.cocodataset.org/zips/train2017.zip'
 DIV2K_VALID_URL = 'http://data.vision.ee.ethz.ch/cvl/DIV2K/DIV2K_valid_HR.zip'
@@ -22,6 +23,7 @@ def get_download_routines():
 		'ALASKA': download_from_ALASKA,
 		'BOSS': download_from_BOSS, 
 		'BOWS2': download_from_BOWS2, 
+		'COCO_Val': download_from_COCO_VAL,
 		'COCO_Test': download_from_COCO_TEST, 
 		'COCO_Train': download_from_COCO_TRAIN, 
 		'DIV2K_VALID': download_from_DIV2K_VALID,
@@ -114,6 +116,19 @@ def download_from_COCO_TRAIN(directory):
 	path_to_unzip_directory = join(directory, unzip_directory)
 	
 	retrieve_file(COCO_TRAIN_URL, path_to_zip_file)
+	unzip_file(path_to_zip_file, directory)
+
+	assert(fs.dir_exists(path_to_unzip_directory))
+
+	return path_to_unzip_directory
+
+def download_from_COCO_VAL(directory):
+	zip_file_name = 'val2017.zip'
+	unzip_directory = 'val2017'
+	path_to_zip_file = join(directory, zip_file_name)
+	path_to_unzip_directory = join(directory, unzip_directory)
+	
+	retrieve_file(COCO_VAL_URL, path_to_zip_file)
 	unzip_file(path_to_zip_file, directory)
 
 	assert(fs.dir_exists(path_to_unzip_directory))

@@ -10,6 +10,22 @@ from os.path import isfile, join, abspath
 from multiprocessing import Pool
 from functools import partial
 
+def limit_images(path_to_directory, amount_of_images):
+	input_directory = abspath(path_to_directory)
+	file_names = [join(input_directory, f) for f in listdir(input_directory) if img.is_image_file(join(input_directory, f))]
+
+	random.shuffle(file_names)
+
+	db_directory = abspath(lookup.get_db_dirs()[lookup.dataset])
+	shortened_directory = join(db_directory, fs.get_uuid())
+	fs.make_dir(shortened_directory)
+
+	copy_files = file_names[:amount_of_images]
+
+	for file in copy_files:
+		fs.copy_file(file, shortened_directory)
+
+	return shortened_directory
 
 def train_test_val_split(path_to_directory, train_split, test_split, val_split):
 	assert((train_split + test_split + val_split <= 1.0))
@@ -45,7 +61,8 @@ def train_test_val_split(path_to_directory, train_split, test_split, val_split):
 def get_metadata_operation_args(operation):
 	args = {
 		lookup.stego: collections.OrderedDict({}),
-		lookup.train_test_val_split: collections.OrderedDict({lookup.train: float, lookup.test: float, lookup.validation: float})
+		lookup.train_test_val_split: collections.OrderedDict({lookup.train: float, lookup.test: float, lookup.validation: float}),
+		lookup.limit: collections.OrderedDict({lookup.amount_of_images: int})
 	}[operation]
 
 	return args
@@ -194,9 +211,14 @@ def process_steganographic_directory(partition, db_name, embeddor_set, source_db
 	return db_uuid
 
 def process_directory(metadata, path_to_directory, db_name, operation_dict):
+	print('applying following operations: ' + str(metadata.keys()))
+
 	stego = False
 	if lookup.stego in metadata:
 		stego = True
+
+	if lookup.limit in metadata:
+		path_to_directory = limit_images(path_to_directory, *metadata[lookup.limit])
 
 	if lookup.train_test_val_split in metadata:
 		train_dir, test_dir, val_dir = train_test_val_split(path_to_directory, *metadata[lookup.train_test_val_split])
