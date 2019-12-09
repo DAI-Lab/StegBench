@@ -13,6 +13,10 @@ def replace(cmd:str, replacements):
 
 #### NATIVE ####
 def preprocess_native(algorithm_info, to_verify_list):
+	if lookup.VERIFY_TXT_FILE in cmd:
+		for to_verify in to_verify_list:
+			to_verify[lookup.VERIFY_TXT_FILE] = generator.generate_verify_file(algorithm_info, to_verify)
+
 	return [], to_verify_list
 
 def generate_native_cmd(algorithm_info, to_verify):
