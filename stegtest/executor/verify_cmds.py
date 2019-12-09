@@ -25,6 +25,11 @@ def generate_native_cmd(algorithm_info, to_verify):
 
 		new_cmd += write_to_result_cmd
 
+	if lookup.WORKING_DIR in algorithm_info:
+		wdir = algorithm_info[lookup.WORKING_DIR]
+		new_cmd = ['(', 'cd', wdir, '&&', new_cmd, ')']
+		new_cmd = ' '.join(new_cmd)
+
 	return {lookup.COMMAND_TYPE: lookup.NATIVE, lookup.COMMAND: [new_cmd]}
 
 def postprocess_native(algorithm_info, verified_list):
