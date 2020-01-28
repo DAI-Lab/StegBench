@@ -11,14 +11,14 @@
 
 # StegTest
 
-This package allows autotesting of different datasets, steganographers, and steganalyzers.
+This package allows autotesting of different datasets, steganographers, and steganalyzers. Using this package, extensive and thorough experiments can be carried out efficiently for a number of algorithms. Example configuration files are included as well as sample demo results. For quick-start, please refer to the manual below. 
 
 - Documentation: https://DAI-Lab.github.io/stegtest
 - Homepage: https://github.com/DAI-Lab/stegtest
 
 # Overview
 
-TODO: Provide a short overview of the project here.
+StegTest is a steganography orchestration package for the evaluation of both steganaographic and steganalysis methods. The system orchestrates extensive experimentation of steganographic procedures through the use of short, easy-to-use configuration files. 
 
 # Install
 
@@ -83,7 +83,17 @@ for more details about this process.
 In this short tutorial we will guide you through a series of steps that will help you
 getting started with **StegTest**.
 
-TODO: Create a step by step guide here.
+1. Install StegTest 
+2. Navigate to the test folder (usually this will contain any relevant configuration/data files)
+3. Initialize the folder for stegtest using the commmand ```bash stegtest initialize```
+4. Add any configuration files to StegTest using the add_config command
+5. Use the experiment, embed, or detect commands to thoroughly test your specified algorithms. 
+
+# Configuration Files
+
+Configuration files provide StegTest with an easy-to-use set of descriptors that define how your steganographic processes operate. Please take a look at some of the example configuration files in the examples/ folder. Each .ini configuration will be labeled by the steganographic procedure's name. This configuration must then follow a restricted specification which only allows for two algorithm types ('detector' | 'embeddor'). 
+
+Each algorithm type will have it's own specific set of specifications as documented in the online manual found here https://DAI-Lab.github.io/stegtest/.
 
 # What's next?
 
