@@ -16,6 +16,7 @@ import stegtest.db.processor as pr
 
 import stegtest.algo.algo_info as algo
 import stegtest.algo.algo_processor as algo_processor
+import stegtest.algo.robust as robust
 
 from stegtest.orchestrator import Embeddor, Detector, Verifier, Scheduler
 
@@ -406,6 +407,31 @@ def run_experiment(ctx, path, database):
     scheduler = Scheduler(metadata, embeddor_set_uuid, detector_set_uuid)
     results = scheduler.run(database)
     print(results)
+
+@pipeline.command()
+@click.option('-m', '--model', help='path of the model', type=str)
+@click.option('-db', '--database', help='uuid of the db(s) to work with',  multiple=True)
+@click.option('-a', '--attack', help='adversarial attack options', type=click.Choice(lookup.get_attack_methods()))
+@click.pass_context
+def adv_attack(ctx, model_path, database, attack):
+    """performs an adversarial attack on a predefined model with specific configuration details"""
+    #TODO assert model path exists and is a valid model path 
+
+    #load data 
+    data = [robust.load_data_for_attack(db) for db in database]
+
+    #data is the form of ((x_db, y_db), ...)
+    #need to push all the datasets together into one
+    x, y = [], []
+    for db in data:
+        x = x + data[0]
+        y = x + data[1]
+
+    #based of the attack need to get the list of required configuration options 
+    #TODO
+    configurations = None
+
+    robust.apply_attack(model_path, attack, configurations)
 
 def main():
     pipeline(obj={})

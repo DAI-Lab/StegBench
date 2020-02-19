@@ -207,6 +207,12 @@ removal_prefix = 'rm'
 removal_directory_prefix = 'rm -rf'
 docker_exec_prefix = 'docker exec'
 
+attack_FGM = 'FGM'
+attack_EAD = 'EAD'
+attack_BIM = 'BIM'
+attack_PGD = 'PGD'
+attack_JSMA = 'JSMA'
+
 def get_top_level_dirs():
 	return {embeddor: embeddor_dir, db: db_dir, detector:detector_dir}
 
@@ -375,6 +381,9 @@ def get_post_cmd(algorithm_info):
 
 def get_verify_cmd(algorithm_info):
 	return algorithm_info[VERIFY_COMMAND]
+
+def get_attack_methods():
+	return [attack_FGM, attack_EAD, attack_BIM, attack_PGD, attack_JSMA]
 
 def initialize_filesystem(directory): #TODO need to remove the None part
 	"""Clears and adds needed directories for stegdetect to work"""
