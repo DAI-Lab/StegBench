@@ -213,6 +213,15 @@ attack_BIM = 'BIM'
 attack_PGD = 'PGD'
 attack_JSMA = 'JSMA'
 
+pytorch = 'pytorch'
+tensorflow = 'tensorflow'
+
+input_shape = 'input_shape'
+criterion = 'criterion'
+optimizer = 'optimizer'
+nb_classes = 'nb_classes'
+attack_method = 'attack_method'
+
 def get_top_level_dirs():
 	return {embeddor: embeddor_dir, db: db_dir, detector:detector_dir}
 

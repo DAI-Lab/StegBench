@@ -24,10 +24,26 @@ from stegtest.orchestrator import Embeddor, Detector, Verifier, Scheduler
 def request_parameters(ctx, parameters):
     parameter_values = {}
     prompt_string = 'Please enter a parameter value for: '
-
     for parameter_name in parameters.keys():
+        value = None
         parameter_type = parameters[parameter_name]
-        value = click.prompt(prompt_string + parameter_name, type=parameter_type)
+
+        if isinstance(parameter_type, list):
+            click.echo('Enter parameter values for ' +  parameter_name + ' list. To end, press q')
+            value = []
+            list_type = parameter_type[0]
+
+            list_value = click.prompt(prompt_string + parameter_name, type=str)
+            while list_value != 'q':
+                value.append(list_type(list_value))
+                list_value = click.prompt(prompt_string + parameter_name, type=str)
+        elif isinstance(parameter_type, dict):
+            get_options = parameter_type.keys()
+            value = click.prompt('Select your choice for ' + parameter_name, type=click.Choice(get_options))
+            value = parameter_type[value]
+        else:
+            value = click.prompt(prompt_string + parameter_name, type=parameter_type)
+
         parameter_values[parameter_name] = value
 
     if len(parameter_values) == 0:
@@ -413,25 +429,25 @@ def run_experiment(ctx, path, database):
 @click.option('-db', '--database', help='uuid of the db(s) to work with',  multiple=True)
 @click.option('-a', '--attack', help='adversarial attack options', type=click.Choice(lookup.get_attack_methods()))
 @click.pass_context
-def adv_attack(ctx, model_path, database, attack):
+def adv_attack(ctx, model, database, attack):
     """performs an adversarial attack on a predefined model with specific configuration details"""
-    #TODO assert model path exists and is a valid model path 
+    assert(fs.file_exists(model))
 
+    configurations = request_parameters(robust.get_model_arguments())
+    configurations[lookup.attack_method] = attack
     #load data 
-    data = [robust.load_data_for_attack(db) for db in database]
-
-    #data is the form of ((x_db, y_db), ...)
-    #need to push all the datasets together into one
+    data = [pr.load_data_as_array(db) for db in database]
     x, y = [], []
     for db in data:
-        x = x + data[0]
-        y = x + data[1]
+        for (x_t, y_t) in db:
+            x.append(x_t)
+            y.append(y_t)
+
+
 
     #based of the attack need to get the list of required configuration options 
-    #TODO
-    configurations = None
-
-    robust.apply_attack(model_path, attack, configurations)
+    dataset = (x, y)
+    robust.apply_attack(model, dataset, configurations)
 
 def main():
     pipeline(obj={})

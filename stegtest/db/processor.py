@@ -230,3 +230,24 @@ def process_directory(metadata, path_to_directory, db_name, operation_dict):
 	else:
 		return process_image_directory(path_to_directory, db_name, operation_dict, stego)
 
+def translate_label(label):
+	if label == lookup.stego:
+		return (1.0, 0)
+	else:
+		return (0, 1.0)
+
+def load_data_as_array(db_uuid, ttv_split=None):
+	if ttv_split:
+		raise NotImplementedError
+
+	db_information = lookup.get_source_db_info(db_uuid)
+	image_dict = lookup.get_image_list(db_information[lookup.uuid_descriptor])
+
+	image_info = [(img.get_image_array(img_dict[lookup.file_path]), translate_label(img_dict[lookup.label])) for img_dict in image_dict]
+	return image_info
+
+def convert_to_image(path_to_directory, img_pixel_values):
+	for pixels in img_pixel_values:
+		file_name = fs.get_uuid() + '.png'
+		file_path = path_to_directory + file_name
+		img.convert_from_pixels(file_path, pixels)

@@ -35,6 +35,23 @@ def convert_channels_to_int(channel:str):
 		'HSV': 3,
 	}[channel]
 
+def convert_from_pixels(path_to_output, pixels):
+	print(pixels.shape)
+	# need to get a RGB 512x512 picture into this shape (262144, 3)
+	pixels = (pixels * 255).astype(np.uint8)
+	print(pixels)
+	print(pixels.shape)
+	new_image = Image.fromarray(pixels)
+	new_image.save(path_to_output)
+	new_image.close()
+
+def get_image_array(path_to_input):
+	img = Image.open(path_to_input).convert('RGB')
+	pix = np.array(img.getdata())
+	img.close()
+
+	return pix
+
 def convert_to_png(path_to_input, path_to_output):
 	img = Image.open(path_to_input)
 	path_to_output = fs.change_extension(path_to_output, 'png')
