@@ -37,10 +37,13 @@ def convert_channels_to_int(channel:str):
 
 def convert_from_pixels(path_to_output, pixels):
 	print(pixels.shape)
+
+    #currently is 3x512x512
+	pixels = np.reshape(pixels, (pixels.shape[0], -1))
+	pixels = pixels.transpose()
+
 	# need to get a RGB 512x512 picture into this shape (262144, 3)
-	pixels = (pixels * 255).astype(np.uint8)
-	print(pixels)
-	print(pixels.shape)
+	# pixels = (pixels * 255).astype(np.uint8)
 	new_image = Image.fromarray(pixels)
 	new_image.save(path_to_output)
 	new_image.close()

@@ -22,6 +22,9 @@ install_requires = [
     'docker',
     'pathos',
     'scikit-image',
+    'scikit-plot',
+    'torch>=1.0.0,<1.1.0',
+    'tqdm',
 ]
 
 setup_requires = [

@@ -160,7 +160,7 @@ def add_embeddor(ctx, embeddor, uuid):
 @click.option('-u', '--uuid', help='specifies an existing embeddor set')
 @click.pass_context
 def add_detector(ctx, detector, uuid):
-    """aadds to or creates a new detector set"""
+    """adds to or creates a new detector set"""
     assert(detector)
     click.echo('Adding detectors: ' + str(detector))
     if uuid:
