@@ -77,7 +77,7 @@ def apply_attack(model_path, dataset, model_attack_config):
 	x_train = x.astype(np.float32)
 
 	predictions = classifier.predict(x_train)
-	accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y, axis=1)) / len (y)
+	accuracy = np.sum(np.argmax(predictions, axis=1) != np.argmax(y, axis=1)) / len (y)
 	print('Accuracy on benign test examples: {}%'.format(accuracy * 100))
 
 	attack_function = get_attack_method(attack_method)
@@ -87,13 +87,14 @@ def apply_attack(model_path, dataset, model_attack_config):
 	# Step 7: Evaluate the ART classifier on adversarial test examples
 
 	predictions = classifier.predict(x_adv)
-	accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y, axis=1)) / len(y)
+	accuracy = np.sum(np.argmax(predictions, axis=1) != np.argmax(y, axis=1)) / len(y)
 	print('Accuracy on adversarial test examples: {}%'.format(accuracy * 100))
 
-	print(x_adv[0])
-	print(x_adv.shape)
-
 	path_to_directory = join(abspath(lookup.get_db_dirs()[lookup.dataset]), fs.get_uuid())
+	fs.make_dir(path_to_directory)
+	
 	processor.convert_to_image(path_to_directory, x_adv)
+
+	print(path_to_directory)
 
 	return path_to_directory

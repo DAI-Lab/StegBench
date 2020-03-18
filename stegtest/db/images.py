@@ -9,6 +9,14 @@ import numpy as np
 from PIL import Image, ExifTags
 Image.MAX_IMAGE_PIXELS = None
 
+# TEST_TRANSFORM = transforms.Compose([
+#     transforms.ToTensor(),
+#     transforms.Normalize(_DEFAULT_MU, _DEFAULT_SIGMA),
+# ])
+
+# image = TEST_TRANSFORM(Image.open(image).convert('RGB'))  # convert the image to tensor
+# image.unsqueeze_(0)
+
 def convert_channels_to_int(channel:str):
 	"""
 		1 (1-bit pixels, black and white, stored with one pixel per byte)
@@ -36,22 +44,28 @@ def convert_channels_to_int(channel:str):
 	}[channel]
 
 def convert_from_pixels(path_to_output, pixels):
-	print(pixels.shape)
-
     #currently is 3x512x512
+
 	pixels = np.reshape(pixels, (pixels.shape[0], -1))
+
+	print(pixels)
+
 	pixels = pixels.transpose()
 
+	# print(pixels)
+
 	# need to get a RGB 512x512 picture into this shape (262144, 3)
-	# pixels = (pixels * 255).astype(np.uint8)
+	pixels = pixels.astype(np.uint8)
 	new_image = Image.fromarray(pixels)
-	new_image.save(path_to_output)
-	new_image.close()
+	# new_image.save(path_to_output)
+	# new_image.close()
 
 def get_image_array(path_to_input):
 	img = Image.open(path_to_input).convert('RGB')
 	pix = np.array(img.getdata())
 	img.close()
+
+	print(pix)
 
 	return pix
 

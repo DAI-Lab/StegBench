@@ -249,5 +249,5 @@ def load_data_as_array(db_uuid, ttv_split=None):
 def convert_to_image(path_to_directory, img_pixel_values):
 	for pixels in img_pixel_values:
 		file_name = fs.get_uuid() + '.png'
-		file_path = path_to_directory + file_name
+		file_path = join(path_to_directory, file_name)
 		img.convert_from_pixels(file_path, pixels)
