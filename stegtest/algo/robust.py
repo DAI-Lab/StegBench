@@ -70,10 +70,12 @@ def apply_attack(model_path, dataset, model_attack_config):
 	#TODO, might need to do something special to get the actual model, like we did for StegDetect
 	classifier = PyTorchClassifier(model=model, input_shape=input_shape, loss=criterion, optimizer=optimizer, nb_classes=nb_classes)
 
-	x = np.array(dataset[0])
+	x = np.array([x_element.numpy()[0] for x_element in dataset[0]])
 	y = np.array(dataset[1])
 
-	x = np.reshape(x, (-1, *input_shape))
+	print(x.shape)
+
+	# x = np.reshape(x, (-1, *input_shape))
 	x_train = x.astype(np.float32)
 
 	predictions = classifier.predict(x_train)
