@@ -24,6 +24,7 @@ install_requires = [
     'scikit-image',
     'scikit-plot',
     'torch>=1.0.0,<1.1.0',
+    'torchvision>=0.2.1,<0.3',
     'tqdm',
 ]
 

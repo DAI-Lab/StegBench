@@ -9,13 +9,17 @@ import numpy as np
 from PIL import Image, ExifTags
 Image.MAX_IMAGE_PIXELS = None
 
-# TEST_TRANSFORM = transforms.Compose([
-#     transforms.ToTensor(),
-#     transforms.Normalize(_DEFAULT_MU, _DEFAULT_SIGMA),
-# ])
+from torchvision import transforms
 
-# image = TEST_TRANSFORM(Image.open(image).convert('RGB'))  # convert the image to tensor
-# image.unsqueeze_(0)
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+_DEFAULT_MU = [.5, .5, .5]
+_DEFAULT_SIGMA = [.5, .5, .5]
+
+TEST_TRANSFORM = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize(_DEFAULT_MU, _DEFAULT_SIGMA),
+])
 
 def convert_channels_to_int(channel:str):
 	"""
@@ -45,6 +49,7 @@ def convert_channels_to_int(channel:str):
 
 def convert_from_pixels(path_to_output, pixels):
     #currently is 3x512x512
+    #might need to do some reverse transform lol 
 
 	pixels = np.reshape(pixels, (pixels.shape[0], -1))
 
@@ -61,13 +66,15 @@ def convert_from_pixels(path_to_output, pixels):
 	# new_image.close()
 
 def get_image_array(path_to_input):
-	img = Image.open(path_to_input).convert('RGB')
-	pix = np.array(img.getdata())
-	img.close()
+	image = TEST_TRANSFORM(Image.open(image).convert('RGB'))  # convert the image to tensor
+	image.unsqueeze_(0)
+	return image
 
-	print(pix)
-
-	return pix
+	# img = Image.open(path_to_input).convert('RGB')
+	# pix = np.array(img.getdata())
+	# img.close()
+	# print(pix)
+	# return pix
 
 def convert_to_png(path_to_input, path_to_output):
 	img = Image.open(path_to_input)
