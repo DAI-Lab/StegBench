@@ -16,8 +16,11 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 _DEFAULT_MU = [.5, .5, .5]
 _DEFAULT_SIGMA = [.5, .5, .5]
 
-_DEFAULT_MU_INVERSE = [-0.5/0.5, -0.5/0.5, -0.5/0.5]
-_DEFAULT_SIGMA_INVERSE = [1/0.5, 1/0.5, 1/0.5]
+_DEFAULT_MU_INVERSE = -0.5/0.5
+_DEFAULT_SIGMA_INVERSE = 1/0.5
+
+# _DEFAULT_MU_INVERSE = [-0.5/0.5, -0.5/0.5, -0.5/0.5]
+# _DEFAULT_SIGMA_INVERSE = [1/0.5, 1/0.5, 1/0.5]
 
 TEST_TRANSFORM = transforms.Compose([
     transforms.ToTensor(),
@@ -25,8 +28,8 @@ TEST_TRANSFORM = transforms.Compose([
 ])
 
 INVERSE_TRANSFORM = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize(_DEFAULT_MU_INVERSE, _DEFAULT_SIGMA_INVERSE),
+    # transforms.Normalize(_DEFAULT_MU_INVERSE, _DEFAULT_SIGMA_INVERSE),
+    transforms.ToPILImage(),
 ])
 
 def convert_channels_to_int(channel:str):
@@ -58,30 +61,17 @@ def convert_channels_to_int(channel:str):
 def convert_from_pixels(path_to_output, pixels):
     #currently is 3x512x512
     #need to fix the output for proper tensorization 
-	pixels = INVERSE_TRANSFORM(pixels)  # convert the image to tensor
-	pixels.unsqueeze_(0)
-
-	print(pixels)
-	print(pixels.shape)
-
-	pixels = pixels.numpy()
-
-	pixels = np.reshape(pixels, (pixels.shape[0], -1))
-	pixels = pixels.transpose()
-
-	# need to get a RGB 512x512 picture into this shape (262144, 3)
-	pixels = pixels.astype(np.uint8)
+	pixels = np.transpose(pixels, (1,2,0))
+	pixels = (pixels - _DEFAULT_MU_INVERSE) / _DEFAULT_SIGMA_INVERSE
+	pixels = (pixels * 255).astype(np.uint8)
 	new_image = Image.fromarray(pixels)
 	new_image.save(path_to_output)
 	new_image.close()
 
 def get_image_array(path_to_input):
 	image = TEST_TRANSFORM(Image.open(path_to_input).convert('RGB'))  # convert the image to tensor
-	#need to get the input that was thrown into the tensor lol //how to properly make this a tensor 
 	image.unsqueeze_(0)
-
 	return image
-
 	# img = Image.open(path_to_input).convert('RGB')
 	# pix = np.array(img.getdata())
 	# img.close()
