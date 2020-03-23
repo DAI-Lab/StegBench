@@ -212,6 +212,7 @@ attack_EAD = 'EAD'
 attack_BIM = 'BIM'
 attack_PGD = 'PGD'
 attack_JSMA = 'JSMA'
+attack_PIXEL = 'PIXEL'
 
 pytorch = 'pytorch'
 tensorflow = 'tensorflow'

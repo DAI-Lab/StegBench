@@ -83,7 +83,7 @@ def apply_attack(model_path, dataset, model_attack_config):
 	print('Accuracy on benign test examples: {}%'.format(accuracy * 100))
 
 	attack_function = get_attack_method(attack_method)
-	attack_instance = attack_function(classifier=classifier, eps=0.2)
+	attack_instance = attack_function(classifier=classifier)
 	x_adv = attack_instance.generate(x=x)
 
 	# Step 7: Evaluate the ART classifier on adversarial test examples
