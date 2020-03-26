@@ -72,11 +72,6 @@ def get_image_array(path_to_input):
 	image = TEST_TRANSFORM(Image.open(path_to_input).convert('RGB'))  # convert the image to tensor
 	image.unsqueeze_(0)
 	return image
-	# img = Image.open(path_to_input).convert('RGB')
-	# pix = np.array(img.getdata())
-	# img.close()
-	# print(pix)
-	# return pix
 
 def convert_to_png(path_to_input, path_to_output):
 	img = Image.open(path_to_input)

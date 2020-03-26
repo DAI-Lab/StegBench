@@ -217,11 +217,12 @@ attack_PIXEL = 'PIXEL'
 pytorch = 'pytorch'
 tensorflow = 'tensorflow'
 
-input_shape = 'input_shape'
+input_shape = 'input shape'
 criterion = 'criterion'
 optimizer = 'optimizer'
-nb_classes = 'nb_classes'
-attack_method = 'attack_method'
+nb_classes = 'number classes'
+attack_method = 'attack method'
+robust_db_name = 'robust database name'
 
 def get_top_level_dirs():
 	return {embeddor: embeddor_dir, db: db_dir, detector:detector_dir}

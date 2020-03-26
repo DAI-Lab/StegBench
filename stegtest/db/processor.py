@@ -143,7 +143,7 @@ def modify_images(input_directory, output_directory, operation_dict):
 
 	return output_files
 
-def process_image_directory(path_to_directory, db_name, operation_dict, stego=False):
+def process_image_directory(path_to_directory, db_name, operation_dict):
 	"""processes an image directory"""
 	source_master_file = lookup.get_all_files()[lookup.source_db_file]
 	metadata_directory = lookup.get_db_dirs()[lookup.metadata]
@@ -213,41 +213,37 @@ def process_steganographic_directory(partition, db_name, embeddor_set, source_db
 def process_directory(metadata, path_to_directory, db_name, operation_dict):
 	print('applying following operations: ' + str(metadata.keys()))
 
-	stego = False
-	if lookup.stego in metadata:
-		stego = True
-
 	if lookup.limit in metadata:
 		path_to_directory = limit_images(path_to_directory, *metadata[lookup.limit])
 
 	if lookup.train_test_val_split in metadata:
 		train_dir, test_dir, val_dir = train_test_val_split(path_to_directory, *metadata[lookup.train_test_val_split])
-		train_uuid = process_image_directory(train_dir, db_name + '-train', operation_dict, stego)
-		test_uuid = process_image_directory(test_dir, db_name + '-test', operation_dict, stego)
-		val_uuid = process_image_directory(val_dir, db_name + '-val', operation_dict, stego)
+		train_uuid = process_image_directory(train_dir, db_name + '-train', operation_dict)
+		test_uuid = process_image_directory(test_dir, db_name + '-test', operation_dict)
+		val_uuid = process_image_directory(val_dir, db_name + '-val', operation_dict)
 		
 		return [train_uuid, test_uuid, val_uuid]
 	else:
-		return process_image_directory(path_to_directory, db_name, operation_dict, stego)
+		return process_image_directory(path_to_directory, db_name, operation_dict)
 
 def translate_label(label):
 	if label == lookup.stego:
-		return (1.0, 0)
+		return (0.0, 1.0)
 	else:
-		return (0, 1.0)
+		return (1.0, 0.0)
 
-def load_data_as_array(db_uuid, ttv_split=None):
-	if ttv_split:
-		raise NotImplementedError
-
-	db_information = lookup.get_source_db_info(db_uuid)
+def load_data_as_array(db_uuid):
+	db_information = lookup.get_db_info(db_uuid)
 	image_dict = lookup.get_image_list(db_information[lookup.uuid_descriptor])
 
 	image_info = [(img.get_image_array(img_dict[lookup.file_path]), translate_label(img_dict[lookup.label])) for img_dict in image_dict]
 	return image_info
 
-def convert_to_image(path_to_directory, img_pixel_values):
+def convert_to_image(path_to_directory, db_name, img_pixel_values):
 	for pixels in img_pixel_values:
 		file_name = fs.get_uuid() + '.png'
 		file_path = join(path_to_directory, file_name)
 		img.convert_from_pixels(file_path, pixels)
+
+    db_uuid = pr.process_directory({}, path_to_directory, db_name, {})
+    return db_uuid

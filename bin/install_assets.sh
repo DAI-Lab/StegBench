@@ -9,12 +9,6 @@ cd ..
 git clone https://github.com/daniellerch/aletheia
 cd aletheia
 pip3 install -r requirements.txt 
-apt-get install octave octave-image octave-signal
-
-
-##potentially move this to a docker file
-
-pip3 install -r requirements.txt
 pip3 install scipy==1.1.0
 pip3 install tensorflow==1.10.0
 apt-get install -y octave octave-image octave-signal

@@ -43,6 +43,7 @@ def get_model_arguments():
 	arguments[lookup.criterion] = get_criterion_options()
 	arguments[lookup.optimizer] = get_optimizer_options()
 	arguments[lookup.nb_classes] = int
+	arguments[lookup.robust_db_name] = str
 
 	return arguments
 
@@ -54,6 +55,7 @@ def apply_attack(model_path, dataset, model_attack_config):
 	optimizer = model_attack_config[lookup.optimizer]
 	nb_classes = model_attack_config[lookup.nb_classes]
 	attack_method = model_attack_config[lookup.attack_method]
+	robust_db_name = model_attack_config[lookup.robust_db_name]
 
 	if criterion == 'cross_entropy':
 		criterion = nn.CrossEntropyLoss()
@@ -67,26 +69,18 @@ def apply_attack(model_path, dataset, model_attack_config):
 	else:
 		raise ValueError
 
-	#TODO, might need to do something special to get the actual model, like we did for StegDetect
 	classifier = PyTorchClassifier(model=model, input_shape=input_shape, loss=criterion, optimizer=optimizer, nb_classes=nb_classes)
-
 	x = np.array([x_element.numpy()[0] for x_element in dataset[0]])
 	y = np.array(dataset[1])
 
-	print(x.shape)
-
-	# x = np.reshape(x, (-1, *input_shape))
-	x_train = x.astype(np.float32)
-
 	predictions = classifier.predict(x_train)
 	accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y, axis=1)) / len (y)
+
 	print('Accuracy on benign test examples: {}%'.format(accuracy * 100))
 
 	attack_function = get_attack_method(attack_method)
 	attack_instance = attack_function(classifier=classifier)
 	x_adv = attack_instance.generate(x=x)
-
-	# Step 7: Evaluate the ART classifier on adversarial test examples
 
 	predictions = classifier.predict(x_adv)
 	accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y, axis=1)) / len(y)
@@ -95,8 +89,6 @@ def apply_attack(model_path, dataset, model_attack_config):
 	path_to_directory = join(abspath(lookup.get_db_dirs()[lookup.dataset]), fs.get_uuid())
 	fs.make_dir(path_to_directory)
 
-	processor.convert_to_image(path_to_directory, x_adv)
-
-	print(path_to_directory)
-
-	return path_to_directory
+	db_uuid = processor.convert_to_image(path_to_directory, robust_db_name, x_adv)
+	return db_uuid
+	
