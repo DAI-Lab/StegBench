@@ -19,17 +19,9 @@ _DEFAULT_SIGMA = [.5, .5, .5]
 _DEFAULT_MU_INVERSE = -0.5/0.5
 _DEFAULT_SIGMA_INVERSE = 1/0.5
 
-# _DEFAULT_MU_INVERSE = [-0.5/0.5, -0.5/0.5, -0.5/0.5]
-# _DEFAULT_SIGMA_INVERSE = [1/0.5, 1/0.5, 1/0.5]
-
 TEST_TRANSFORM = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize(_DEFAULT_MU, _DEFAULT_SIGMA),
-])
-
-INVERSE_TRANSFORM = transforms.Compose([
-    # transforms.Normalize(_DEFAULT_MU_INVERSE, _DEFAULT_SIGMA_INVERSE),
-    transforms.ToPILImage(),
 ])
 
 def convert_channels_to_int(channel:str):
@@ -59,8 +51,6 @@ def convert_channels_to_int(channel:str):
 	}[channel]
 
 def convert_from_pixels(path_to_output, pixels):
-    #currently is 3x512x512
-    #need to fix the output for proper tensorization 
 	pixels = np.transpose(pixels, (1,2,0))
 	pixels = (pixels - _DEFAULT_MU_INVERSE) / _DEFAULT_SIGMA_INVERSE
 	pixels = (pixels * 255).astype(np.uint8)

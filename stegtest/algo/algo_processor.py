@@ -20,7 +20,6 @@ def validate_native():
 	return True
 
 def validate_docker(config):
-	#TODO assert facts about the image and the command
 	assert(config[lookup.DOCKER_IMAGE])
 	assert(config[lookup.COMMAND])
 
@@ -167,7 +166,6 @@ def compile_csv_results(algorithm_info, source_db):
 	raise NotImplementedError
 
 def compile_txt_results(algorithm_info, source_db):
-	#TODO THIS IS NOT TESTED AND IS HACKY -- NEED TO VALIDATE THIS PIPELINE
 	algorithm_uuid = algorithm_info[lookup.uuid_descriptor]
 	asset_dir = abspath(lookup.get_algo_asset_dirs()[lookup.detector])
 	

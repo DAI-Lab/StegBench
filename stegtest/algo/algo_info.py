@@ -25,7 +25,6 @@ def get_set_files(algorithm_type:str):
 
 def create_algorithm_set(algorithm_type:str, algorithms:[str]):
 	"""creates a new algorithm set"""
-	#create set file
 	set_uuid = fs.get_uuid()
 	set_file_directory = lookup.get_algo_set_dirs()[algorithm_type]
 	individual_set_file_path = join(set_file_directory, fs.create_name_from_uuid(set_uuid, 'csv'))
