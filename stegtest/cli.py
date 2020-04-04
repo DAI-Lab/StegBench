@@ -449,5 +449,15 @@ def adv_attack(ctx, model, database, attack):
     dataset = (x, y)
     robust.apply_attack(model, dataset, configurations)
 
+@pipeline.command()
+@click.option('-db', '--database', help='uuid of the stego db(s) to work with',  multiple=True)
+@click.option('--absolute', help='absolute path in file', is_flag=True, default=False)
+@click.pass_context
+def generate_labels(ctx, database, absolute):
+    """generates labels.csv file for a set of databases"""
+
+    raise NotImplementedError
+
+
 def main():
     pipeline(obj={})
