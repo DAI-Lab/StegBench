@@ -18,7 +18,7 @@ import stegtest.algo.algo_info as algo
 import stegtest.algo.algo_processor as algo_processor
 import stegtest.algo.robust as robust
 
-from os.path import isfile, join, abspath
+from os.path import isfile, join, abspath, relpath
 
 from stegtest.orchestrator import Embeddor, Detector, Verifier, Scheduler
 
@@ -434,36 +434,37 @@ def run_experiment(ctx, path, database):
 def adv_attack(ctx, model, database, attack):
     """performs an adversarial attack on a predefined model with specific configuration details"""
     assert(fs.file_exists(model))
-
     configurations = request_parameters(robust.get_model_arguments())
     configurations[lookup.attack_method] = attack
-    #load data 
+    
     data = [pr.load_data_as_array(db) for db in database]
     x, y = [], []
     for db in data:
         for (x_t, y_t) in db:
             x.append(x_t)
             y.append(y_t)
-            
-    #based of the attack need to get the list of required configuration options 
+
     dataset = (x, y)
     robust.apply_attack(model, dataset, configurations)
 
 @pipeline.command()
 @click.option('-db', '--database', help='uuid of the stego db(s) to work with',  multiple=True)
 @click.option('-o', '--output', help='name of output file', default='labels.csv')
-@click.option('--absolute', help='absolute path in file', is_flag=True, default=False)
+@click.option('-r', '--relative', help='requires relative path in file', is_flag=True, default=False)
 @click.pass_context
-def generate_labels(ctx, database, output, absolute):
+def generate_labels(ctx, database, output, relative):
     """generates labels.csv file for a set of databases"""
     db_image_list = [('cover', 'steganographic')]
+    label_file_directory = abspath(lookup.get_top_level_dirs()[lookup.db])
+    path_to_label_file = join(label_file_directory, output)
     for db in database:
         db_image_dict = lookup.get_image_list(db)
-        db_image_list = db_image_list + list(map(lambda img: (img[lookup.source_image], img[lookup.file_path]), db_image_dict))
+        if relative:
+            db_image_list = db_image_list + list(map(lambda img: (relpath(img[lookup.source_image], label_file_directory), relpath(img[lookup.file_path], label_file_directory)), db_image_dict))
+        else:
+            db_image_list = db_image_list + list(map(lambda img: (img[lookup.source_image], img[lookup.file_path]), db_image_dict))
 
-    path_to_label_file = abspath(join(lookup.get_top_level_dirs()[lookup.db], output))
     fs.write_to_csv_file(path_to_label_file, db_image_list)
-
     print('The labels file can be found here: ' + path_to_label_file)
 
 def main():
