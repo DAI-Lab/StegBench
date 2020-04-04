@@ -18,6 +18,8 @@ import stegtest.algo.algo_info as algo
 import stegtest.algo.algo_processor as algo_processor
 import stegtest.algo.robust as robust
 
+from os.path import isfile, join, abspath
+
 from stegtest.orchestrator import Embeddor, Detector, Verifier, Scheduler
 
 @click.pass_context
@@ -455,9 +457,15 @@ def adv_attack(ctx, model, database, attack):
 @click.pass_context
 def generate_labels(ctx, database, absolute):
     """generates labels.csv file for a set of databases"""
+    db_image_list = [('cover', 'steganographic')]
+    for db in database:
+        db_image_dict = lookup.get_image_list(db)
+        db_image_list = db_image_list + list(map(lambda img: (img[lookup.source_image], img[lookup.file_path]), db_image_dict))
 
-    raise NotImplementedError
+    path_to_label_file = abspath(join(lookup.get_top_level_dirs()[lookup.db], 'labels.csv'))
+    fs.write_to_csv_file(path_to_label_file, db_image_list)
 
+    print('The labels file can be found here: ' + path_to_label_file)
 
 def main():
     pipeline(obj={})
