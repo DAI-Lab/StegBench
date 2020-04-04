@@ -444,9 +444,7 @@ def adv_attack(ctx, model, database, attack):
         for (x_t, y_t) in db:
             x.append(x_t)
             y.append(y_t)
-
-
-
+            
     #based of the attack need to get the list of required configuration options 
     dataset = (x, y)
     robust.apply_attack(model, dataset, configurations)
