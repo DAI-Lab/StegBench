@@ -445,7 +445,8 @@ def adv_attack(ctx, model, database, attack):
             y.append(y_t)
 
     dataset = (x, y)
-    robust.apply_attack(model, dataset, configurations)
+    db_uuid = robust.apply_attack(model, dataset, configurations)
+    click.echo('The UUID of the dataset you have created is: ' + db_uuid)
 
 @pipeline.command()
 @click.option('-db', '--database', help='uuid of the stego db(s) to work with',  multiple=True)
