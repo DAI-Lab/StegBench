@@ -245,5 +245,5 @@ def convert_to_image(path_to_directory, db_name, img_pixel_values):
 		file_path = join(path_to_directory, file_name)
 		img.convert_from_pixels(file_path, pixels)
 
-	db_uuid = pr.process_directory({}, path_to_directory, db_name, {})
+	db_uuid = process_directory({}, path_to_directory, db_name, {})
 	return db_uuid

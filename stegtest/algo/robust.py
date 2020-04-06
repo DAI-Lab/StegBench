@@ -73,7 +73,7 @@ def apply_attack(model_path, dataset, model_attack_config):
 	x = np.array([x_element.numpy()[0] for x_element in dataset[0]])
 	y = np.array(dataset[1])
 
-	predictions = classifier.predict(x_train)
+	predictions = classifier.predict(x)
 	accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y, axis=1)) / len (y)
 
 	print('Accuracy on benign test examples: {}%'.format(accuracy * 100))
