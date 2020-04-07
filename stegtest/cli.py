@@ -210,7 +210,7 @@ def adv_attack(ctx, model, database, attack):
     configurations = request_parameters(robust.get_model_arguments())
     configurations[lookup.attack_method] = attack
 
-    steg.adv_attack(model, database, configurations):
+    steg.adv_attack(model, database, configurations)
 
 @pipeline.command()
 @click.option('-db', '--database', help='uuid of the stego db(s) to work with',  multiple=True)
