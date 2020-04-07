@@ -41,7 +41,6 @@ class Embeddor():
 		all_post_cmds = []
 		all_termination_cmds = []
 
-		#TODO VALIDATE THE PARTITION...
 		print('generating commands...')
 
 		for idx, embeddor in enumerate(self.embeddors):
@@ -101,7 +100,7 @@ class Embeddor():
 		fs.make_dir(output_directory)
 
 		images_per_embeddor = int(num_images / num_embeddors)
-		remainder = num_images - images_per_embeddor*num_embeddors #TODO randomly assign this
+		remainder = num_images - images_per_embeddor*num_embeddors
 		for i in range(num_embeddors):
 			start_idx = i*images_per_embeddor
 			end_idx = (i+1)*images_per_embeddor

@@ -67,7 +67,7 @@ def get_config_from_file(config_file_path):
 
 	return config_dict
 
-def get_config_files(config_directory): #TODO push this to filesystem
+def get_config_files(config_directory):
 	assert(fs.dir_exists(config_directory))
 	config_files = [abspath(join(config_directory, f)) for f in listdir(config_directory) if is_config_file(f)]
 	return config_files

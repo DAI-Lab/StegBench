@@ -396,7 +396,7 @@ def get_verify_cmd(algorithm_info):
 def get_attack_methods():
 	return [attack_FGM, attack_EAD, attack_BIM, attack_PGD, attack_JSMA]
 
-def initialize_filesystem(directory): #TODO need to remove the None part
+def initialize_filesystem(directory):
 	"""Clears and adds needed directories for stegdetect to work"""
 	print('initializing fs at ' + directory)
 	try:

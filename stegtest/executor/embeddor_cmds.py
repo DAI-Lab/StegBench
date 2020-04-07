@@ -25,7 +25,7 @@ def process_directories(algorithm_info, to_embed_list):
 		fs.make_dir(temp_directory)
 
 		to_embed_files = sorted_by_directories[directory_pair]
-		for file in to_embed_files: #TODO parallelize this
+		for file in to_embed_files:
 			fs.copy_file(file[lookup.INPUT_IMAGE_PATH], temp_directory)
 		payloads = set(list(map(lambda f: f[lookup.PAYLOAD], sorted_by_directories[directory_pair])))
 		assert(len(payloads) == 1)
