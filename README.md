@@ -66,7 +66,6 @@ source by running `make install` on the `stable` branch:
 ```bash
 git clone git@github.com:DAI-Lab/stegtest.git
 cd stegtest
-git checkout stable
 make install
 ```
 

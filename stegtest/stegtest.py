@@ -44,19 +44,11 @@ def download(routine, name, operation_dict={}, metadata_dict={}):
     db_uuid = pr.process_directory(metadata_dict, download_directory, name, operation_dict)
     print('The UUID of the dataset(s) you have processed is: ' + str(db_uuid))
 
-@pipeline.command()
-@click.option('-d', '--directory', help='specify an already downloaded database')
-@click.option('-n', '--name', help='specify the name for the database')
-@click.option('-o', '--operation', help='applies specified operation to each image', type=click.Choice(lookup.get_image_operations()), multiple=True)
-@click.option('-m', '--metadata', help='applies metadata or operation to directory', type=click.Choice(lookup.get_directory_operations()), multiple=True)
-@click.pass_context
 def process(directory, name, operation_dict={}, metadata_dict={}):
     """processes a specified database"""
     db_uuid = pr.process_directory(metadata_dict, directory, name, operation_dict)
     print('The UUID of the dataset(s) you have processed is: ' + str(db_uuid))
 
-@pipeline.command()
-@click.pass_context
 def add_embeddor(embeddor, uuid=None):
     """adds to or creates a new embeddor set"""
     print('Adding embeddors: ' + str(embeddor))
@@ -185,14 +177,14 @@ def info(all=True, database=False, embeddor=False, detector=False):
     print(breaker)
     print('All information printed.')
 
-def embed(ctx, embeddor, database, ratio, name):
+def embed(embeddor, database, ratio, name):
     """Embeds a db using embeddors and db images"""
     embeddor_set = algo.get_algorithm_set(lookup.embeddor, embeddor)
     generator = Embeddor(embeddor_set)
     db_uuid = generator.embed_ratio(name, database, ratio)
     print('The UUID of the dataset you have created is: ' + db_uuid)
 
-def detect(ctx, detector, database):
+def detect(detector, database):
     """analyzes a set detectors using a pre-processed database"""
     detector_set = algo.get_algorithm_set(lookup.detector, detector)
     analyzer = Detector(detector_set)
@@ -299,14 +291,14 @@ def verify(database):
     print('\tCorrectly Embedded (%): ' + str(100*(float(verified_total)/float(verified_total + error_total))))
     print('\tIncorrect Embedding (%): ' + str(100*(float(error_total)/float(verified_total + error_total))))
 
-def run_experiment(ctx, path, database):
+def run_experiment(path, database):
     """runs pipelines specified in experiment configuration file"""
     metadata, embeddor_set_uuid, detector_set_uuid = algo_processor.process_experiment_file(path)
     scheduler = Scheduler(metadata, embeddor_set_uuid, detector_set_uuid)
     results = scheduler.run(database)
     print(results)
 
-def adv_attack(ctx, model, database, configurations):
+def adv_attack(model, database, configurations):
     """performs an adversarial attack on a predefined model with specific configuration details"""
     assert(fs.file_exists(model)) 
     data = [pr.load_data_as_array(db) for db in database]
@@ -320,7 +312,7 @@ def adv_attack(ctx, model, database, configurations):
     db_uuid = robust.apply_attack(model, dataset, configurations)
     print('The UUID of the dataset you have created is: ' + db_uuid)
 
-def generate_labels(ctx, database, output, relative=False):
+def generate_labels(database, output, relative=False):
     """generates labels.csv file for a set of databases"""
     db_image_list = [('cover', 'steganographic')]
     label_file_directory = abspath(lookup.get_top_level_dirs()[lookup.db])
