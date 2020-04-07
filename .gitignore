@@ -106,3 +106,13 @@ data/
 
 # Vim
 .*.swp
+
+#Image Files
+*.jpeg
+*.png
+*.jpg
+*.pgm
+
+#Asset Files
+*.csv
+

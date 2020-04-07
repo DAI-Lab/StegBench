@@ -75,7 +75,7 @@ def add_detector(detector, uuid=None):
     print('Added detector successfully')
     print(message + uuid)
 
-def info(all=True, database=False, embeddor=False, detector=False):
+def info(all=False, database=False, embeddor=False, detector=False):
     """provides system info"""
     breaker = ['-' for i in range(100)]
     breaker = ''.join(breaker)
@@ -242,7 +242,7 @@ def detect(detector, database):
             total_stego = raw_results[lookup.total_stego_raw]
             total_cover = raw_results[lookup.total_cover_raw]
 
-            print('\tRaw Results:') #TODO change this when thresholding gets introduced
+            print('\tRaw Results:')
             print('\t\t(' + str(true_positive)  + '/' + str(total_stego) + ') stego images identified correctly')
             print('\t\t(' + str(true_negative)  + '/' + str(total_cover) + ') cover images identified correctly')
             print('\t\t(' + str(true_positive + true_negative)  + '/' + str(total_stego + total_cover) + ') total images identified correctly')
