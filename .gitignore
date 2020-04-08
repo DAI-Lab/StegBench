@@ -109,7 +109,6 @@ data/
 
 #Image Files
 *.jpeg
-*.png
 *.jpg
 *.pgm
 
