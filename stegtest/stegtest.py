@@ -43,11 +43,13 @@ def download(routine, name, operation_dict={}, metadata_dict={}):
     download_directory = dl.download_routine(routine)
     db_uuid = pr.process_directory(metadata_dict, download_directory, name, operation_dict)
     print('The UUID of the dataset(s) you have processed is: ' + str(db_uuid))
+    return db_uuid
 
 def process(directory, name, operation_dict={}, metadata_dict={}):
     """processes a specified database"""
     db_uuid = pr.process_directory(metadata_dict, directory, name, operation_dict)
     print('The UUID of the dataset(s) you have processed is: ' + str(db_uuid))
+    return db_uuid
 
 def add_embeddor(embeddor, uuid=None):
     """adds to or creates a new embeddor set"""
@@ -62,6 +64,8 @@ def add_embeddor(embeddor, uuid=None):
     print('Added embeddor successfully')
     print(message + uuid)
 
+    return uuid
+
 def add_detector(detector, uuid=None):
     """adds to or creates a new detector set"""
     print('Adding detectors: ' + str(detector))
@@ -74,6 +78,8 @@ def add_detector(detector, uuid=None):
 
     print('Added detector successfully')
     print(message + uuid)
+
+    return uuid
 
 def info(all=False, database=False, embeddor=False, detector=False):
     """provides system info"""
