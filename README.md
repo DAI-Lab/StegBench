@@ -91,7 +91,11 @@ StegTest also supports a command line interface. To get started, please have ste
 stegtest --help
 ```
 
-This will give you a list of the commands. For each command you can type the command followed by --help to retrieve information specific to that command. 
+This will give you a list of the commands. You should get the following output:
+
+![](bin/img_assets/stegtest_cli.png).
+
+For each command you can type the command followed by --help to retrieve information specific to that command. 
 
 # Configuration Files
 
