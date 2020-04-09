@@ -51,14 +51,14 @@ def process(directory, name, operation_dict={}, metadata_dict={}):
     print('The UUID of the dataset(s) you have processed is: ' + str(db_uuid))
     return db_uuid
 
-def add_embeddor(embeddor, uuid=None):
+def add_embeddor(embeddor_uuids, set_uuid=None):
     """adds to or creates a new embeddor set"""
-    print('Adding embeddors: ' + str(embeddor))
-    if uuid:
-        uuid = algo.add_to_algorithm_set(lookup.embeddor, uuid, embeddor)
+    print('Adding embeddors: ' + str(embeddor_uuids))
+    if set_uuid:
+        uuid = algo.add_to_algorithm_set(lookup.embeddor, set_uuid, embeddor_uuids)
         message = 'The UUID of the set you have added to is: '
     else:
-        uuid = algo.create_algorithm_set(lookup.embeddor, embeddor)
+        uuid = algo.create_algorithm_set(lookup.embeddor, embeddor_uuids)
         message = 'The new UUID of the set you have created is: '
 
     print('Added embeddor successfully')
@@ -66,14 +66,14 @@ def add_embeddor(embeddor, uuid=None):
 
     return uuid
 
-def add_detector(detector, uuid=None):
+def add_detector(detector_uuids, set_uuid=None):
     """adds to or creates a new detector set"""
-    print('Adding detectors: ' + str(detector))
-    if uuid:
-        uuid = algo.add_to_algorithm_set(lookup.detector, uuid, detector)
+    print('Adding detectors: ' + str(detector_uuids))
+    if set_uuid:
+        uuid = algo.add_to_algorithm_set(lookup.detector, set_uuid, detector_uuids)
         message = 'The UUID of the set you have added to is: '
     else:
-        uuid = algo.create_algorithm_set(lookup.detector, detector)
+        uuid = algo.create_algorithm_set(lookup.detector, detector_uuids)
         message = 'The new UUID of the set you have created is: '
 
     print('Added detector successfully')
@@ -183,18 +183,19 @@ def info(all=False, database=False, embeddor=False, detector=False):
     print(breaker)
     print('All information printed.')
 
-def embed(embeddor, database, ratio, name):
+def embed(embeddor_set_uuid, database_uuid, ratio, name):
     """Embeds a db using embeddors and db images"""
-    embeddor_set = algo.get_algorithm_set(lookup.embeddor, embeddor)
+    embeddor_set = algo.get_algorithm_set(lookup.embeddor, embeddor_set_uuid)
     generator = Embeddor(embeddor_set)
-    db_uuid = generator.embed_ratio(name, database, ratio)
+    db_uuid = generator.embed_ratio(name, database_uuid, ratio)
     print('The UUID of the dataset you have created is: ' + db_uuid)
+    return db_uuid
 
-def detect(detector, database):
+def detect(detector_set_uuid, database_uuids):
     """analyzes a set detectors using a pre-processed database"""
-    detector_set = algo.get_algorithm_set(lookup.detector, detector)
+    detector_set = algo.get_algorithm_set(lookup.detector, detector_set_uuid)
     analyzer = Detector(detector_set)
-    results = analyzer.detect(database)
+    results = analyzer.detect(database_uuids)
 
     breaker = ['-' for i in range(100)]
     breaker = ''.join(breaker)
@@ -204,7 +205,7 @@ def detect(detector, database):
     print('Experiment information')
     print(breaker)
     print(breaker)
-    for db in database:
+    for db in database_uuids:
         db_info = lookup.get_db_info(db)
 
         if db_info[lookup.stego]:
@@ -264,10 +265,10 @@ def detect(detector, database):
     print(breaker)
     print('All results printed.')
 
-def verify(database):
+def verify(stego_database_uuid):
     """verifies a steganographic database"""
     verifier = Verifier()
-    results = verifier.verify(database)
+    results = verifier.verify(stego_database_uuid)
     
     verified_total = 0
     error_total = 0

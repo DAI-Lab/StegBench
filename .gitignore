@@ -111,6 +111,7 @@ data/
 *.jpeg
 *.jpg
 *.pgm
+#.png
 
 #Asset Files
 *.csv
