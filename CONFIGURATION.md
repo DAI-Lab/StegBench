@@ -1,6 +1,8 @@
 
 # CONFIGURATION SPECIFICATION
 
+<b>For examples of configuration options, please look at the examples/configs folder. We have providede a number of different configuration options that should be able to help you when you write your own.</b>
+
 Stegtest works by processing configuration files that contain information about each of the algorithms in the system. This allows StegTest to be a highly interoperable and modular system that can easily integrate into existing steganographic pipelines. Configuration files specify how a specific steganographic or steganalysis tool operates on your machine. You pass in several parameters that determine the following
 
 - <b>Compatibility</b>: The compatibility of the tool for different operating mechanisms
