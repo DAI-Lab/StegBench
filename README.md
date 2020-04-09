@@ -101,7 +101,7 @@ For each command you can type the command followed by --help to retrieve informa
 
 Configuration files provide StegTest with an easy-to-use set of descriptors that define how your steganographic processes operate. Please take a look at some of the example configuration files in the examples/ folder. Each .ini configuration will be labeled by the steganographic procedure's name. This configuration must then follow a restricted specification which only allows for two algorithm types ('detector' | 'embeddor'). 
 
-Each algorithm type will have it's own specific set of specifications as documented in the online manual here ![CONFIGURATION.MD](CONFIGURATION.md).
+Each algorithm type will have it's own specific set of specifications as documented in the online manual here: [CONFIGURATION.MD](CONFIGURATION.md).
 
 # What's next?
 
