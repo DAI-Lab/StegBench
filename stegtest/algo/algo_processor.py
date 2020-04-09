@@ -141,7 +141,14 @@ def compile_csv_directory(algorithm_info, source_db):
 		file_result = result[1]
 
 		if algorithm_info[lookup.DETECTOR_TYPE] == lookup.binary_detector:
-			if file_result == 'True':
+			yes_filter = algorithm_info[lookup.regex_filter_yes]
+			no_filter = algorithm_info[lookup.regex_filter_no]
+
+			stego = re.search(yes_filter, file_result)
+			cover = re.search(no_filter, file_result)
+			assert (stego or cover and not (stego and cover))
+
+			if stego: 
 				result = lookup.stego
 			else:
 				result = lookup.cover
