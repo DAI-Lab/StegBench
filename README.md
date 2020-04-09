@@ -82,17 +82,26 @@ for more details about this process.
 In this short tutorial we will guide you through a series of steps that will help you
 getting started with **StegTest**.
 
-1. Install StegTest 
-2. Navigate to the test folder (usually this will contain any relevant configuration/data files)
-3. Initialize the folder for stegtest using the commmand ```bash stegtest initialize```
-4. Add any configuration files to StegTest using the add_config command
-5. Use the experiment, embed, or detect commands to thoroughly test your specified algorithms. 
+Please proceed to this [TUTORIAL](notebooks/Tutorial.ipynb) to get started with StegTest
+
+# CLI
+
+StegTest also supports a command line interface. To get started, please have stegtest installed in your system and then type in 
+```
+stegtest --help
+```
+
+This will give you a list of the commands. You should get the following output:
+
+![](bin/img_assets/stegtest_cli.png).
+
+For each command you can type the command followed by --help to retrieve information specific to that command. 
 
 # Configuration Files
 
 Configuration files provide StegTest with an easy-to-use set of descriptors that define how your steganographic processes operate. Please take a look at some of the example configuration files in the examples/ folder. Each .ini configuration will be labeled by the steganographic procedure's name. This configuration must then follow a restricted specification which only allows for two algorithm types ('detector' | 'embeddor'). 
 
-Each algorithm type will have it's own specific set of specifications as documented in the online manual found here https://DAI-Lab.github.io/stegtest/.
+Each algorithm type will have it's own specific set of specifications as documented in the online manual here: [CONFIGURATION.MD](CONFIGURATION.md).
 
 # What's next?
 

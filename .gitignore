@@ -109,9 +109,9 @@ data/
 
 #Image Files
 *.jpeg
-*.png
 *.jpg
 *.pgm
+#.png
 
 #Asset Files
 *.csv
