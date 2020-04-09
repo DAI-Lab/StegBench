@@ -138,7 +138,7 @@ There are several extra detector-specific configuration options. The first extra
 
 They next few configuration options are relate to how we collect results. 
 
-### Result Specificatio
+### Result Specification
 
 For detectors that operate on individual images rather than an entire directory, we have the following configuraiton option:
 
@@ -147,8 +147,6 @@ pipe_output = True
 ```
 
 If this is set to true, the output from the run command will be piped to a text result file that will then be analyzed. This is identical to the pipe_output we found in the verification command.
-
-### Result Specification
 
 To collect results from StegTest, there are two options. Your specification can choose one of the following paths: 
 
