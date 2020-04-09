@@ -319,12 +319,12 @@ def adv_attack(model, database, configurations):
     db_uuid = robust.apply_attack(model, dataset, configurations)
     print('The UUID of the dataset you have created is: ' + db_uuid)
 
-def generate_labels(database, output, relative=False):
+def generate_labels(database_uuids, output_csv_file, relative=False):
     """generates labels.csv file for a set of databases"""
     db_image_list = [('cover', 'steganographic')]
     label_file_directory = abspath(lookup.get_top_level_dirs()[lookup.db])
-    path_to_label_file = join(label_file_directory, output)
-    for db in database:
+    path_to_label_file = join(label_file_directory, output_csv_file)
+    for db in database_uuids:
         db_image_dict = lookup.get_image_list(db)
         if relative:
             db_image_list = db_image_list + list(map(lambda img: (relpath(img[lookup.source_image], label_file_directory), relpath(img[lookup.file_path], label_file_directory)), db_image_dict))
