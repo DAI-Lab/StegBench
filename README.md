@@ -82,7 +82,7 @@ for more details about this process.
 In this short tutorial we will guide you through a series of steps that will help you
 getting started with **StegTest**.
 
-Please proceed to ![TUTORIAL](notebooks/Tutorial.ipynb) to get started with StegTest
+Please proceed to [TUTORIAL](notebooks/Tutorial.ipynb) to get started with StegTest
 
 # CLI
 
