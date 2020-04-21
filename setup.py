@@ -15,7 +15,7 @@ install_requires = [
     'Click>=6.0',
     'numpy',
     'jpeg2dct',
-    'Pillow',
+    'Pillow<=6.0.0',
     'sklearn',
     'matplotlib>=1.4.0'
     'scikit-plot',
@@ -26,6 +26,7 @@ install_requires = [
     'torch>=1.0.0,<1.1.0',
     'torchvision>=0.2.1,<0.3',
     'tqdm',
+    'adversarial-robustness-toolbox'
 ]
 
 setup_requires = [
