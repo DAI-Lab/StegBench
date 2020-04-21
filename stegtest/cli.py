@@ -103,7 +103,7 @@ def download(ctx, routine, name, operation, metadata):
                 
             metadata_dict[dir_op] = list(operation_parameters.values())
 
-    steg.download(routine, name, operation, metadata)
+    steg.download(routine, name, operation_dict, metadata_dict)
 
 @pipeline.command()
 @click.option('-d', '--directory', help='specify an already downloaded database')
