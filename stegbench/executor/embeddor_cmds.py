@@ -1,6 +1,6 @@
-import stegtest.utils.lookup as lookup
-import stegtest.utils.filesystem as fs
-import stegtest.executor.runner as runner
+import stegbench.utils.lookup as lookup
+import stegbench.utils.filesystem as fs
+import stegbench.executor.runner as runner
 import os
 from collections import defaultdict
 

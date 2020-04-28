@@ -1,4 +1,4 @@
-* StegTest version:
+* StegBench version:
 * Python version:
 * Operating System:
 

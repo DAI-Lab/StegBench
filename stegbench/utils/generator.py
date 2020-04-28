@@ -1,5 +1,5 @@
-import stegtest.utils.lookup as lookup
-import stegtest.utils.filesystem as fs
+import stegbench.utils.lookup as lookup
+import stegbench.utils.filesystem as fs
 import random
 import string
 

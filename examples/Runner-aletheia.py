@@ -94,7 +94,7 @@ def lsbr(path, payload):
 import sys
 from os import path
 from os.path import abspath, join
-import stegtest.utils.filesystem as fs
+import stegbench.utils.filesystem as fs
 
 class Runner(object):
     """docstring for Processor"""

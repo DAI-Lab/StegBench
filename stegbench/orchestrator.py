@@ -4,19 +4,19 @@ import random
 import sys
 import copy
 
-import stegtest.utils.filesystem as fs
-import stegtest.utils.lookup as lookup
-import stegtest.utils.generator as generator
+import stegbench.utils.filesystem as fs
+import stegbench.utils.lookup as lookup
+import stegbench.utils.generator as generator
 
-import stegtest.algo.algo_info as algo
-import stegtest.algo.algo_processor as algo_processor
+import stegbench.algo.algo_info as algo
+import stegbench.algo.algo_processor as algo_processor
 
-import stegtest.executor.embeddor_cmds as embeddor_cmds
-import stegtest.executor.detector_cmds as detector_cmds
-import stegtest.executor.verify_cmds as verify_cmds
-import stegtest.executor.runner as runner
+import stegbench.executor.embeddor_cmds as embeddor_cmds
+import stegbench.executor.detector_cmds as detector_cmds
+import stegbench.executor.verify_cmds as verify_cmds
+import stegbench.executor.runner as runner
 
-import stegtest.db.processor as processor
+import stegbench.db.processor as processor
 
 from os.path import abspath, join
 from pathos.multiprocessing import ThreadPool as Pool

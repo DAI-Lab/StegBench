@@ -10,7 +10,7 @@
    :caption: Resources
    :hidden:
 
-   API Reference <api/stegtest>
+   API Reference <api/stegbench>
    contributing
    authors
    history

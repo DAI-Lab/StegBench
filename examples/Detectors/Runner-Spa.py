@@ -1,6 +1,6 @@
 import imageio
 from cmath import sqrt
-import stegtest.utils.filesystem as fs
+import stegbench.utils.filesystem as fs
 import sys
 
 ##Code from https://github.com/daniellerch/aletheia/tree/master/aletheialib

@@ -1,7 +1,7 @@
 import imghdr
 import collections
-import stegtest.utils.lookup as lookup
-import stegtest.utils.filesystem as fs
+import stegbench.utils.lookup as lookup
+import stegbench.utils.filesystem as fs
 from jpeg2dct.numpy import load
 from skimage.util import random_noise, img_as_ubyte, img_as_float
 import numpy as np

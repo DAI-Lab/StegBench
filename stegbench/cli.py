@@ -7,22 +7,22 @@ import os
 import collections
 import click
 
-import stegtest.utils.lookup as lookup
-import stegtest.utils.filesystem as fs
+import stegbench.utils.lookup as lookup
+import stegbench.utils.filesystem as fs
 
-import stegtest.db.downloader as dl 
-import stegtest.db.images as img
-import stegtest.db.processor as pr
+import stegbench.db.downloader as dl 
+import stegbench.db.images as img
+import stegbench.db.processor as pr
 
-import stegtest.algo.algo_info as algo
-import stegtest.algo.algo_processor as algo_processor
-import stegtest.algo.robust as robust
+import stegbench.algo.algo_info as algo
+import stegbench.algo.algo_processor as algo_processor
+import stegbench.algo.robust as robust
 
 from os.path import isfile, join, abspath, relpath
 
-from stegtest.orchestrator import Embeddor, Detector, Verifier, Scheduler
+from stegbench.orchestrator import Embeddor, Detector, Verifier, Scheduler
 
-import stegtest as steg
+import stegbench as steg
 
 @click.pass_context
 def request_parameters(ctx, parameters):
@@ -70,13 +70,13 @@ def pipeline(ctx):
 @click.option('-d', '--directory', help='path to a directory of config files', type=str, multiple=True)
 @click.pass_context
 def add_config(ctx, config, directory):
-    """adds stegtest configuration"""
+    """adds stegbench configuration"""
     steg.add_config(config, directory)
 
 @pipeline.command()
 @click.pass_context
 def initialize(ctx):
-    """initializes stegtest configurations"""
+    """initializes stegbench configurations"""
     steg.initialize()
 
 @pipeline.command()

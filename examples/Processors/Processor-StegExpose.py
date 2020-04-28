@@ -2,7 +2,7 @@
 import sys
 from os import path
 from os.path import abspath, join
-import stegtest.utils.filesystem as fs
+import stegbench.utils.filesystem as fs
 
 class Processor(object):
 	"""docstring for Processor"""

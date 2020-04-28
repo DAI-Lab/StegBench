@@ -2,8 +2,8 @@ import subprocess
 import docker
 import tqdm
 
-import stegtest.utils.lookup as lookup
-import stegtest.utils.filesystem as fs
+import stegbench.utils.lookup as lookup
+import stegbench.utils.filesystem as fs
 from pathos.multiprocessing import ProcessingPool as Pool
 
 client = docker.from_env()
