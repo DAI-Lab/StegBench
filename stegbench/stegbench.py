@@ -7,30 +7,30 @@ import os
 import collections
 import click
 
-import stegtest.utils.lookup as lookup
-import stegtest.utils.filesystem as fs
+import stegbench.utils.lookup as lookup
+import stegbench.utils.filesystem as fs
 
-import stegtest.db.downloader as dl 
-import stegtest.db.images as img
-import stegtest.db.processor as pr
+import stegbench.db.downloader as dl 
+import stegbench.db.images as img
+import stegbench.db.processor as pr
 
-import stegtest.algo.algo_info as algo
-import stegtest.algo.algo_processor as algo_processor
-import stegtest.algo.robust as robust
+import stegbench.algo.algo_info as algo
+import stegbench.algo.algo_processor as algo_processor
+import stegbench.algo.robust as robust
 
 from os.path import isfile, join, abspath, relpath
 
-from stegtest.orchestrator import Embeddor, Detector, Verifier, Scheduler
+from stegbench.orchestrator import Embeddor, Detector, Verifier, Scheduler
 
 def add_config(config=[], directory=[]):
-    """adds stegtest configuration"""
+    """adds stegbench configuration"""
     for c in config:
             algo_processor.process_config_file(c)
     for d in directory:
             algo_processor.process_config_directory(d)
 
 def initialize():
-    """initializes stegtest configurations"""
+    """initializes stegbench configurations"""
     directory = os.getcwd()
     lookup.initialize_filesystem(directory)
 

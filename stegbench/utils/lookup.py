@@ -1,4 +1,4 @@
-import stegtest.utils.filesystem as fs
+import stegbench.utils.filesystem as fs
 import uuid
 import ast 
 import os 
@@ -9,16 +9,16 @@ import subprocess
 from os.path import join, abspath
 
 #TOP DIRECTORY
-stegtest_tld = 'stegtest_asssets'
+stegbench_tld = 'stegbench_asssets'
 
 #SUB-DIRECTORY TYPES#
 embeddor = 'embeddor'
 detector = 'detector'
 db = 'db'
 
-embeddor_dir = join(stegtest_tld, embeddor)
-detector_dir = join(stegtest_tld, detector)
-db_dir = join(stegtest_tld, db)
+embeddor_dir = join(stegbench_tld, embeddor)
+detector_dir = join(stegbench_tld, detector)
+db_dir = join(stegbench_tld, db)
 
 #DB DIRECTORIES AND FILES
 dataset = 'datasets'
@@ -405,9 +405,9 @@ def initialize_filesystem(directory):
 		raise OSError('directory: ' + directory + ' is not a valid directory. Please initialize with a valid directory')
 
 	print('cleaning fs...')
-	fs.clean_filesystem([stegtest_tld])
+	fs.clean_filesystem([stegbench_tld])
 
-	fs.make_dir(stegtest_tld)
+	fs.make_dir(stegbench_tld)
 
 	print('initializing directories...')
 

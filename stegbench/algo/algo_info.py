@@ -7,9 +7,9 @@ from sklearn.metrics import roc_auc_score, average_precision_score
 import scikitplot as skplt
 import matplotlib.pyplot as plt
 
-import stegtest.algo.algo_processor as algo_processor
-import stegtest.utils.lookup as lookup
-import stegtest.utils.filesystem as fs
+import stegbench.algo.algo_processor as algo_processor
+import stegbench.utils.lookup as lookup
+import stegbench.utils.filesystem as fs
 
 import math
 import scipy

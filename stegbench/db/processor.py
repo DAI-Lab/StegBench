@@ -1,6 +1,6 @@
-import stegtest.utils.filesystem as fs
-import stegtest.utils.lookup as lookup
-import stegtest.db.images as img
+import stegbench.utils.filesystem as fs
+import stegbench.utils.lookup as lookup
+import stegbench.db.images as img
 import collections
 import random
 

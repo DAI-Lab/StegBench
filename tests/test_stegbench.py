@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Tests for `stegtest` package."""
+"""Tests for `stegbench` package."""
 
 import unittest
 from click.testing import CliRunner
 
-# from stegtest import stegtest
-from stegtest import cli
+# from stegbench import stegbench
+from stegbench import cli
 
 
-class TestStegtest(unittest.TestCase):
-    """Tests for `stegtest` package."""
+class TestStegbench(unittest.TestCase):
+    """Tests for `stegbench` package."""
 
     def setUp(self):
         """Set up test fixtures, if any."""
@@ -30,7 +30,7 @@ class TestStegtest(unittest.TestCase):
         runner = CliRunner()
         result = runner.invoke(cli.main)
         assert result.exit_code == 0
-        assert 'stegtest.cli.main' in result.output
+        assert 'stegbench.cli.main' in result.output
         help_result = runner.invoke(cli.main, ['--help'])
         assert help_result.exit_code == 0
         assert '--help  Show this message and exit.' in help_result.output

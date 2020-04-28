@@ -3,7 +3,7 @@
 
 <b>For examples of configuration options, please look at the [CONFIG EXAMPLES](examples/configs/) provided. We have providede a number of different configuration options that should be able to help you when you write your own.</b>
 
-Stegtest works by processing configuration files that contain information about each of the algorithms in the system. This allows StegTest to be a highly interoperable and modular system that can easily integrate into existing steganographic pipelines. Configuration files specify how a specific steganographic or steganalysis tool operates on your machine. You pass in several parameters that determine the following
+StegBench works by processing configuration files that contain information about each of the algorithms in the system. This allows StegBench to be a highly interoperable and modular system that can easily integrate into existing steganographic pipelines. Configuration files specify how a specific steganographic or steganalysis tool operates on your machine. You pass in several parameters that determine the following
 
 - <b>Compatibility</b>: The compatibility of the tool for different operating mechanisms
 - <b>Command Execution</b>: The commands that must be used to execute the tool. 
@@ -33,11 +33,11 @@ We make use of the Docker Python SDK to execute in the docker environment. We ma
 
 ## Command Generation
 
-We now explain the specific flags that you will require for writing your commands in the StegTest configuration specification. These flags are specific to the algorithm type that you are using. So, we will explain the flags for both embeddors and detectors. Later on, we will walk through several examples so that you can see how we write these configuration specifications. 
+We now explain the specific flags that you will require for writing your commands in the StegBench configuration specification. These flags are specific to the algorithm type that you are using. So, we will explain the flags for both embeddors and detectors. Later on, we will walk through several examples so that you can see how we write these configuration specifications. 
 
 ### Embeddor Command Generation
 
-There are flags that are specific to embeddor command generation. These flags tell the StegTest system what to substitute for certain fields when generating the commands from the run command that you provide. The reason for these flags is that embedding procedures require operating on large image datasets and there are tools that operate on the entire dataset while there are tools that will only operate on one image. Furthermore, additional constraints on how these tools embed messages necessitate flags in the run command so that the system can properly substitute values and generate proper commands. The flags that are available to embeddor commands are the following:
+There are flags that are specific to embeddor command generation. These flags tell the StegBench system what to substitute for certain fields when generating the commands from the run command that you provide. The reason for these flags is that embedding procedures require operating on large image datasets and there are tools that operate on the entire dataset while there are tools that will only operate on one image. Furthermore, additional constraints on how these tools embed messages necessitate flags in the run command so that the system can properly substitute values and generate proper commands. The flags that are available to embeddor commands are the following:
 
 #### Input Image Path
 
@@ -75,7 +75,7 @@ tool_executable /path/to/image secret /path/to/output
 
 ### Detector Command Generation
 
-There are flags that are specific to detector command generation. These flags tell the StegTest system what to substitute for certain fields when generating the commands from the run command that you provide. The reason for these flags is that detection procedures require operating on large image datasets and that there are tools that operate on the entire dataset while there are tools that will only operate on one image. Furthermore, additional constraints on how these tools detect if an image is steganographic or not necessitate flags in the run command so that the system can properly substitute values and generate proper commmands. The flags that are available to detector commands are the following:
+There are flags that are specific to detector command generation. These flags tell the StegBench system what to substitute for certain fields when generating the commands from the run command that you provide. The reason for these flags is that detection procedures require operating on large image datasets and that there are tools that operate on the entire dataset while there are tools that will only operate on one image. Furthermore, additional constraints on how these tools detect if an image is steganographic or not necessitate flags in the run command so that the system can properly substitute values and generate proper commmands. The flags that are available to detector commands are the following:
 
 #### Input Image Path
 
@@ -150,7 +150,7 @@ pipe_output = True
 
 If this is set to true, the output from the run command will be piped to a text result file that will then be analyzed. This is identical to the pipe_output we found in the verification command.
 
-To collect results from StegTest, there are two options. Your specification can choose one of the following paths: 
+To collect results from StegBench, there are two options. Your specification can choose one of the following paths: 
 
 - <b>text file result</b>: pipe_output = True or using the RESULT_TXT_FILE in your run or post_run command. 
 - <b>csv file result</b>: RESULT_CSV_FILE in your run or post_run command. 
@@ -162,7 +162,7 @@ Whichever option you choose for your tool, you will also have to provide two add
 
 If your command chooses option 2, which returns in a csv file, then you have the additional option of providing an output_file configuration.
 
-- <b> output_file </b>: If this configuration is provided, the StegTest system will use this information to match the image names outputted in your tool's CSV file with repsect to the image input that was provided to your tool.
+- <b> output_file </b>: If this configuration is provided, the StegBench system will use this information to match the image names outputted in your tool's CSV file with repsect to the image input that was provided to your tool.
 
 To clarify this configuration, if your tool was told to run detection on /path/to/image and when it returned the result in the csv it returned 'image , True', our system would need to be able to match /path/to/image with image. To do this, you can use the flag INPUT_IMAGE_NAME which relates the path to the file name. An example of this is shown with StegExpose. 
 

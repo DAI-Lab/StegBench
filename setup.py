@@ -84,7 +84,7 @@ setup(
     description='This package allows autotesting of different datasets, steganographers, and steganalyzers.',
     entry_points={
         'console_scripts': [
-            'stegtest=stegtest.cli:main',
+            'stegbench=stegbench.cli:main',
         ],
     },
     extras_require={
@@ -97,14 +97,14 @@ setup(
     long_description=readme + '\n\n' + history,
     long_description_content_type='text/markdown',
     include_package_data=True,
-    keywords='stegtest stegtest StegTest',
-    name='stegtest',
-    packages=find_packages(include=['stegtest', 'stegtest.*']),
+    keywords='stegbench stegbench StegBench',
+    name='stegbench',
+    packages=find_packages(include=['stegbench', 'stegbench.*']),
     python_requires='>=3.4',
     setup_requires=setup_requires,
     test_suite='tests',
     tests_require=tests_require,
-    url='https://github.com/DAI-Lab/stegtest',
+    url='https://github.com/DAI-Lab/stegbench',
     version='0.1.0.dev0',
     zip_safe=False,
 )

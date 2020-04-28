@@ -10,10 +10,10 @@ from art.utils import load_mnist
 
 from os.path import join, abspath
 
-import stegtest.utils.lookup as lookup
-import stegtest.db.processor as processor
-import stegtest.db.images as images
-import stegtest.utils.filesystem as fs
+import stegbench.utils.lookup as lookup
+import stegbench.db.processor as processor
+import stegbench.db.images as images
+import stegbench.utils.filesystem as fs
 
 import torch
 

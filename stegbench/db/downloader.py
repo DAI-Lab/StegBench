@@ -1,6 +1,6 @@
-import stegtest.utils.lookup as lookup
-import stegtest.utils.filesystem as fs
-import stegtest.db.processor as processor
+import stegbench.utils.lookup as lookup
+import stegbench.utils.filesystem as fs
+import stegbench.db.processor as processor
 
 import urllib.request as req
 import shutil

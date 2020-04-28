@@ -2,7 +2,7 @@ import sys
 import imageio
 import numpy as np
 from cmath import sqrt
-import stegtest.utils.filesystem as fs
+import stegbench.utils.filesystem as fs
 
 ##Code from https://github.com/daniellerch/aletheia/tree/master/aletheialib
 

@@ -1,7 +1,7 @@
-import stegtest.utils.lookup as lookup
-import stegtest.utils.filesystem as fs
-import stegtest.utils.generator as generator
-import stegtest.executor.runner as runner
+import stegbench.utils.lookup as lookup
+import stegbench.utils.filesystem as fs
+import stegbench.utils.generator as generator
+import stegbench.executor.runner as runner
 import os
 
 from os.path import abspath, join
