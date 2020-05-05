@@ -207,7 +207,7 @@ removal_prefix = 'rm'
 removal_directory_prefix = 'rm -rf'
 docker_exec_prefix = 'docker exec'
 
-attack_FGM = 'FGM'
+attack_FGM = 'FGSM'
 attack_EAD = 'EAD'
 attack_BIM = 'BIM'
 attack_PGD = 'PGD'
