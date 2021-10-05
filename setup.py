@@ -26,7 +26,7 @@ install_requires = [
     'torch>=1.0.0,<1.1.0',
     'torchvision>=0.2.1,<0.3',
     'tqdm',
-    'adversarial-robustness-toolbox'
+    'adversarial-robustness-toolbox==1.2.0'
 ]
 
 setup_requires = [
