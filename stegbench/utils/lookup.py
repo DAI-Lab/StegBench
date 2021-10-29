@@ -6,7 +6,7 @@ from os.path import abspath, join
 import stegbench.utils.filesystem as fs
 
 # TOP DIRECTORY
-stegbench_tld = 'stegbench_asssets'
+stegbench_tld = 'stegbench_assets'
 
 #SUB-DIRECTORY TYPES#
 embeddor = 'embeddor'
