@@ -15,7 +15,7 @@ install_requires = [
     'Click>=6.0',
     'numpy',
     'jpeg2dct',
-    'Pillow<=6.0.0',
+    'Pillow<=7.0.0',
     'sklearn',
     'matplotlib>=1.4.0'
     'scikit-plot',
@@ -23,8 +23,8 @@ install_requires = [
     'pathos',
     'scikit-image',
     'scikit-plot',
-    'torch>=1.0.0,<1.1.0',
-    'torchvision>=0.2.1,<0.3',
+    'torch>=1.0.0,<2.0.0',
+    'torchvision>=0.2.1,<1.0.0',
     'tqdm',
     'adversarial-robustness-toolbox==1.2.0'
 ]

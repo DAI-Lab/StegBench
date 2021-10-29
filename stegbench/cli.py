@@ -1,28 +1,18 @@
 # -*- coding: utf-8 -*-
 
 """Console script for StegTest."""
-import sys
-import subprocess
-import os
 import collections
+
 import click
 
-import stegbench.utils.lookup as lookup
-import stegbench.utils.filesystem as fs
-
-import stegbench.db.downloader as dl 
+import stegbench as steg
+import stegbench.algo.robust as robust
+import stegbench.db.downloader as dl
 import stegbench.db.images as img
 import stegbench.db.processor as pr
+import stegbench.utils.filesystem as fs
+import stegbench.utils.lookup as lookup
 
-import stegbench.algo.algo_info as algo
-import stegbench.algo.algo_processor as algo_processor
-import stegbench.algo.robust as robust
-
-from os.path import isfile, join, abspath, relpath
-
-from stegbench.orchestrator import Embeddor, Detector, Verifier, Scheduler
-
-import stegbench as steg
 
 @click.pass_context
 def request_parameters(ctx, parameters):
@@ -33,7 +23,7 @@ def request_parameters(ctx, parameters):
         parameter_type = parameters[parameter_name]
 
         if isinstance(parameter_type, list):
-            click.echo('Enter parameter values for ' +  parameter_name + ' list. To end, press q')
+            click.echo('Enter parameter values for ' + parameter_name + ' list. To end, press q')
             value = []
             list_type = parameter_type[0]
 
@@ -43,7 +33,9 @@ def request_parameters(ctx, parameters):
                 list_value = click.prompt(prompt_string + parameter_name, type=str)
         elif isinstance(parameter_type, dict):
             get_options = parameter_type.keys()
-            value = click.prompt('Select your choice for ' + parameter_name, type=click.Choice(get_options))
+            value = click.prompt(
+                'Select your choice for ' + parameter_name,
+                type=click.Choice(get_options))
             value = parameter_type[value]
         else:
             value = click.prompt(prompt_string + parameter_name, type=parameter_type)
@@ -59,19 +51,23 @@ def request_parameters(ctx, parameters):
         return parameter_values
 
     ctx.abort()
-  
+
+
 @click.group()
 @click.pass_context
 def pipeline(ctx):
     pass
 
+
 @pipeline.command()
 @click.option('-c', '--config', help='path to config file', type=str, multiple=True)
-@click.option('-d', '--directory', help='path to a directory of config files', type=str, multiple=True)
+@click.option('-d', '--directory', help='path to a directory of config files',
+              type=str, multiple=True)
 @click.pass_context
 def add_config(ctx, config, directory):
     """adds stegbench configuration"""
     steg.add_config(config, directory)
+
 
 @pipeline.command()
 @click.pass_context
@@ -79,11 +75,15 @@ def initialize(ctx):
     """initializes stegbench configurations"""
     steg.initialize()
 
+
 @pipeline.command()
-@click.option('-r', '--routine', help='specify a pre-loaded download routine', type=click.Choice(dl.get_download_routines().keys()))
+@click.option('-r', '--routine', help='specify a pre-loaded download routine',
+              type=click.Choice(dl.get_download_routines().keys()))
 @click.option('-n', '--name', help='specify the name for the database')
-@click.option('-o', '--operation', help='applies specified operation(s) to all images', type=click.Choice(lookup.get_image_operations()), multiple=True)
-@click.option('-m', '--metadata', help='applies metadata or operation to directory', type=click.Choice(lookup.get_directory_operations()), multiple=True)
+@click.option('-o', '--operation', help='applies specified operation(s) to all images',
+              type=click.Choice(lookup.get_image_operations()), multiple=True)
+@click.option('-m', '--metadata', help='applies metadata or operation to directory',
+              type=click.Choice(lookup.get_directory_operations()), multiple=True)
 @click.pass_context
 def download(ctx, routine, name, operation, metadata):
     """downloads a specified database"""
@@ -100,16 +100,19 @@ def download(ctx, routine, name, operation, metadata):
             operation_parameters = {}
             if pr.get_metadata_operation_args(dir_op) is not None:
                 operation_parameters = request_parameters(pr.get_metadata_operation_args(dir_op))
-                
+
             metadata_dict[dir_op] = list(operation_parameters.values())
 
     steg.download(routine, name, operation_dict, metadata_dict)
 
+
 @pipeline.command()
 @click.option('-d', '--directory', help='specify an already downloaded database')
 @click.option('-n', '--name', help='specify the name for the database')
-@click.option('-o', '--operation', help='applies specified operation to each image', type=click.Choice(lookup.get_image_operations()), multiple=True)
-@click.option('-m', '--metadata', help='applies metadata or operation to directory', type=click.Choice(lookup.get_directory_operations()), multiple=True)
+@click.option('-o', '--operation', help='applies specified operation to each image',
+              type=click.Choice(lookup.get_image_operations()), multiple=True)
+@click.option('-m', '--metadata', help='applies metadata or operation to directory',
+              type=click.Choice(lookup.get_directory_operations()), multiple=True)
 @click.pass_context
 def process(ctx, directory, name, operation, metadata):
     """processes a specified database"""
@@ -129,13 +132,15 @@ def process(ctx, directory, name, operation, metadata):
             operation_parameters = {}
             if pr.get_metadata_operation_args(dir_op) is not None:
                 operation_parameters = request_parameters(pr.get_metadata_operation_args(dir_op))
-                
+
             metadata_dict[dir_op] = list(operation_parameters.values())
 
     steg.process(directory, name, operation_dict, metadata_dict)
 
+
 @pipeline.command()
-@click.option('-e', '--embeddor', help='specify an embedding routine(s) by uuid', type=str, multiple=True)
+@click.option('-e', '--embeddor', help='specify an embedding routine(s) by uuid',
+              type=str, multiple=True)
 @click.option('-u', '--uuid', help='specifies an existing embeddor set')
 @click.pass_context
 def add_embeddor(ctx, embeddor, uuid):
@@ -143,14 +148,17 @@ def add_embeddor(ctx, embeddor, uuid):
     assert(embeddor)
     steg.add_embeddor(embeddor, uuid)
 
+
 @pipeline.command()
-@click.option('-d', '--detector', help='specify an detecting routine(s) by uuid', type=str, multiple=True)
+@click.option('-d', '--detector', help='specify an detecting routine(s) by uuid',
+              type=str, multiple=True)
 @click.option('-u', '--uuid', help='specifies an existing embeddor set')
 @click.pass_context
 def add_detector(ctx, detector, uuid):
     """adds to or creates a new detector set"""
     assert(detector)
     steg.add_detector(detector, uuid)
+
 
 @pipeline.command()
 @click.option('-a', '--all', help='shows all available information', is_flag=True, default=False)
@@ -162,6 +170,7 @@ def info(ctx, all, database, embeddor, detector):
     """provides system info"""
     steg.info(all, database, embeddor, detector)
 
+
 @pipeline.command()
 @click.option('-e', '--embeddor', help='uuid of the embeddor set being used', type=str)
 @click.option('-db', '--database', help=' uuid of the db being used', type=str)
@@ -170,8 +179,9 @@ def info(ctx, all, database, embeddor, detector):
 @click.pass_context
 def embed(ctx, embeddor, database, ratio, name):
     """Embeds a db using embeddors and db images"""
-    assert(embeddor and database and ratio and name) 
+    assert(embeddor and database and ratio and name)
     steg.embed(embeddor, database, ratio, name)
+
 
 @pipeline.command()
 @click.option('-d', '--detector', help='uuid of the detector set being used')
@@ -182,6 +192,7 @@ def detect(ctx, detector, database):
     assert(detector and database)
     steg.detect(detector, database)
 
+
 @pipeline.command()
 @click.option('-db', '--database', help='uuid of the db to verify')
 @click.pass_context
@@ -190,19 +201,23 @@ def verify(ctx, database):
     assert(database)
     steg.verify(database)
 
+
 @pipeline.command()
 @click.option('-p', '--path', help='path to experiment file')
-@click.option('-db', '--database', help='uuid of the source db(s) to run experiment on', multiple=True)
+@click.option('-db', '--database',
+              help='uuid of the source db(s) to run experiment on', multiple=True)
 @click.pass_context
 def run_experiment(ctx, path, database):
     """runs pipelines specified in experiment configuration file"""
     assert(path)
     steg.run_experiment(path, database)
 
+
 @pipeline.command()
 @click.option('-m', '--model', help='path of the model', type=str)
-@click.option('-db', '--database', help='uuid of the db(s) to work with',  multiple=True)
-@click.option('-a', '--attack', help='adversarial attack options', type=click.Choice(lookup.get_attack_methods()))
+@click.option('-db', '--database', help='uuid of the db(s) to work with', multiple=True)
+@click.option('-a', '--attack', help='adversarial attack options',
+              type=click.Choice(lookup.get_attack_methods()))
 @click.pass_context
 def adv_attack(ctx, model, database, attack):
     """performs an adversarial attack on a predefined model with specific configuration details"""
@@ -212,14 +227,17 @@ def adv_attack(ctx, model, database, attack):
 
     steg.adv_attack(model, database, configurations)
 
+
 @pipeline.command()
-@click.option('-db', '--database', help='uuid of the stego db(s) to work with',  multiple=True)
+@click.option('-db', '--database', help='uuid of the stego db(s) to work with', multiple=True)
 @click.option('-o', '--output', help='name of output file', default='labels.csv')
-@click.option('-r', '--relative', help='requires relative path in file', is_flag=True, default=False)
+@click.option('-r', '--relative', help='requires relative path in file',
+              is_flag=True, default=False)
 @click.pass_context
 def generate_labels(ctx, database, output, relative):
     """generates labels.csv file for a set of databases"""
     steg.generate_labels(database, output, relative)
+
 
 def main():
     pipeline(obj={})
