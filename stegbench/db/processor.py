@@ -133,6 +133,7 @@ def process_steganographic_list(partition, embeddors):
             info_image.append(input_file)
             info_image.append(embeddors[idx][lookup.uuid_descriptor])
             info_image.append(len(secret_txt))
+            info_image.append(secret_txt)
             info_image.append(password)
 
             info_images.append(info_image)

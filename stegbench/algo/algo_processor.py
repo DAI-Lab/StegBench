@@ -258,9 +258,10 @@ def verify_embedding(verify_db, embeddors):
         asset_directory = lookup.get_algo_asset_dirs()[lookup.embeddor]
         verify_file_path = abspath(join(asset_directory, asset_file_name))
 
-        data = fs.read_txt_file(verify_file_path)
+        data = fs.read_txt_file(verify_file_path)[0].strip()
 
-        if (len(data[0])) == int(image_file[lookup.secret_txt_length]):
+        if (len(data) == int(image_file[lookup.secret_txt_length])
+                and data == image_file[lookup.PAYLOAD]):
             verification_result = True
         else:
             verification_result = False

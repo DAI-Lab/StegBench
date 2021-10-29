@@ -148,7 +148,7 @@ cover_image_header = [
     embedding_max,
     label]
 steganographic_image_header = cover_image_header + \
-    [source_image, uuid_descriptor, secret_txt_length, PASSWORD]
+    [source_image, uuid_descriptor, secret_txt_length, PAYLOAD, PASSWORD]
 
 master_algo_header = [uuid_descriptor, name_descriptor,
                       filepath_descriptor]  # points to a config file
