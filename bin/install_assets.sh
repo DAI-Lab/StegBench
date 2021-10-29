@@ -21,7 +21,10 @@ make
 cd $starting_dir/utils/aletheia/external/maxSRM
 make
 
-pip install steganogan
+cd $starting_dir/utils/
+git clone git@github.com:DAI-Lab/SteganoGAN.git
+cd SteganoGAN
+make install
 
 cd $starting_dir/utils/
 git clone git@github.com:DAI-Lab/StegDetect.git
