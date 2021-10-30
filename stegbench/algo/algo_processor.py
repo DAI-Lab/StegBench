@@ -213,7 +213,7 @@ def compile_txt_results(algorithm_info, source_db):
 
             stego = re.search(yes_filter, file_result)
             cover = re.search(no_filter, file_result)
-            assert (stego or cover and not (stego and cover))
+            assert ((stego or cover) and not (stego and cover))
 
             if stego:
                 result = lookup.stego
