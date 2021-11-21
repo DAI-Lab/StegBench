@@ -337,6 +337,7 @@ def verify(stego_database_uuid):
           str(100 * (float(verified_total) / float(verified_total + error_total))))
     print('\tIncorrect Embedding (%): ' +
           str(100 * (float(error_total) / float(verified_total + error_total))))
+    return float(verified_total) / float(verified_total + error_total)
 
 
 def run_experiment(path, database):
