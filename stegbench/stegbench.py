@@ -301,6 +301,7 @@ def detect(detector_set_uuid, database_uuids):
 
     print(breaker)
     print('All results printed.')
+    return results
 
 
 def verify(stego_database_uuid):
