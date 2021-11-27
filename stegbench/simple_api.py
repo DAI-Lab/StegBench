@@ -15,11 +15,12 @@ def init_working_dir(clear_cache):
             return
     steg.initialize()
     steg.add_config(directory=["examples/configs/detector_csfc",
+                               "examples/configs/detector_prob",
                                "examples/configs/embeddor"])
 
 
 class EmbeddorWrapper(object):
-    def __init__(self, embeddor_name, clear_cache=False):
+    def __init__(self, embeddor_name, clear_cache=True):
         init_working_dir(clear_cache)
         embeddor_info = algo.get_all_algorithms(lookup.embeddor)
         self._embeddor_name = embeddor_name
@@ -35,9 +36,12 @@ class EmbeddorWrapper(object):
         self._embeddor_set_uuid = steg.add_embeddor([self._embeddor["uuid"]])
 
 
-    def embed(self, cover_path, steg_path, ratio):
+    def embed(self, cover_path, steg_path, ratio, overwrite=False):
         if os.path.exists(steg_path):
-            raise RuntimeError("steg path exists")
+            if overwrite:
+                shutil.rmtree(steg_path)
+            else:
+                raise RuntimeError("steg path exists")
 
         cover_db_name = datetime.datetime.now().strftime("cover-%Y%m%d-%H%M%S")
         steg_db_name = datetime.datetime.now().strftime(
@@ -62,7 +66,7 @@ class EmbeddorWrapper(object):
 
 
 class DetectorWrapper(object):
-    def __init__(self, detector_name, clear_cache=False):
+    def __init__(self, detector_name, clear_cache=True):
         init_working_dir(clear_cache)
         detector_info = algo.get_all_algorithms(lookup.detector)
         self._detector_name = detector_name
@@ -99,7 +103,7 @@ class DetectorWrapper(object):
 
 
 if __name__ == "__main__":
-    embeddor = EmbeddorWrapper("steganogan-basic", clear_cache=False)
+    embeddor = EmbeddorWrapper("steganogan-basic")
     accuracy = embeddor.embed("notebooks/example_dataset", "tmp/", ratio=0.0001)
     print(accuracy)
     detector = DetectorWrapper("spa")
