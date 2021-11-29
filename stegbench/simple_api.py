@@ -8,6 +8,11 @@ import datetime
 
 
 def init_working_dir(clear_cache):
+    """create the working directory.
+
+    Args:
+        clear_cache (bool): if True, overwrite current working directory.
+    """
     if os.path.exists(lookup.stegbench_tld):
         if clear_cache:
             shutil.rmtree(lookup.stegbench_tld)
@@ -20,7 +25,15 @@ def init_working_dir(clear_cache):
 
 
 class EmbeddorWrapper(object):
+    """A simple wrapper for all embeddors."""
     def __init__(self, embeddor_name, clear_cache=True):
+        """Create an embeddor by name.
+
+        Args:
+            embeddor_name (str): the name of an embeddor. Embeddor names can be found in config
+                files.
+            clear_cache (bool): if True, overwrite current working directory.
+        """
         init_working_dir(clear_cache)
         embeddor_info = algo.get_all_algorithms(lookup.embeddor)
         self._embeddor_name = embeddor_name
@@ -37,6 +50,16 @@ class EmbeddorWrapper(object):
 
 
     def embed(self, cover_path, steg_path, ratio, overwrite=False):
+        """Embed text into cover images.
+
+        Args:
+            cover_path (str): a directory containing cover images.
+            steg_path (str): a directory to save steg images.
+            ratio (float): bits per pixel.
+            overwrite (str): whether to overwrite the steg path.
+        Returns:
+            (float): recovery accuracy.
+        """
         if os.path.exists(steg_path):
             if overwrite:
                 shutil.rmtree(steg_path)
@@ -66,7 +89,15 @@ class EmbeddorWrapper(object):
 
 
 class DetectorWrapper(object):
+    """A simple wrapper for detectors."""
     def __init__(self, detector_name, clear_cache=True):
+        """Create a detector by name.
+
+        Args:
+            detector_name (str): the name of the detector. Detector names can be found in config
+                files.
+            clear_cache (bool): whether to overwrite the working directory.
+        """
         init_working_dir(clear_cache)
         detector_info = algo.get_all_algorithms(lookup.detector)
         self._detector_name = detector_name
@@ -82,6 +113,14 @@ class DetectorWrapper(object):
         self._detector_set_uuid = steg.add_detector([self._detector["uuid"]])
 
     def detect(self, cover_path=None, steg_path=None):
+        """Detect steg images.
+
+        Args:
+            cover_path (str or None): a directory of cover images.
+            steg_path (str or None): a directory of steg images.
+        Returns:
+            (float, float): the accuracy of detecting cover images and steg images respectively.
+        """
         cover_db_name = datetime.datetime.now().strftime("cover-%Y%m%d-%H%M%S")
         steg_db_name = datetime.datetime.now().strftime("steg--%Y%m%d-%H%M%S")
 
